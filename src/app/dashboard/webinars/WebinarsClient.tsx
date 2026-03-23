@@ -405,21 +405,30 @@ export default function WebinarsClient({
 
             {/* Status table */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
-              {STATUS_TABLE.map(row => (
+              {STATUS_TABLE.map(row => {
+                const isActive = statusLabel.includes(row.label)
+                return (
                 <div key={row.label} style={{
                   display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '8px 12px', borderRadius: 10,
-                  background: statusLabel.includes(row.label) ? '#F0EEFF' : '#FAF8FF',
-                  border: `1px solid ${statusLabel.includes(row.label) ? '#DDD5FF' : '#EDE8FF'}`,
+                  padding: isActive ? '10px 14px' : '8px 12px',
+                  borderRadius: 12,
+                  background: isActive ? '#FFD93D' : '#FAF8FF',
+                  border: `1px solid ${isActive ? '#FFD93D' : '#EDE8FF'}`,
                 }}>
-                  <span style={{ fontSize: 18, flexShrink: 0 }}>{row.icon}</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', minWidth: 120 }}>
+                  <span style={{ fontSize: isActive ? 20 : 18, flexShrink: 0 }}>{row.icon}</span>
+                  <span style={{
+                    fontSize: 13, minWidth: 120,
+                    fontWeight: 700,
+                    fontFamily: isActive ? 'var(--font-unbounded)' : 'var(--font-nunito)',
+                    color: isActive ? '#5C4200' : 'var(--text)',
+                  }}>
                     {row.label}
                   </span>
-                  <span style={{ fontSize: 12, color: 'var(--muted)', minWidth: 50 }}>{row.months}</span>
-                  <span style={{ fontSize: 13, color: 'var(--text)' }}>{row.desc}</span>
+                  <span style={{ fontSize: 12, color: isActive ? '#7A5500' : 'var(--muted)', minWidth: 50 }}>{row.months}</span>
+                  <span style={{ fontSize: 13, color: isActive ? '#5C4200' : 'var(--text)' }}>{row.desc}</span>
                 </div>
-              ))}
+                )
+              })}
             </div>
 
             {/* Current status */}
