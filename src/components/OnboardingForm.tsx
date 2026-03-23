@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { calculateKBJU, type ActivityLevel } from '@/lib/kbju'
+import { LEGAL_DOCS } from '@/lib/legal'
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
@@ -39,6 +40,120 @@ const HEALTH_OPTIONS = [
   { value: 'diabetes', label: 'Диабет' },
 ]
 
+// ── Legal helpers ──────────────────────────────────────────────────────────
+
+function DocLink({
+  slug,
+  label,
+  openDoc,
+  setOpenDoc,
+}: {
+  slug: string
+  label: string
+  openDoc: string | null
+  setOpenDoc: (v: string | null) => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={e => { e.stopPropagation(); setOpenDoc(openDoc === slug ? null : slug) }}
+      style={{
+        background: 'none', border: 'none', padding: 0,
+        color: 'var(--pur)', fontSize: 'inherit',
+        fontFamily: 'var(--font-nunito)', cursor: 'pointer',
+        textDecoration: 'underline', textUnderlineOffset: 2,
+        fontWeight: 600,
+      }}
+    >
+      {label}
+    </button>
+  )
+}
+
+function ConsentRow({
+  checked,
+  onChange,
+  label,
+  docSlug,
+  openDoc,
+  setOpenDoc,
+}: {
+  checked: boolean
+  onChange: (v: boolean) => void
+  label: React.ReactNode
+  docSlug: string
+  openDoc: string | null
+  setOpenDoc: (v: string | null) => void
+}) {
+  // Find which docs are shown for this row (could be "terms" or "rules" or others)
+  const isOpen = openDoc !== null && (openDoc === docSlug || openDoc === 'rules')
+
+  // Determine which doc content to show
+  type DocKey = 'terms' | 'rules' | 'disclaimer' | 'privacy' | 'refund'
+  const shownDoc = openDoc ? LEGAL_DOCS[openDoc as DocKey] : null
+
+  return (
+    <div>
+      <label
+        style={{
+          display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer',
+        }}
+      >
+        <span
+          onClick={() => onChange(!checked)}
+          style={{
+            marginTop: 2, flexShrink: 0,
+            width: 20, height: 20, borderRadius: 6,
+            border: `2px solid ${checked ? 'var(--pur)' : 'var(--border)'}`,
+            background: checked ? 'var(--pur)' : 'transparent',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', transition: 'all 0.15s',
+          }}
+        >
+          {checked && (
+            <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+              <path d="M1 4L4 7.5L10 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
+        </span>
+        <span
+          style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--text)', fontFamily: 'var(--font-nunito)', userSelect: 'none' }}
+          onClick={() => onChange(!checked)}
+        >
+          {label}
+        </span>
+      </label>
+
+      {/* Inline doc accordion */}
+      {shownDoc && (openDoc === docSlug || openDoc === 'rules') && (
+        <div style={{
+          marginTop: 10, padding: '12px 14px',
+          background: '#F9F8FF', border: '1px solid var(--border)',
+          borderRadius: 12, fontSize: 12.5, lineHeight: 1.7,
+          color: 'var(--text)', whiteSpace: 'pre-wrap',
+          maxHeight: 280, overflowY: 'auto',
+          fontFamily: 'var(--font-nunito)',
+        }}>
+          <p style={{ margin: '0 0 8px', fontWeight: 700, fontSize: 13 }}>{shownDoc.title}</p>
+          {shownDoc.content}
+          <button
+            type="button"
+            onClick={() => setOpenDoc(null)}
+            style={{
+              marginTop: 10, display: 'block',
+              background: 'none', border: 'none', padding: 0,
+              color: 'var(--pur)', fontSize: 13, cursor: 'pointer',
+              fontWeight: 600, fontFamily: 'var(--font-nunito)',
+            }}
+          >
+            Закрыть ↑
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function OnboardingForm({ userId }: { userId: string }) {
   const router = useRouter()
 
@@ -55,6 +170,14 @@ export default function OnboardingForm({ userId }: { userId: string }) {
   const [noneChecked, setNoneChecked] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Consent state
+  const [agreedTerms, setAgreedTerms] = useState(false)
+  const [agreedDisclaimer, setAgreedDisclaimer] = useState(false)
+  const [agreedPersonalData, setAgreedPersonalData] = useState(false)
+  const [openDoc, setOpenDoc] = useState<string | null>(null)
+
+  const allAgreed = agreedTerms && agreedDisclaimer && agreedPersonalData
 
   const handleChange = (field: string, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }))
@@ -116,6 +239,9 @@ export default function OnboardingForm({ userId }: { userId: string }) {
         kbju_fat:      kbju.fat,
         kbju_carbs:    kbju.carbs,
         status: 'trial',
+        agreed_terms_at: new Date().toISOString(),
+        agreed_disclaimer_at: new Date().toISOString(),
+        agreed_personal_data_at: new Date().toISOString(),
       },
       { onConflict: 'id' }
     )
@@ -345,6 +471,61 @@ export default function OnboardingForm({ userId }: { userId: string }) {
         />
       </Card>
 
+      {/* ── Consent block ──────────────────────────────────────────────── */}
+      <div className="rounded-2xl p-4 flex flex-col gap-3" style={{ background: 'var(--card)', border: '2px solid var(--border)' }}>
+        <p className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
+          Перед началом
+        </p>
+
+        {/* Consent 1: Terms + Rules */}
+        <ConsentRow
+          checked={agreedTerms}
+          onChange={setAgreedTerms}
+          label={
+            <>
+              Я прочитала и принимаю{' '}
+              <DocLink slug="terms" label="Пользовательское соглашение" openDoc={openDoc} setOpenDoc={setOpenDoc} />
+              {' '}и{' '}
+              <DocLink slug="rules" label="Правила клуба" openDoc={openDoc} setOpenDoc={setOpenDoc} />
+            </>
+          }
+          docSlug="terms"
+          openDoc={openDoc}
+          setOpenDoc={setOpenDoc}
+        />
+
+        {/* Consent 2: Medical disclaimer */}
+        <ConsentRow
+          checked={agreedDisclaimer}
+          onChange={setAgreedDisclaimer}
+          label={
+            <>
+              Я ознакомилась с{' '}
+              <DocLink slug="disclaimer" label="Медицинским дисклеймером" openDoc={openDoc} setOpenDoc={setOpenDoc} />
+              {' '}и понимаю, что информация в клубе носит образовательный характер и не является медицинской консультацией
+            </>
+          }
+          docSlug="disclaimer"
+          openDoc={openDoc}
+          setOpenDoc={setOpenDoc}
+        />
+
+        {/* Consent 3: Personal data */}
+        <ConsentRow
+          checked={agreedPersonalData}
+          onChange={setAgreedPersonalData}
+          label={
+            <>
+              Я даю согласие на обработку моих персональных данных согласно{' '}
+              <DocLink slug="privacy" label="Политике конфиденциальности" openDoc={openDoc} setOpenDoc={setOpenDoc} />
+            </>
+          }
+          docSlug="privacy"
+          openDoc={openDoc}
+          setOpenDoc={setOpenDoc}
+        />
+      </div>
+
       {error && (
         <p className="text-sm text-center px-1" style={{ color: '#E74C3C', fontFamily: 'var(--font-nunito)' }}>
           {error}
@@ -353,15 +534,18 @@ export default function OnboardingForm({ userId }: { userId: string }) {
 
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || !allAgreed}
         className="w-full rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-50"
         style={{
           minHeight: 56,
-          background: 'linear-gradient(135deg, #2A9D5C 0%, #52C98D 100%)',
+          background: allAgreed
+            ? 'linear-gradient(135deg, #2A9D5C 0%, #52C98D 100%)'
+            : '#C0B8D8',
           fontFamily: 'var(--font-nunito)',
+          cursor: allAgreed ? 'pointer' : 'not-allowed',
         }}
       >
-        {loading ? 'Сохраняем...' : 'Начать мой путь 🌿'}
+        {loading ? 'Сохраняем...' : 'Принимаю и начинаю 🌿'}
       </button>
 
       <p className="text-xs text-center pb-6" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
