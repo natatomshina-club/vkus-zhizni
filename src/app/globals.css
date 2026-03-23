@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+:root {
+  --pur: #7C5CFC;
+  --pur-light: #EDE9FF;
+  --grn: #A8E6CF;
+  --grn-light: #E8FFF4;
+  --yel: #FFD93D;
+  --yel-light: #FFFBE6;
+  --ora: #FF9F43;
+  --ora-light: #FFF3E6;
+  --bg: #FAF8FF;
+  --text: #2D1F6E;
+  --card: #FFFFFF;
+  --border: #EDE9FF;
+  --muted: rgba(45, 31, 110, 0.45);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-nunito), system-ui, sans-serif;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-unbounded), system-ui, sans-serif;
+}

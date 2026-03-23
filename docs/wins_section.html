@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Маленькие победы — Вкус Жизни</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pur:#7C5CFC;--pur-lt:#F0EEFF;--pur-br:#DDD5FF;
+  --grn:#A8E6CF;--grn-dk:#2D6A4F;
+  --yel:#FFD93D;--yel-dk:#5C4200;
+  --ora:#FF9F43;--red:#FF6B6B;
+  --bg:#FAF8FF;--card:#fff;
+  --text:#2D1F6E;--muted:#7B6FAA;--pale:#9B8FCC;
+  --border:#EDE8FF;
+  --pnk:#FF6B9D;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Nunito',sans-serif;background:#E8E2FF;
+  display:flex;flex-direction:column;align-items:center;padding:24px;gap:48px}
+.section-head{font-family:'Unbounded',sans-serif;font-size:12px;font-weight:700;
+  color:var(--pur);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;text-align:center}
+
+/* =================== MOBILE =================== */
+.m-wrap{display:flex;flex-direction:column;align-items:center}
+.phone{width:375px;height:820px;background:var(--bg);border-radius:36px;overflow:hidden;
+  border:3px solid var(--pur-br);box-shadow:0 24px 64px rgba(124,92,252,.2);
+  display:flex;flex-direction:column}
+.sbar{background:var(--card);padding:10px 20px 7px;display:flex;justify-content:space-between;flex-shrink:0}
+.sbar-t{font-size:13px;font-weight:700;color:var(--text)}
+.tbar{background:var(--card);padding:8px 16px 10px;display:flex;align-items:center;
+  gap:10px;border-bottom:2px solid var(--border);flex-shrink:0}
+.tb-back{width:32px;height:32px;background:var(--pur-lt);border:none;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer}
+.tb-mid{flex:1;text-align:center}
+.tb-title{font-family:'Unbounded',sans-serif;font-size:13px;font-weight:800;color:var(--text)}
+.tb-sub{font-size:10px;color:var(--pale);font-weight:600}
+.mscroll{flex:1;overflow-y:auto;padding:14px}
+.mscroll::-webkit-scrollbar{width:0}
+
+/* --- БЛОК ПРОГРЕССА ИЗ ТРЕКЕРА (мобайл) --- */
+.m-progress{background:var(--card);border:2px solid var(--border);border-radius:16px;
+  padding:14px;margin-bottom:14px}
+.mp-title{font-size:12px;font-weight:700;color:var(--pale);text-transform:uppercase;
+  letter-spacing:.07em;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.mp-title span{font-size:14px}
+.mp-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mpg-item{background:var(--pur-lt);border-radius:12px;padding:10px 12px;position:relative;overflow:hidden}
+.mpg-item.weight{background:linear-gradient(135deg,#F0EEFF,#E6DEFF)}
+.mpg-item.waist{background:linear-gradient(135deg,#E8FFF5,#D4F7EA)}
+.mpg-item.hips{background:linear-gradient(135deg,#FFF8E6,#FFF0C7)}
+.mpg-item.chest{background:linear-gradient(135deg,#FFF0F5,#FFE0EC)}
+.mpg-label{font-size:10px;font-weight:700;color:var(--pale);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.mpg-item.weight .mpg-label{color:#5A45B8}
+.mpg-item.waist .mpg-label{color:var(--grn-dk)}
+.mpg-item.hips .mpg-label{color:#8B6914}
+.mpg-item.chest .mpg-label{color:#A03060}
+.mpg-row{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.mpg-start{font-size:12px;color:var(--pale);font-weight:700;text-decoration:line-through}
+.mpg-arr{font-size:14px;color:var(--pale)}
+.mpg-cur{font-family:'Unbounded',sans-serif;font-size:17px;font-weight:800}
+.mpg-item.weight .mpg-cur{color:#5A45B8}
+.mpg-item.waist .mpg-cur{color:var(--grn-dk)}
+.mpg-item.hips .mpg-cur{color:#8B6914}
+.mpg-item.chest .mpg-cur{color:#A03060}
+.mpg-unit{font-size:11px;font-weight:700;color:var(--muted)}
+.mpg-diff{display:inline-block;font-size:10px;font-weight:800;border-radius:6px;
+  padding:2px 7px;margin-top:5px}
+.mpg-diff.minus{background:#D4F7EA;color:var(--grn-dk)}
+.mpg-diff.none{background:var(--pur-lt);color:var(--pur)}
+.mpg-link{display:block;text-align:center;margin-top:10px;font-size:11px;font-weight:700;
+  color:var(--pur);text-decoration:none;opacity:.8}
+.mpg-no-data{text-align:center;padding:12px;color:var(--pale);font-size:12px;font-weight:600}
+
+/* stats strip */
+.m-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.mst{background:var(--card);border:2px solid var(--border);border-radius:14px;padding:11px;text-align:center}
+.mst-v{font-family:'Unbounded',sans-serif;font-size:20px;font-weight:800;margin-bottom:3px;line-height:1}
+.mst.pur .mst-v{color:var(--pur)}.mst.grn .mst-v{color:var(--grn-dk)}.mst.yel .mst-v{color:var(--yel-dk)}
+.mst-l{font-size:10px;font-weight:700;color:var(--pale);text-transform:uppercase;letter-spacing:.04em}
+
+/* streak mobile */
+.m-streak{background:linear-gradient(135deg,var(--pur),#9B6BFF);border-radius:16px;
+  padding:13px;margin-bottom:14px;display:flex;align-items:flex-start;gap:11px}
+.ms-ico{font-size:28px;flex-shrink:0}
+.ms-info{flex:1}
+.ms-t{font-size:14px;font-weight:800;color:#fff;margin-bottom:2px}
+.ms-s{font-size:12px;color:rgba(255,255,255,.75);margin-bottom:8px}
+.ms-days{display:flex;gap:4px}
+.ms-day{width:24px;height:24px;border-radius:7px;display:flex;align-items:center;
+  justify-content:center;font-size:10px;font-weight:800}
+.ms-day.done{background:rgba(255,255,255,.3);color:#fff}
+.ms-day.today{background:#fff;color:var(--pur)}
+.ms-day.miss{background:rgba(255,255,255,.1);color:rgba(255,255,255,.28)}
+
+/* random win */
+.m-random{background:linear-gradient(135deg,var(--yel),#FFC107);border-radius:16px;
+  padding:14px;margin-bottom:14px}
+.mr-label{font-size:10px;font-weight:700;color:var(--yel-dk);text-transform:uppercase;
+  letter-spacing:.07em;margin-bottom:7px;display:flex;align-items:center;gap:6px}
+.mr-text{font-size:14px;font-weight:800;color:var(--yel-dk);line-height:1.5;margin-bottom:5px}
+.mr-date{font-size:11px;color:#8B6914;margin-bottom:10px}
+.mr-refresh{background:rgba(0,0,0,.1);border:none;border-radius:9px;padding:6px 13px;
+  font-size:12px;font-weight:700;color:var(--yel-dk);cursor:pointer;font-family:'Nunito',sans-serif}
+
+/* input card */
+.m-input-card{background:var(--card);border:2px solid var(--border);border-radius:16px;padding:14px;margin-bottom:14px}
+.m-input-card.highlight{border-color:var(--pur);box-shadow:0 0 0 3px rgba(124,92,252,.12);animation:pulse-border .6s ease}
+@keyframes pulse-border{0%{box-shadow:0 0 0 0 rgba(124,92,252,.3)}100%{box-shadow:0 0 0 6px rgba(124,92,252,0)}}
+.mic-title{font-size:14px;font-weight:800;color:var(--text);margin-bottom:11px}
+.mic-textarea{width:100%;border:2px solid var(--border);border-radius:12px;
+  padding:12px 14px;font-size:14px;font-family:'Nunito',sans-serif;color:var(--text);
+  background:#F8F5FF;resize:none;height:80px;outline:none;transition:border .18s;
+  margin-bottom:10px;line-height:1.5}
+.mic-textarea:focus{border-color:var(--pur)}
+.mic-hints{margin-bottom:11px}
+.mic-hints-lbl{font-size:10px;font-weight:700;color:var(--pale);text-transform:uppercase;
+  letter-spacing:.06em;margin-bottom:7px}
+.mic-hint-chips{display:flex;gap:5px;flex-wrap:wrap}
+.mhc{background:var(--pur-lt);border:none;border-radius:18px;padding:5px 11px;
+  font-size:11px;font-weight:700;color:var(--pur);cursor:pointer;font-family:'Nunito',sans-serif;transition:all .13s}
+.mhc:hover{background:var(--pur);color:#fff}
+.mic-save{width:100%;background:var(--grn);color:var(--grn-dk);border:none;
+  border-radius:12px;padding:13px;font-size:14px;font-weight:800;cursor:pointer;
+  font-family:'Nunito',sans-serif;transition:opacity .15s}
+.mic-save:disabled{opacity:.4;cursor:default}
+
+/* section label */
+.m-sec{font-size:11px;font-weight:700;color:var(--pale);text-transform:uppercase;
+  letter-spacing:.07em;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.m-sec::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* win feed */
+.win-item{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px}
+.wi-left{display:flex;flex-direction:column;align-items:center}
+.wi-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.wi-line{width:2px;flex:1;min-height:20px;background:var(--border);margin:3px auto 0}
+.wi-body{flex:1;padding-bottom:4px}
+.wi-date{font-size:10px;font-weight:700;color:var(--pale);margin-bottom:4px}
+.wi-text{font-size:14px;font-weight:700;color:var(--text);line-height:1.55;
+  background:var(--card);border:2px solid var(--border);border-radius:12px;
+  padding:10px 13px;border-left:4px solid transparent}
+.wi-text.c-pur{border-left-color:var(--pur)}.wi-text.c-grn{border-left-color:var(--grn-dk)}
+.wi-text.c-yel{border-left-color:var(--yel)}.wi-text.c-ora{border-left-color:var(--ora)}
+.wi-text.c-pnk{border-left-color:var(--pnk)}
+
+/* win source badge (из главной) */
+.wi-badge{display:inline-block;font-size:9px;font-weight:800;color:var(--pur);
+  background:var(--pur-lt);border-radius:5px;padding:1px 6px;margin-left:6px;vertical-align:middle}
+
+/* bottom nav */
+.bnav{background:var(--card);border-top:2px solid var(--border);padding:8px 4px 12px;
+  display:flex;justify-content:space-around;flex-shrink:0}
+.bn{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;
+  padding:4px 8px;border-radius:11px;border:none;background:transparent;min-width:52px}
+.bn.on{background:var(--pur-lt)}
+.bni{font-size:20px}.bnl{font-size:10px;font-weight:700;color:var(--muted)}
+.bn.on .bnl{color:var(--pur)}
+
+/* =================== DESKTOP =================== */
+.d-wrap{display:flex;flex-direction:column;align-items:center;width:100%}
+.desk{width:1180px;height:820px;background:var(--bg);border-radius:22px;overflow:hidden;
+  border:3px solid var(--pur-br);box-shadow:0 32px 80px rgba(124,92,252,.18);display:flex}
+.dsb{width:220px;flex-shrink:0;background:var(--card);border-right:2px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.dsb-brand{padding:18px 16px 14px;border-bottom:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;gap:9px}
+.dsb-ball{width:34px;height:34px;background:var(--pur);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.dsb-nm{font-family:'Unbounded',sans-serif;font-size:10px;font-weight:800;color:var(--text);line-height:1.35}
+.dsb-nm small{display:block;font-size:8px;color:var(--pale);font-weight:600}
+.dsb-user{padding:12px 14px;border-bottom:2px solid var(--border);flex-shrink:0}
+.dsu-name{font-size:14px;font-weight:800;color:var(--text);margin-bottom:1px}
+.dsu-sub{font-size:11px;color:var(--pale)}
+.dsb-nav{flex:1;padding:8px;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
+.dsb-nav::-webkit-scrollbar{width:0}
+.sbn{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:11px;cursor:pointer;border:none;background:transparent;width:100%;text-align:left;transition:background .12s}
+.sbn:hover{background:var(--pur-lt)}.sbn.on{background:var(--pur)}
+.sbn-i{font-size:16px;width:22px;text-align:center;flex-shrink:0}
+.sbn-l{font-size:12px;font-weight:700;color:#4A3A8A;white-space:nowrap;flex:1}.sbn.on .sbn-l{color:#fff}
+.dsb-sep{height:1px;background:var(--border);margin:4px 8px}
+.dmain{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.dheader{background:var(--card);border-bottom:2px solid var(--border);padding:14px 28px;flex-shrink:0}
+.dh-title{font-family:'Unbounded',sans-serif;font-size:18px;font-weight:800;color:var(--text)}
+.dh-sub{font-size:13px;color:var(--muted);margin-top:2px}
+.dbody{flex:1;overflow-y:auto;padding:22px 28px;display:grid;grid-template-columns:1fr 320px;gap:22px;align-content:start}
+.dbody::-webkit-scrollbar{width:4px}
+.dbody::-webkit-scrollbar-thumb{background:var(--pur-br);border-radius:2px}
+
+/* --- БЛОК ПРОГРЕССА ИЗ ТРЕКЕРА (десктоп, в правой колонке) --- */
+.d-progress{background:var(--card);border:2px solid var(--border);border-radius:18px;
+  padding:18px;margin-bottom:18px}
+.dp-title{font-size:13px;font-weight:800;color:var(--text);margin-bottom:14px;
+  display:flex;align-items:center;justify-content:space-between}
+.dp-title-left{display:flex;align-items:center;gap:7px}
+.dp-link{font-size:11px;font-weight:700;color:var(--pur);text-decoration:none;opacity:.75}
+.dp-link:hover{opacity:1}
+.dp-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dpg-item{border-radius:14px;padding:13px 14px;position:relative;overflow:hidden}
+.dpg-item.weight{background:linear-gradient(135deg,#F0EEFF,#E8E2FF)}
+.dpg-item.waist{background:linear-gradient(135deg,#E8FFF5,#D4F7EA)}
+.dpg-item.hips{background:linear-gradient(135deg,#FFF8E6,#FFF0C7)}
+.dpg-item.chest{background:linear-gradient(135deg,#FFF0F5,#FFE0EC)}
+.dpg-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+.dpg-item.weight .dpg-label{color:#5A45B8}
+.dpg-item.waist .dpg-label{color:var(--grn-dk)}
+.dpg-item.hips .dpg-label{color:#8B6914}
+.dpg-item.chest .dpg-label{color:#A03060}
+.dpg-row{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;margin-bottom:6px}
+.dpg-start{font-size:12px;color:var(--pale);font-weight:700;text-decoration:line-through}
+.dpg-arr{font-size:13px;color:var(--pale)}
+.dpg-cur{font-family:'Unbounded',sans-serif;font-size:18px;font-weight:800}
+.dpg-item.weight .dpg-cur{color:#5A45B8}
+.dpg-item.waist .dpg-cur{color:var(--grn-dk)}
+.dpg-item.hips .dpg-cur{color:#8B6914}
+.dpg-item.chest .dpg-cur{color:#A03060}
+.dpg-unit{font-size:11px;font-weight:700;color:var(--muted)}
+.dpg-diff{display:inline-block;font-size:11px;font-weight:800;border-radius:7px;padding:3px 9px}
+.dpg-diff.minus{background:#D4F7EA;color:var(--grn-dk)}
+.dpg-diff.none{background:var(--pur-lt);color:var(--pur)}
+.dp-no-data{text-align:center;padding:16px;color:var(--pale);font-size:13px;font-weight:600}
+
+/* desktop input */
+.d-input-card{background:var(--card);border:2px solid var(--border);border-radius:18px;padding:20px;margin-bottom:18px}
+.d-input-card.highlight{border-color:var(--pur);box-shadow:0 0 0 3px rgba(124,92,252,.12);animation:pulse-border .6s ease}
+.dic-title{font-size:15px;font-weight:800;color:var(--text);margin-bottom:12px}
+.dic-textarea{width:100%;border:2px solid var(--border);border-radius:13px;
+  padding:14px 16px;font-size:15px;font-family:'Nunito',sans-serif;color:var(--text);
+  background:#F8F5FF;resize:none;height:90px;outline:none;transition:border .18s;line-height:1.55;margin-bottom:12px}
+.dic-textarea:focus{border-color:var(--pur)}
+.dic-hints-lbl{font-size:11px;font-weight:700;color:var(--pale);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.dic-hints{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.dhc{background:var(--pur-lt);border:none;border-radius:20px;padding:6px 13px;font-size:12px;font-weight:700;color:var(--pur);cursor:pointer;font-family:'Nunito',sans-serif;transition:all .13s}
+.dhc:hover{background:var(--pur);color:#fff}
+.dic-save{background:var(--grn);color:var(--grn-dk);border:none;border-radius:12px;padding:12px 28px;font-size:14px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif}
+.dic-save:disabled{opacity:.4;cursor:default}
+
+/* desktop feed */
+.d-feed{background:var(--card);border:2px solid var(--border);border-radius:18px;padding:20px}
+.df-title{font-size:14px;font-weight:800;color:var(--text);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.df-count{font-size:12px;font-weight:700;color:var(--pale)}
+.dw-item{display:flex;gap:12px;align-items:flex-start;margin-bottom:14px}
+.dwi-left{display:flex;flex-direction:column;align-items:center}
+.dwi-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.dwi-line{width:2px;flex:1;min-height:16px;background:var(--border);margin:3px auto 0}
+.dwi-body{flex:1}
+.dwi-date{font-size:11px;font-weight:700;color:var(--pale);margin-bottom:5px}
+.dwi-text{font-size:14px;font-weight:700;color:var(--text);line-height:1.6;
+  background:#F8F5FF;border-radius:12px;padding:11px 14px;border-left:4px solid transparent}
+.dwi-text.c-pur{border-left-color:var(--pur)}.dwi-text.c-grn{border-left-color:var(--grn-dk)}
+.dwi-text.c-yel{border-left-color:var(--yel)}.dwi-text.c-ora{border-left-color:var(--ora)}
+.dwi-text.c-pnk{border-left-color:var(--pnk)}
+/* source badge десктоп */
+.dwi-badge{display:inline-block;font-size:9px;font-weight:800;color:var(--pur);
+  background:var(--pur-lt);border-radius:5px;padding:1px 6px;margin-left:6px;vertical-align:middle}
+
+/* right col */
+.d-stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px}
+.dst{background:var(--card);border:2px solid var(--border);border-radius:14px;padding:14px;text-align:center}
+.dst-v{font-family:'Unbounded',sans-serif;font-size:22px;font-weight:800;margin-bottom:4px;line-height:1}
+.dst.pur .dst-v{color:var(--pur)}.dst.grn .dst-v{color:var(--grn-dk)}.dst.yel .dst-v{color:var(--yel-dk)}
+.dst-l{font-size:10px;font-weight:700;color:var(--pale);text-transform:uppercase;letter-spacing:.04em}
+
+.d-streak{background:linear-gradient(135deg,var(--pur),#9B6BFF);border-radius:18px;padding:16px;margin-bottom:16px}
+.ds-top{display:flex;align-items:center;gap:11px;margin-bottom:12px}
+.ds-ico{font-size:28px;flex-shrink:0}
+.ds-t{font-size:15px;font-weight:800;color:#fff;margin-bottom:2px}
+.ds-s{font-size:12px;color:rgba(255,255,255,.7)}
+.ds-days{display:flex;gap:5px;flex-wrap:wrap}
+.dsd{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800}
+.dsd.done{background:rgba(255,255,255,.28);color:#fff}
+.dsd.today{background:#fff;color:var(--pur)}
+.dsd.miss{background:rgba(255,255,255,.08);color:rgba(255,255,255,.28)}
+
+.d-random{background:linear-gradient(135deg,var(--yel),#FFC107);border-radius:18px;padding:16px}
+.dr-lbl{font-size:10px;font-weight:700;color:var(--yel-dk);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.dr-text{font-size:15px;font-weight:800;color:var(--yel-dk);line-height:1.5;margin-bottom:6px;transition:opacity .2s}
+.dr-date{font-size:12px;color:#8B6914;margin-bottom:12px}
+.dr-btn{background:rgba(0,0,0,.1);border:none;border-radius:9px;padding:7px 14px;font-size:12px;font-weight:700;color:var(--yel-dk);cursor:pointer;font-family:'Nunito',sans-serif}
+
+/* toast */
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);
+  background:#2D1F6E;color:#fff;border-radius:14px;padding:12px 22px;
+  font-size:14px;font-weight:700;z-index:300;display:none;white-space:nowrap}
+.toast.show{display:block;animation:toastIn .25s ease}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* === СИМУЛЯЦИЯ ГЛАВНОЙ СТРАНИЦЫ (для демо) === */
+.demo-home-wrap{display:flex;flex-direction:column;align-items:center;width:100%}
+.demo-home{width:480px;background:var(--bg);border:3px dashed var(--pur-br);border-radius:22px;padding:20px;box-shadow:0 8px 24px rgba(124,92,252,.1)}
+.demo-label{font-size:11px;font-weight:700;color:var(--pur);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.demo-label::before,.demo-label::after{content:'';flex:1;height:1px;background:var(--pur-br)}
+.home-win-card{background:var(--card);border:2px solid var(--border);border-radius:16px;padding:16px}
+.hwc-top{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.hwc-ico{width:36px;height:36px;background:linear-gradient(135deg,var(--pur),#9B6BFF);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.hwc-ttl{font-size:14px;font-weight:800;color:var(--text)}
+.hwc-sub{font-size:11px;color:var(--pale);font-weight:600}
+.hwc-input{width:100%;border:2px solid var(--border);border-radius:12px;
+  padding:10px 13px;font-size:14px;font-family:'Nunito',sans-serif;color:var(--text);
+  background:#F8F5FF;resize:none;height:68px;outline:none;transition:border .18s;line-height:1.5;margin-bottom:10px}
+.hwc-input:focus{border-color:var(--pur)}
+.hwc-save{background:linear-gradient(135deg,var(--pur),#9B6BFF);color:#fff;border:none;
+  border-radius:11px;padding:11px 20px;font-size:13px;font-weight:800;cursor:pointer;
+  font-family:'Nunito',sans-serif;transition:opacity .15s}
+.hwc-save:disabled{opacity:.4;cursor:default}
+.home-win-arrow{text-align:center;margin-top:10px;font-size:12px;font-weight:700;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- =================== ДЕМО ГЛАВНОЙ =================== -->
+<div class="demo-home-wrap">
+<div class="section-head">Главная страница — виджет ввода победы</div>
+<div class="demo-home">
+  <div class="demo-label">Виджет на Главной (/dashboard)</div>
+  <div class="home-win-card">
+    <div class="hwc-top">
+      <div class="hwc-ico">🏆</div>
+      <div>
+        <div class="hwc-ttl">Маленькая победа сегодня?</div>
+        <div class="hwc-sub">Запиши — это поднимает настроение</div>
+      </div>
+    </div>
+    <textarea class="hwc-input" id="home-win-input"
+      placeholder="Не перекусывала? Выпила воду? Даже это — победа!"
+      oninput="homeCheckInput()"></textarea>
+    <button class="hwc-save" id="home-save-btn" onclick="homeSaveWin()" disabled>
+      Записать победу 🎉
+    </button>
+  </div>
+  <div class="home-win-arrow">⬇ Победа сразу появится в разделе «Маленькие победы»</div>
+</div>
+</div>
+
+
+<!-- =================== MOBILE =================== -->
+<div class="m-wrap">
+<div class="section-head">Мобайл — Маленькие победы</div>
+<div class="phone">
+  <div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-t">📶 🔋</span></div>
+  <div class="tbar">
+    <button class="tb-back">←</button>
+    <div class="tb-mid">
+      <div class="tb-title">Маленькие победы</div>
+      <div class="tb-sub">Каждый день — шаг вперёд</div>
+    </div>
+    <div style="width:32px"></div>
+  </div>
+  <div class="mscroll">
+
+    <!-- Прогресс из Трекера -->
+    <div class="m-progress">
+      <div class="mp-title"><span>📊</span> Мой прогресс</div>
+      <div id="m-progress-content">
+        <div class="mp-grid">
+          <div class="mpg-item weight">
+            <div class="mpg-label">⚖️ Вес</div>
+            <div class="mpg-row">
+              <span class="mpg-start" id="m-w-start">78</span>
+              <span class="mpg-arr">→</span>
+              <span class="mpg-cur" id="m-w-cur">72.4</span>
+              <span class="mpg-unit">кг</span>
+            </div>
+            <div class="mpg-diff minus" id="m-w-diff">−5.6 кг</div>
+          </div>
+          <div class="mpg-item waist">
+            <div class="mpg-label">📏 Талия</div>
+            <div class="mpg-row">
+              <span class="mpg-start" id="m-wa-start">82</span>
+              <span class="mpg-arr">→</span>
+              <span class="mpg-cur" id="m-wa-cur">76</span>
+              <span class="mpg-unit">см</span>
+            </div>
+            <div class="mpg-diff minus" id="m-wa-diff">−6 см</div>
+          </div>
+          <div class="mpg-item hips">
+            <div class="mpg-label">🔵 Бёдра</div>
+            <div class="mpg-row">
+              <span class="mpg-start" id="m-h-start">102</span>
+              <span class="mpg-arr">→</span>
+              <span class="mpg-cur" id="m-h-cur">97</span>
+              <span class="mpg-unit">см</span>
+            </div>
+            <div class="mpg-diff minus" id="m-h-diff">−5 см</div>
+          </div>
+          <div class="mpg-item chest">
+            <div class="mpg-label">💗 Грудь</div>
+            <div class="mpg-row">
+              <span class="mpg-start" id="m-c-start">95</span>
+              <span class="mpg-arr">→</span>
+              <span class="mpg-cur" id="m-c-cur">92</span>
+              <span class="mpg-unit">см</span>
+            </div>
+            <div class="mpg-diff minus" id="m-c-diff">−3 см</div>
+          </div>
+        </div>
+        <a href="/dashboard/tracker" class="mpg-link">Открыть трекер →</a>
+      </div>
+    </div>
+
+    <!-- Статистика -->
+    <div class="m-stats">
+      <div class="mst pur"><div class="mst-v" id="m-total-count">24</div><div class="mst-l">Всего</div></div>
+      <div class="mst grn"><div class="mst-v">5</div><div class="mst-l">Подряд 🔥</div></div>
+      <div class="mst yel"><div class="mst-v">11</div><div class="mst-l">Рекорд</div></div>
+    </div>
+
+    <!-- Стрик -->
+    <div class="m-streak">
+      <div class="ms-ico">🔥</div>
+      <div class="ms-info">
+        <div class="ms-t">5 дней подряд!</div>
+        <div class="ms-s">Твой рекорд — 11 дней. Побей его!</div>
+        <div class="ms-days">
+          <div class="ms-day done">Пн</div><div class="ms-day done">Вт</div>
+          <div class="ms-day done">Ср</div><div class="ms-day done">Чт</div>
+          <div class="ms-day today">Пт</div><div class="ms-day miss">Сб</div>
+          <div class="ms-day miss">Вс</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Случайная победа -->
+    <div class="m-random">
+      <div class="mr-label">✨ Помнишь как ты...</div>
+      <div class="mr-text" id="m-random-text">«Целый день без перекусов — первый раз за месяц!»</div>
+      <div class="mr-date" id="m-random-date">9 марта 2026</div>
+      <button class="mr-refresh" onclick="refreshRandom()">🔄 Другая победа</button>
+    </div>
+
+    <!-- Поле ввода -->
+    <div class="m-input-card" id="m-input-card">
+      <div class="mic-title">🏆 Победа сегодня?</div>
+      <textarea class="mic-textarea" id="m-win-input"
+        placeholder="Например: не перекусывала, выпила 2 литра воды..."
+        oninput="mCheckInput()"></textarea>
+      <div class="mic-hints">
+        <div class="mic-hints-lbl">Подсказки — тапни чтобы вставить</div>
+        <div class="mic-hint-chips">
+          <button class="mhc" onclick="mHint(this)">Не перекусывала</button>
+          <button class="mhc" onclick="mHint(this)">Выпила 2 литра воды</button>
+          <button class="mhc" onclick="mHint(this)">Белковый завтрак</button>
+          <button class="mhc" onclick="mHint(this)">Не хотелось сладкого</button>
+          <button class="mhc" onclick="mHint(this)">Сыта до обеда</button>
+          <button class="mhc" onclick="mHint(this)">Приготовила по методу</button>
+        </div>
+      </div>
+      <button class="mic-save" id="m-save-btn" onclick="mSaveWin()" disabled>
+        Записать победу 🎉
+      </button>
+    </div>
+
+    <!-- Лента -->
+    <div class="m-sec">📖 Мои победы</div>
+    <div id="m-wins-feed">
+      <div class="win-item">
+        <div class="wi-left"><div class="wi-dot" style="background:var(--pur)"></div><div class="wi-line"></div></div>
+        <div class="wi-body"><div class="wi-date">Вчера · 14 марта</div><div class="wi-text c-pur">Не перекусывала весь день — первый раз за долгое время! 🎉</div></div>
+      </div>
+      <div class="win-item">
+        <div class="wi-left"><div class="wi-dot" style="background:var(--grn-dk)"></div><div class="wi-line"></div></div>
+        <div class="wi-body"><div class="wi-date">13 марта</div><div class="wi-text c-grn">Выпила 2 литра воды — тяги к сладкому не было весь день</div></div>
+      </div>
+      <div class="win-item">
+        <div class="wi-left"><div class="wi-dot" style="background:var(--yel-dk)"></div><div class="wi-line"></div></div>
+        <div class="wi-body"><div class="wi-date">12 марта</div><div class="wi-text c-yel">Белковый завтрак — была сыта до 14:00. Просто магия!</div></div>
+      </div>
+      <div class="win-item">
+        <div class="wi-left"><div class="wi-dot" style="background:var(--ora)"></div><div class="wi-line"></div></div>
+        <div class="wi-body"><div class="wi-date">11 марта</div><div class="wi-text c-ora">Приготовила ужин по методу — вся семья съела и не поняла что это «диетическое»</div></div>
+      </div>
+      <div class="win-item">
+        <div class="wi-left"><div class="wi-dot" style="background:var(--pur)"></div><div class="wi-line"></div></div>
+        <div class="wi-body"><div class="wi-date">10 марта</div><div class="wi-text c-pur">Отказалась от торта на дне рождения — не потому что нельзя, а потому что не хотелось</div></div>
+      </div>
+      <div class="win-item">
+        <div class="wi-left"><div class="wi-dot" style="background:var(--grn-dk)"></div><div class="wi-line"></div></div>
+        <div class="wi-body"><div class="wi-date">9 марта</div><div class="wi-text c-grn">Целый день без перекусов — первый раз за месяц!</div></div>
+      </div>
+    </div>
+    <div style="height:12px"></div>
+  </div>
+
+  <div class="bnav">
+    <button class="bn"><div class="bni">🏠</div><div class="bnl">Главная</div></button>
+    <button class="bn"><div class="bni">🧊</div><div class="bnl">Кухня</div></button>
+    <button class="bn"><div class="bni">📓</div><div class="bnl">Дневник</div></button>
+    <button class="bn"><div class="bni">📊</div><div class="bnl">Трекер</div></button>
+    <button class="bn on"><div class="bni">🏆</div><div class="bnl">Победы</div></button>
+  </div>
+</div>
+</div>
+
+
+<!-- =================== DESKTOP =================== -->
+<div class="d-wrap">
+<div class="section-head">Десктоп — Маленькие победы</div>
+<div class="desk">
+
+  <div class="dsb">
+    <div class="dsb-brand"><div class="dsb-ball">🌿</div><div class="dsb-nm">Вкус Жизни<small>Клуб</small></div></div>
+    <div class="dsb-user"><div class="dsu-name">Марина</div><div class="dsu-sub">День 32 · Новенькая 🌱</div></div>
+    <div class="dsb-nav">
+      <div class="sbn"><div class="sbn-i">🏠</div><span class="sbn-l">Главная</span></div>
+      <div class="dsb-sep"></div>
+      <div class="sbn"><div class="sbn-i">🧊</div><span class="sbn-l">Умная кухня</span></div>
+      <div class="sbn"><div class="sbn-i">⭐</div><span class="sbn-l">Избранные рецепты</span></div>
+      <div class="dsb-sep"></div>
+      <div class="sbn"><div class="sbn-i">📊</div><span class="sbn-l">Трекер замеров</span></div>
+      <div class="sbn"><div class="sbn-i">📓</div><span class="sbn-l">Дневник питания</span></div>
+      <div class="sbn on"><div class="sbn-i">🏆</div><span class="sbn-l">Маленькие победы</span></div>
+      <div class="dsb-sep"></div>
+      <div class="sbn"><div class="sbn-i">🧬</div><span class="sbn-l">Я и моё тело</span></div>
+      <div class="sbn"><div class="sbn-i">🎥</div><span class="sbn-l">Вебинары</span></div>
+      <div class="sbn"><div class="sbn-i">🎓</div><span class="sbn-l">Мини-курс</span></div>
+      <div class="dsb-sep"></div>
+      <div class="sbn"><div class="sbn-i">🏃</div><span class="sbn-l">Марафон</span></div>
+      <div class="dsb-sep"></div>
+      <div class="sbn"><div class="sbn-i">💬</div><span class="sbn-l">Чат с Наташей</span></div>
+      <div class="sbn"><div class="sbn-i">👤</div><span class="sbn-l">Профиль</span></div>
+    </div>
+  </div>
+
+  <div class="dmain">
+    <div class="dheader">
+      <div class="dh-title">🏆 Маленькие победы</div>
+      <div class="dh-sub">Каждый день — шаг вперёд. Даже самый маленький.</div>
+    </div>
+
+    <div class="dbody">
+
+      <!-- LEFT: ввод + лента -->
+      <div>
+        <div class="d-input-card" id="d-input-card">
+          <div class="dic-title">Победа сегодня?</div>
+          <textarea class="dic-textarea" id="d-win-input"
+            placeholder="Напиши что сегодня получилось — даже маленькое. Не перекусывала? Выпила воду? Это уже победа!"
+            oninput="dCheckInput()"></textarea>
+          <div class="dic-hints-lbl">Подсказки — нажми чтобы вставить</div>
+          <div class="dic-hints">
+            <button class="dhc" onclick="dHint(this)">Не перекусывала</button>
+            <button class="dhc" onclick="dHint(this)">Выпила 2 литра воды</button>
+            <button class="dhc" onclick="dHint(this)">Белковый завтрак</button>
+            <button class="dhc" onclick="dHint(this)">Не хотелось сладкого</button>
+            <button class="dhc" onclick="dHint(this)">Сыта до обеда</button>
+            <button class="dhc" onclick="dHint(this)">Приготовила по методу</button>
+            <button class="dhc" onclick="dHint(this)">Отказалась от мучного</button>
+            <button class="dhc" onclick="dHint(this)">Хорошо спала</button>
+          </div>
+          <button class="dic-save" id="d-save-btn" onclick="dSaveWin()" disabled>Записать победу 🎉</button>
+        </div>
+
+        <div class="d-feed">
+          <div class="df-title"><span>📖 Мои победы</span><span class="df-count" id="d-feed-count">24 записи</span></div>
+          <div id="d-wins-feed">
+            <div class="dw-item">
+              <div class="dwi-left"><div class="dwi-dot" style="background:var(--pur)"></div><div class="dwi-line"></div></div>
+              <div class="dwi-body"><div class="dwi-date">Вчера · 14 марта 2026</div><div class="dwi-text c-pur">Не перекусывала весь день — первый раз за долгое время! 🎉</div></div>
+            </div>
+            <div class="dw-item">
+              <div class="dwi-left"><div class="dwi-dot" style="background:var(--grn-dk)"></div><div class="dwi-line"></div></div>
+              <div class="dwi-body"><div class="dwi-date">13 марта 2026</div><div class="dwi-text c-grn">Выпила 2 литра воды — тяги к сладкому не было весь день</div></div>
+            </div>
+            <div class="dw-item">
+              <div class="dwi-left"><div class="dwi-dot" style="background:var(--yel-dk)"></div><div class="dwi-line"></div></div>
+              <div class="dwi-body"><div class="dwi-date">12 марта 2026</div><div class="dwi-text c-yel">Белковый завтрак — была сыта до 14:00. Просто магия!</div></div>
+            </div>
+            <div class="dw-item">
+              <div class="dwi-left"><div class="dwi-dot" style="background:var(--ora)"></div><div class="dwi-line"></div></div>
+              <div class="dwi-body"><div class="dwi-date">11 марта 2026</div><div class="dwi-text c-ora">Приготовила ужин по методу — вся семья съела и не поняла что это «диетическое»</div></div>
+            </div>
+            <div class="dw-item">
+              <div class="dwi-left"><div class="dwi-dot" style="background:var(--pur)"></div><div class="dwi-line"></div></div>
+              <div class="dwi-body"><div class="dwi-date">10 марта 2026</div><div class="dwi-text c-pur">Отказалась от торта на дне рождения — не потому что нельзя, а потому что не хотелось</div></div>
+            </div>
+            <div class="dw-item">
+              <div class="dwi-left"><div class="dwi-dot" style="background:var(--grn-dk)"></div><div class="dwi-line"></div></div>
+              <div class="dwi-body"><div class="dwi-date">9 марта 2026</div><div class="dwi-text c-grn">Целый день без перекусов — первый раз за месяц!</div></div>
+            </div>
+            <div class="dw-item">
+              <div class="dwi-left"><div class="dwi-dot" style="background:var(--pnk)"></div></div>
+              <div class="dwi-body"><div class="dwi-date">7 марта 2026</div><div class="dwi-text c-pnk">Проснулась с хорошим настроением — заметила что стала лучше спать</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: прогресс + статы + стрик + случайная -->
+      <div>
+
+        <!-- БЛОК ПРОГРЕССА ИЗ ТРЕКЕРА -->
+        <div class="d-progress">
+          <div class="dp-title">
+            <div class="dp-title-left"><span>📊</span> Мой прогресс</div>
+            <a href="/dashboard/tracker" class="dp-link">Открыть трекер →</a>
+          </div>
+          <div id="d-progress-content">
+            <div class="dp-grid">
+              <div class="dpg-item weight">
+                <div class="dpg-label">⚖️ Вес</div>
+                <div class="dpg-row">
+                  <span class="dpg-start" id="d-w-start">78</span>
+                  <span class="dpg-arr">→</span>
+                  <span class="dpg-cur" id="d-w-cur">72.4</span>
+                  <span class="dpg-unit">кг</span>
+                </div>
+                <div class="dpg-diff minus" id="d-w-diff">−5.6 кг</div>
+              </div>
+              <div class="dpg-item waist">
+                <div class="dpg-label">📏 Талия</div>
+                <div class="dpg-row">
+                  <span class="dpg-start" id="d-wa-start">82</span>
+                  <span class="dpg-arr">→</span>
+                  <span class="dpg-cur" id="d-wa-cur">76</span>
+                  <span class="dpg-unit">см</span>
+                </div>
+                <div class="dpg-diff minus" id="d-wa-diff">−6 см</div>
+              </div>
+              <div class="dpg-item hips">
+                <div class="dpg-label">🔵 Бёдра</div>
+                <div class="dpg-row">
+                  <span class="dpg-start" id="d-h-start">102</span>
+                  <span class="dpg-arr">→</span>
+                  <span class="dpg-cur" id="d-h-cur">97</span>
+                  <span class="dpg-unit">см</span>
+                </div>
+                <div class="dpg-diff minus" id="d-h-diff">−5 см</div>
+              </div>
+              <div class="dpg-item chest">
+                <div class="dpg-label">💗 Грудь</div>
+                <div class="dpg-row">
+                  <span class="dpg-start" id="d-c-start">95</span>
+                  <span class="dpg-arr">→</span>
+                  <span class="dpg-cur" id="d-c-cur">92</span>
+                  <span class="dpg-unit">см</span>
+                </div>
+                <div class="dpg-diff minus" id="d-c-diff">−3 см</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-stats-grid">
+          <div class="dst pur"><div class="dst-v" id="d-total-count">24</div><div class="dst-l">Всего побед</div></div>
+          <div class="dst grn"><div class="dst-v">5</div><div class="dst-l">Дней подряд 🔥</div></div>
+          <div class="dst yel"><div class="dst-v">11</div><div class="dst-l">Рекорд дней</div></div>
+        </div>
+
+        <div class="d-streak">
+          <div class="ds-top">
+            <div class="ds-ico">🔥</div>
+            <div><div class="ds-t">5 дней подряд!</div><div class="ds-s">Рекорд — 11 дней. Побей его!</div></div>
+          </div>
+          <div class="ds-days">
+            <div class="dsd done">Пн</div><div class="dsd done">Вт</div>
+            <div class="dsd done">Ср</div><div class="dsd done">Чт</div>
+            <div class="dsd today">Пт</div><div class="dsd miss">Сб</div>
+            <div class="dsd miss">Вс</div><div class="dsd miss">Пн</div>
+            <div class="dsd miss">Вт</div><div class="dsd miss">Ср</div>
+          </div>
+        </div>
+
+        <div class="d-random">
+          <div class="dr-lbl">✨ Помнишь как ты...</div>
+          <div class="dr-text" id="d-random-text">«Целый день без перекусов — первый раз за месяц!»</div>
+          <div class="dr-date" id="d-random-date">9 марта 2026</div>
+          <button class="dr-btn" onclick="refreshRandom()">🔄 Другая победа</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+// ================================================================
+// ХРАНИЛИЩЕ ДАННЫХ
+// В реальном Next.js проекте это будет Supabase (таблица wins)
+// Здесь используем localStorage как шина между страницами в браузере
+// ================================================================
+
+const WINS_KEY = 'vkus_wins';
+const TRACKER_KEY = 'vkus_tracker';
+
+// Данные трекера (заглушка — в реальном проекте читается из Supabase measurements)
+// В Supabase: SELECT * FROM measurements WHERE member_id=... ORDER BY date DESC
+const TRACKER_DATA = {
+  weight:  { start: 78,  current: 72.4, unit: 'кг' },
+  waist:   { start: 82,  current: 76,   unit: 'см' },
+  hips:    { start: 102, current: 97,   unit: 'см' },
+  chest:   { start: 95,  current: 92,   unit: 'см' },
+};
+
+// Начальные победы (в продакшне — из Supabase таблицы wins)
+let allWins = [
+  { text: 'Не перекусывала весь день — первый раз за долгое время! 🎉', date: '14 марта 2026', label: 'Вчера · 14 марта 2026', source: 'wins' },
+  { text: 'Выпила 2 литра воды — тяги к сладкому не было весь день', date: '13 марта 2026', label: '13 марта 2026', source: 'wins' },
+  { text: 'Белковый завтрак — была сыта до 14:00. Просто магия!', date: '12 марта 2026', label: '12 марта 2026', source: 'wins' },
+  { text: 'Приготовила ужин по методу — вся семья съела и не поняла что это «диетическое»', date: '11 марта 2026', label: '11 марта 2026', source: 'wins' },
+  { text: 'Отказалась от торта на дне рождения — не потому что нельзя, а потому что не хотелось', date: '10 марта 2026', label: '10 марта 2026', source: 'wins' },
+  { text: 'Целый день без перекусов — первый раз за месяц!', date: '9 марта 2026', label: '9 марта 2026', source: 'wins' },
+  { text: 'Проснулась с хорошим настроением — заметила что стала лучше спать', date: '7 марта 2026', label: '7 марта 2026', source: 'wins' },
+];
+
+const colors  = ['c-pur','c-grn','c-yel','c-ora','c-pnk'];
+const dots    = ['var(--pur)','var(--grn-dk)','var(--yel-dk)','var(--ora)','var(--pnk)'];
+let colorIdx  = 0;
+
+// ================================================================
+// ПРОГРЕСС ИЗ ТРЕКЕРА
+// API: GET /api/tracker/summary → { weight, waist, hips, chest }
+// ================================================================
+function renderProgress() {
+  const data = TRACKER_DATA;
+  function fmt(v){ return typeof v === 'number' && v % 1 !== 0 ? v.toFixed(1) : v; }
+  function diff(start, cur){ return +(start - cur).toFixed(1); }
+
+  // Мобайл
+  const fields = [
+    { key:'weight', mS:'m-w-start', mC:'m-w-cur', mD:'m-w-diff', dS:'d-w-start', dC:'d-w-cur', dD:'d-w-diff', unit:'кг' },
+    { key:'waist',  mS:'m-wa-start',mC:'m-wa-cur',mD:'m-wa-diff',dS:'d-wa-start',dC:'d-wa-cur',dD:'d-wa-diff',unit:'см' },
+    { key:'hips',   mS:'m-h-start', mC:'m-h-cur', mD:'m-h-diff', dS:'d-h-start', dC:'d-h-cur', dD:'d-h-diff', unit:'см' },
+    { key:'chest',  mS:'m-c-start', mC:'m-c-cur', mD:'m-c-diff', dS:'d-c-start', dC:'d-c-cur', dD:'d-c-diff', unit:'см' },
+  ];
+  fields.forEach(f => {
+    const d = data[f.key];
+    if(!d) return;
+    const delta = diff(d.start, d.current);
+    const diffTxt = delta > 0 ? `−${fmt(delta)} ${f.unit}` : delta === 0 ? 'без изменений' : `+${fmt(Math.abs(delta))} ${f.unit}`;
+    const cls = delta > 0 ? 'minus' : 'none';
+    [f.mS,f.dS].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=fmt(d.start); });
+    [f.mC,f.dC].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=fmt(d.current); });
+    [f.mD,f.dD].forEach(id=>{ const el=document.getElementById(id); if(el){ el.textContent=diffTxt; el.className='mpg-diff '+cls; if(el.classList.contains('dpg-diff')) el.className='dpg-diff '+cls; } });
+  });
+}
+
+// ================================================================
+// ВВОД С ГЛАВНОЙ СТРАНИЦЫ
+// В Next.js: данные идут напрямую в Supabase через POST /api/wins
+// Здесь: имитация через localStorage (кросс-страничная шина)
+// ================================================================
+
+function homeCheckInput(){
+  const val = document.getElementById('home-win-input').value.trim();
+  document.getElementById('home-save-btn').disabled = val.length < 3;
+}
+
+function homeSaveWin(){
+  const text = document.getElementById('home-win-input').value.trim();
+  if(!text) return;
+  const todayLabel = todayStr();
+
+  // Сохраняем в localStorage (в продакшне — POST /api/wins { text, source: 'dashboard' })
+  const win = { text, date: todayLabel, label: `Сегодня · ${todayLabel}`, source: 'dashboard' };
+  saveToStorage(win);
+
+  // Добавляем в обе ленты немедленно
+  addToFeed('m-wins-feed', 'm', text, `Сегодня · ${todayLabel}`, true);
+  addToFeed('d-wins-feed', 'd', text, `Сегодня · ${todayLabel}`, true);
+  updateCounts();
+
+  document.getElementById('home-win-input').value = '';
+  document.getElementById('home-save-btn').disabled = true;
+  showToast('🎉 Победа записана с Главной! Она появилась в разделе «Победы»');
+
+  // Подсвечиваем поля ввода в разделе побед
+  highlightInput('m-input-card');
+  highlightInput('d-input-card');
+}
+
+// ================================================================
+// ВВОД ПРЯМО В РАЗДЕЛЕ ПОБЕД
+// ================================================================
+function mCheckInput(){
+  const val = document.getElementById('m-win-input').value.trim();
+  document.getElementById('m-save-btn').disabled = val.length < 3;
+}
+function mHint(btn){
+  document.getElementById('m-win-input').value = btn.textContent;
+  mCheckInput();
+}
+function mSaveWin(){
+  const text = document.getElementById('m-win-input').value.trim();
+  if(!text) return;
+  const todayLabel = todayStr();
+  const win = { text, date: todayLabel, label: `Сегодня · ${todayLabel}`, source: 'wins' };
+  saveToStorage(win);
+  addToFeed('m-wins-feed','m',text,`Сегодня · ${todayLabel}`,false);
+  addToFeed('d-wins-feed','d',text,`Сегодня · ${todayLabel}`,false);
+  updateCounts();
+  document.getElementById('m-win-input').value='';
+  document.getElementById('m-save-btn').disabled=true;
+  showToast('🎉 Победа записана! Ты молодец!');
+}
+
+function dCheckInput(){
+  const val = document.getElementById('d-win-input').value.trim();
+  document.getElementById('d-save-btn').disabled = val.length < 3;
+}
+function dHint(btn){
+  document.getElementById('d-win-input').value = btn.textContent;
+  dCheckInput();
+}
+function dSaveWin(){
+  const text = document.getElementById('d-win-input').value.trim();
+  if(!text) return;
+  const todayLabel = todayStr();
+  const win = { text, date: todayLabel, label: `Сегодня · ${todayLabel}`, source: 'wins' };
+  saveToStorage(win);
+  addToFeed('d-wins-feed','d',text,`Сегодня · ${todayLabel}`,false);
+  addToFeed('m-wins-feed','m',text,`Сегодня · ${todayLabel}`,false);
+  updateCounts();
+  document.getElementById('d-win-input').value='';
+  document.getElementById('d-save-btn').disabled=true;
+  showToast('🎉 Победа записана! Ты молодец!');
+}
+
+// ================================================================
+// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// ================================================================
+
+function saveToStorage(win){
+  allWins.unshift(win);
+  try {
+    const stored = JSON.parse(localStorage.getItem(WINS_KEY) || '[]');
+    stored.unshift(win);
+    localStorage.setItem(WINS_KEY, JSON.stringify(stored.slice(0,100)));
+  } catch(e){}
+}
+
+function addToFeed(feedId, prefix, text, dateLabel, fromHome){
+  const feed = document.getElementById(feedId);
+  const dot = dots[colorIdx % dots.length];
+  const color = colors[colorIdx % colors.length];
+  colorIdx++;
+
+  const badge = fromHome ? `<span class="${prefix==='m'?'wi-badge':'dwi-badge'}">с Главной</span>` : '';
+
+  const item = document.createElement('div');
+  item.className = prefix==='m' ? 'win-item' : 'dw-item';
+  item.style.cssText='opacity:0;transform:translateY(-8px);transition:all .3s';
+
+  if(prefix==='m'){
+    item.innerHTML=`<div class="wi-left"><div class="wi-dot" style="background:${dot}"></div><div class="wi-line"></div></div><div class="wi-body"><div class="wi-date">${dateLabel}${badge}</div><div class="wi-text ${color}">${text}</div></div>`;
+  } else {
+    item.innerHTML=`<div class="dwi-left"><div class="dwi-dot" style="background:${dot}"></div><div class="dwi-line"></div></div><div class="dwi-body"><div class="dwi-date">${dateLabel}${badge}</div><div class="dwi-text ${color}">${text}</div></div>`;
+  }
+  feed.prepend(item);
+  requestAnimationFrame(()=>{ item.style.opacity='1'; item.style.transform='translateY(0)'; });
+}
+
+function updateCounts(){
+  const n = allWins.length;
+  const el1 = document.getElementById('m-total-count');
+  const el2 = document.getElementById('d-total-count');
+  const el3 = document.getElementById('d-feed-count');
+  if(el1) el1.textContent = n;
+  if(el2) el2.textContent = n;
+  if(el3) el3.textContent = n + (n === 1 ? ' запись' : n < 5 ? ' записи' : ' записей');
+}
+
+function highlightInput(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.classList.remove('highlight');
+  requestAnimationFrame(()=>{ el.classList.add('highlight'); });
+}
+
+function todayStr(){
+  const d = new Date();
+  const months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+// Случайная победа
+let rndIdx = 0;
+const pastWins = [
+  { text: '«Целый день без перекусов — первый раз за месяц!»', date: '9 марта 2026' },
+  { text: '«Белковый завтрак — была сыта до 14:00»', date: '12 марта 2026' },
+  { text: '«Отказалась от торта — и не пожалела»', date: '10 марта 2026' },
+  { text: '«Выпила 2 литра воды — почувствовала разницу»', date: '13 марта 2026' },
+  { text: '«Приготовила ужин по методу — семья в восторге»', date: '11 марта 2026' },
+  { text: '«Сыта до 14:00 — раньше такого не было»', date: '7 марта 2026' },
+];
+function refreshRandom(){
+  rndIdx = (rndIdx + 1) % pastWins.length;
+  const w = pastWins[rndIdx];
+  ['m-random-text','d-random-text'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el){ el.style.opacity='0'; setTimeout(()=>{ el.textContent=w.text; el.style.opacity='1'; el.style.transition='opacity .2s'; },180); }
+  });
+  ['m-random-date','d-random-date'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) setTimeout(()=>el.textContent=w.date,180);
+  });
+}
+
+let toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+// Проверяем localStorage — вдруг уже есть победы с Главной
+function loadFromStorage(){
+  try {
+    const stored = JSON.parse(localStorage.getItem(WINS_KEY) || '[]');
+    stored.forEach(win=>{
+      if(win.source==='dashboard'){
+        addToFeed('m-wins-feed','m',win.text,win.label||win.date,true);
+        addToFeed('d-wins-feed','d',win.text,win.label||win.date,true);
+        allWins.unshift(win);
+      }
+    });
+  } catch(e){}
+}
+
+// Инициализация
+renderProgress();
+loadFromStorage();
+updateCounts();
+</script>
+
+<!--
+  ================================================================
+  КАК ЭТО РАБОТАЕТ В NEXT.JS ПРОЕКТЕ:
+  ================================================================
+
+  1. ВВОД С ГЛАВНОЙ СТРАНИЦЫ (/dashboard):
+     — Компонент WinWidget на главной делает POST /api/wins
+     — API сохраняет запись в Supabase таблицу wins
+     — При открытии /dashboard/wins страница делает GET /api/wins
+       и отображает все записи включая те что с Главной
+     — Источник записи (source: 'dashboard' | 'wins') хранится в поле source
+
+  2. ДАННЫЕ ТРЕКЕРА:
+     — GET /api/tracker/summary возвращает:
+       { weight, waist, hips, chest } с полями start и current
+       (start = первое измерение, current = последнее из measurements)
+     — SQL: SELECT MIN(weight) as start_weight, MAX_BY_DATE(weight) as cur_weight
+             FROM measurements WHERE member_id = auth.uid()
+
+  3. ТАБЛИЦА wins (Supabase):
+     CREATE TABLE wins (
+       id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+       member_id  uuid REFERENCES members(id),
+       text       text NOT NULL,
+       source     text DEFAULT 'wins',  -- 'wins' | 'dashboard'
+       created_at timestamptz DEFAULT now()
+     );
+     ALTER TABLE wins ENABLE ROW LEVEL SECURITY;
+     CREATE POLICY "Users own wins" ON wins FOR ALL USING (auth.uid() = member_id);
+  ================================================================
+-->
+</body>
+</html>
