@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient()
@@ -16,6 +16,8 @@ export async function POST(
     if (member?.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
+
+    const { id } = await params
 
     const body = await request.json() as { question?: string; answer?: string; category?: string }
     const question = body.question?.trim() ?? ''
@@ -32,7 +34,7 @@ export async function POST(
         question,
         answer,
         category,
-        source_post_id: params.id,
+        source_post_id: id,
         created_by: user.id,
       })
       .select('id, question, answer, category, source_post_id, created_by, created_at')

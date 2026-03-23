@@ -15,7 +15,7 @@ async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>, 
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient()
@@ -25,6 +25,8 @@ export async function PATCH(
     if (!await requireAdmin(supabase, user.id)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
+
+    const { id: paramId } = await params
 
     const body = await request.json() as {
       question?: unknown
@@ -75,7 +77,7 @@ export async function PATCH(
     const { data, error } = await supabase
       .from('faq_items')
       .update(patch)
-      .eq('id', params.id)
+      .eq('id', paramId)
       .select('id, question, answer, category, source_post_id, created_by, created_at')
       .single()
 
@@ -93,7 +95,7 @@ export async function PATCH(
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient()
@@ -104,10 +106,12 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
+    const { id } = await params
+
     const { error } = await supabase
       .from('faq_items')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
 
     if (error) {
       console.error('[faq DELETE]', error)

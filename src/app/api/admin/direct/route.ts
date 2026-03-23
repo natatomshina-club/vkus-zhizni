@@ -46,7 +46,7 @@ export async function GET() {
     unread_count: number
   }>()
 
-  for (const msg of (messages ?? []) as MsgRow[]) {
+  for (const msg of (messages ?? []) as unknown as MsgRow[]) {
     const existing = dialogMap.get(msg.member_id)
     if (!existing) {
       dialogMap.set(msg.member_id, {
