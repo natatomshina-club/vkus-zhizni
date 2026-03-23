@@ -16,7 +16,7 @@ export default async function DashboardLayout({
 
   return (
     <MemberProvider>
-      <div className="flex h-screen" style={{ background: 'var(--bg)' }}>
+      <div className="flex h-[100dvh]" style={{ background: 'var(--bg)' }}>
         <Sidebar />
 
         <ClientLayout>{children}</ClientLayout>

@@ -405,8 +405,8 @@ export default function ChannelLayout({ channels, memberId, isAdmin, memberName,
           )}
         </div>
 
-        {/* Channel body — fills remaining height (above MobileNav, pb-16 = MobileNav height) */}
-        <div className="flex-1 min-h-0 overflow-hidden flex flex-col pb-16">
+        {/* Channel body — fills remaining height */}
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
           {activeChannel && (
             <ChannelContent
               channel={activeChannel}

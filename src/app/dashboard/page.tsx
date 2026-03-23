@@ -260,12 +260,12 @@ export default async function DashboardPage() {
           <h2 className="text-sm font-bold mb-3" style={{ fontFamily: 'var(--font-unbounded)', color: 'var(--text)' }}>
             Разделы клуба
           </h2>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 items-stretch">
             {sections.map(({ href, icon, title, desc, bg, color }) => (
               <Link
                 key={href}
                 href={href}
-                className="rounded-2xl p-4 flex flex-col gap-1 transition-transform active:scale-95"
+                className="rounded-2xl p-4 flex flex-col gap-1 transition-transform active:scale-95 h-full"
                 style={{ background: bg }}
               >
                 <span className="text-2xl leading-none">{icon}</span>
@@ -282,10 +282,10 @@ export default async function DashboardPage() {
 
         {/* ── Вводный курс ── */}
         <div
-          className="rounded-2xl p-5 flex items-center justify-between gap-4"
+          className="rounded-2xl p-5 flex items-center justify-between gap-3 flex-wrap"
           style={{ background: 'linear-gradient(135deg, #FF9F43 0%, #FFBF69 100%)' }}
         >
-          <div>
+          <div className="min-w-0">
             <p className="text-base font-bold text-white leading-snug" style={{ fontFamily: 'var(--font-unbounded)' }}>
               Стройность без голода
             </p>
@@ -298,7 +298,7 @@ export default async function DashboardPage() {
             className="shrink-0 flex items-center gap-1.5 text-xs font-bold px-4 py-2.5 rounded-xl whitespace-nowrap"
             style={{ background: '#fff', color: '#C96A00', fontFamily: 'var(--font-nunito)' }}
           >
-            ▶ Смотреть первый урок
+            ▶ Смотреть урок
           </Link>
         </div>
 

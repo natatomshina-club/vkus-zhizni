@@ -260,8 +260,8 @@ export default function PostFeed({ channel, memberId, isAdmin, memberName, membe
         )}
       </div>
 
-      {/* Compose bar */}
-      <div className="shrink-0">
+      {/* Compose bar — pb-[64px] reserves space under fixed MobileNav on mobile */}
+      <div className="shrink-0 pb-[64px] lg:pb-0">
         <ComposeBar
           channel={channel}
           memberId={memberId}

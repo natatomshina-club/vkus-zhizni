@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Unbounded, Nunito } from 'next/font/google'
 import './globals.css'
 
@@ -17,6 +17,13 @@ const nunito = Nunito({
 export const metadata: Metadata = {
   title: 'Вкус Жизни — Клуб стройных и здоровых',
   description: 'Клуб питания для гормонального баланса Натальи Томшиной',
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  interactiveWidget: 'resizes-content',
 }
 
 export default function RootLayout({
