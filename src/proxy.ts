@@ -46,13 +46,18 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  // Onboarding check: only on /dashboard root and /onboarding to minimise DB calls
-  if (user && (pathname === '/dashboard' || pathname === '/onboarding')) {
+  // Onboarding + blocked check (only on dashboard/onboarding to minimise DB calls)
+  if (user && (pathname.startsWith('/dashboard') || pathname === '/onboarding')) {
     const { data: member } = await supabase
       .from('members')
-      .select('weight')
+      .select('weight, is_blocked, role')
       .eq('id', user.id)
       .single()
+
+    // Blocked non-admins → /blocked
+    if (member?.is_blocked && member?.role !== 'admin') {
+      return NextResponse.redirect(new URL('/blocked', request.url))
+    }
 
     const hasProfile = !!member?.weight
 
@@ -71,5 +76,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/admin/:path*', '/auth', '/onboarding'],
+  matcher: ['/dashboard/:path*', '/admin/:path*', '/auth', '/onboarding', '/blocked'],
 }
