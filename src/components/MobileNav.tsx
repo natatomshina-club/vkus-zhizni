@@ -70,11 +70,11 @@ function IconAdmin() {
 }
 
 const items = [
-  { href: '/dashboard',          label: 'Главная',  Icon: IconHome,     hasUnread: false },
-  { href: '/dashboard/kitchen',  label: 'Кухня',    Icon: IconKitchen,  hasUnread: false },
-  { href: '/dashboard/webinars', label: 'Вебинары', Icon: IconWebinars, hasUnread: false },
-  { href: '/dashboard/diary',    label: 'Дневник',  Icon: IconDiary,    hasUnread: false },
-  { href: '/dashboard/channel',  label: 'Чат',      Icon: IconChat,     hasUnread: true  },
+  { href: '/dashboard',         label: 'Главная', Icon: IconHome,    hasUnread: false },
+  { href: '/dashboard/kitchen', label: 'Кухня',   Icon: IconKitchen, hasUnread: false },
+  { href: '/dashboard/diary',   label: 'Дневник',  Icon: IconDiary,   hasUnread: false },
+  { href: '/dashboard/profile', label: 'Профиль',  Icon: IconProfile, hasUnread: false },
+  { href: '/dashboard/channel', label: 'Чат',      Icon: IconChat,    hasUnread: true  },
 ]
 
 export default function MobileNav() {
