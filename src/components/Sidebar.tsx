@@ -170,7 +170,7 @@ export default function Sidebar() {
       {isAdmin && (
         <div className="px-2 pb-1">
           <Link
-            href="/admin/messages"
+            href="/admin"
             className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-[13px] transition-all"
             style={{
               background: pathname.startsWith('/admin') ? 'var(--pur)' : 'var(--pur-lt)',

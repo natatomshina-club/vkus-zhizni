@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -552,12 +553,25 @@ function ChatPanel({
 // ── Main layout ───────────────────────────────────────────────────────────────
 
 export default function MessagesLayout({ initialDialogs, marathon: initialMarathon }: Props) {
+  const searchParams = useSearchParams()
   const [dialogs, setDialogs] = useState<Dialog[]>(initialDialogs)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list')
   const [marathon, setMarathon] = useState<Marathon | null>(initialMarathon)
 
   const selectedDialog = dialogs.find(d => d.member_id === selectedId) ?? null
+
+  // Auto-open dialog if member_id is in URL (e.g. from member card)
+  useEffect(() => {
+    const memberId = searchParams.get('member_id')
+    if (!memberId) return
+    setSelectedId(memberId)
+    setMobileView('chat')
+    // Mark as read locally if dialog exists
+    setDialogs(prev => prev.map(d =>
+      d.member_id === memberId ? { ...d, unread_count: 0 } : d
+    ))
+  }, [searchParams])
 
   // Polling dialogs list every 30s
   useEffect(() => {
@@ -589,8 +603,8 @@ export default function MessagesLayout({ initialDialogs, marathon: initialMarath
       {/* Header */}
       <div className="shrink-0 px-4 py-5 border-b" style={{ borderColor: 'var(--border)' }}>
         <div className="flex items-center gap-2">
-          <a href="/dashboard" className="text-sm" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
-            ← Клуб
+          <a href="/admin" className="text-sm" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
+            ← Панель
           </a>
         </div>
         <h1 className="text-base font-bold mt-2" style={{ fontFamily: 'var(--font-unbounded)', color: 'var(--text)' }}>

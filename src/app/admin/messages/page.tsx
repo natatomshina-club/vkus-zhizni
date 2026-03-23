@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import MessagesLayout from './MessagesLayout'
@@ -70,7 +71,9 @@ export default async function AdminMessagesPage() {
 
   return (
     <div className="h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
-      <MessagesLayout initialDialogs={dialogs} marathon={marathon} />
+      <Suspense fallback={null}>
+        <MessagesLayout initialDialogs={dialogs} marathon={marathon} />
+      </Suspense>
     </div>
   )
 }

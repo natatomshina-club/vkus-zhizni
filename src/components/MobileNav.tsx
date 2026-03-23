@@ -131,7 +131,7 @@ export default function MobileNav() {
       })}
       {isAdmin && (
         <Link
-          href="/admin/messages"
+          href="/admin"
           className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all"
           style={{
             color: pathname.startsWith('/admin') ? 'var(--pur)' : 'var(--text)',
