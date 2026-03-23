@@ -596,6 +596,13 @@ export default function MessagesLayout({ initialDialogs, marathon: initialMarath
         <h1 className="text-base font-bold mt-2" style={{ fontFamily: 'var(--font-unbounded)', color: 'var(--text)' }}>
           ✉️ Личные сообщения
         </h1>
+        <a
+          href="/admin/announcements"
+          className="mt-3 flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-xl"
+          style={{ background: 'var(--pur-light)', color: 'var(--pur)', fontFamily: 'var(--font-nunito)' }}
+        >
+          📢 Важное от Наташи (объявления)
+        </a>
       </div>
 
       {/* Dialog list */}

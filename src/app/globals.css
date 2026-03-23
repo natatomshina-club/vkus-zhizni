@@ -26,6 +26,32 @@ h1, h2, h3, h4 {
   font-family: var(--font-unbounded), system-ui, sans-serif;
 }
 
+/* ── Interactive hover/active effects ─────────── */
+.btn-lift {
+  transition: all 0.2s ease;
+}
+.btn-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(124, 92, 252, 0.18);
+}
+.btn-lift:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+/* Card hover */
+.card-lift {
+  transition: all 0.2s ease;
+}
+.card-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(124, 92, 252, 0.12);
+}
+.card-lift:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
 /* ── Mobile fixes (max-width: 1023px) ─────────── */
 @media (max-width: 1023px) {
   body {

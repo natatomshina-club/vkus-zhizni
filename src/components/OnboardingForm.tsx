@@ -165,10 +165,10 @@ export default function OnboardingForm({ userId }: { userId: string }) {
 
       {/* Name */}
       <Card>
-        <SectionTitle>Как тебя зовут?</SectionTitle>
+        <SectionTitle>Полное Ф.И.О.</SectionTitle>
         <input
           type="text"
-          placeholder="Имя и фамилия"
+          placeholder="Например: Иванова Мария Сергеевна"
           value={form.full_name}
           onChange={e => handleChange('full_name', e.target.value)}
           className={inputClass}

@@ -239,9 +239,10 @@ export default function ProfileClient({ userId, userEmail, member }: Props) {
         {editingProfile ? (
           <div className="flex flex-col gap-3">
             <div>
-              <p className="text-xs mb-1" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>Имя</p>
+              <p className="text-xs mb-1" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>Полное Ф.И.О.</p>
               <input
                 type="text"
+                placeholder="Например: Иванова Мария Сергеевна"
                 value={profileForm.name}
                 onChange={e => handleProfileChange('name', e.target.value)}
                 className={inputClass}

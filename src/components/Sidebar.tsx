@@ -95,8 +95,8 @@ export default function Sidebar() {
         <p className="text-base font-bold leading-none" style={{ fontFamily: 'var(--font-unbounded)', color: 'var(--pur)' }}>
           Вкус Жизни
         </p>
-        <p className="text-[10px] mt-1 font-medium tracking-widest uppercase" style={{ color: 'var(--muted)' }}>
-          Клуб
+        <p className="text-[11px] mt-1 font-medium leading-snug" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
+          клуб стройных и здоровых
         </p>
       </div>
 

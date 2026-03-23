@@ -9,7 +9,7 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth')
 
-  const [{ data: member }, { count: savedCount }] = await Promise.all([
+  const [{ data: member }, { count: savedCount }, { data: announcement }] = await Promise.all([
     supabase
       .from('members')
       .select('name, full_name, status, created_at, age, weight, start_weight, height, goal_weight, activity_level, kbju_calories, kbju_protein, kbju_fat, kbju_carbs, segment')
@@ -19,9 +19,28 @@ export default async function DashboardPage() {
       .from('saved_recipes')
       .select('id', { count: 'exact', head: true })
       .eq('member_id', user.id),
+    supabase
+      .from('announcements')
+      .select('text')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ])
 
   const isTrial = member?.status === 'trial' || !member?.status
+
+  // Club rank by months
+  const monthsInClub = member?.created_at
+    ? (Date.now() - new Date(member.created_at).getTime()) / (1000 * 60 * 60 * 24 * 30)
+    : 0
+  const clubRank = !isTrial
+    ? monthsInClub < 3  ? { label: 'Новенькая',     icon: '🌸', bg: '#FFE4F0', color: '#9B1B5A' }
+    : monthsInClub < 6  ? { label: 'Вошла во вкус', icon: '🔥', bg: '#FFE8D0', color: '#7A2500' }
+    : monthsInClub < 9  ? { label: 'Уже своя',      icon: '💚', bg: '#D0F5E8', color: '#1A5C3A' }
+    : monthsInClub < 12 ? { label: 'Легенда',        icon: '👑', bg: '#FFF3C0', color: '#5C4200' }
+    :                     { label: 'Бриллиант',      icon: '💎', bg: '#E8E0FF', color: '#3D1D8A' }
+    : null
 
   // Determine if profile is filled
   const hasProfile = !!(member?.weight || member?.kbju_calories)
@@ -29,6 +48,11 @@ export default async function DashboardPage() {
   const daysInClub = member?.created_at
     ? Math.max(1, Math.floor((Date.now() - new Date(member.created_at).getTime()) / 86400000) + 1)
     : 1
+
+  // Welcome text for first-day trial (if no active announcement)
+  const announcementText = announcement?.text ?? (isTrial && daysInClub <= 1
+    ? 'Добро пожаловать в клуб «Вкус Жизни»! 🌿\nЯ рада что ты здесь. У тебя есть 7 дней чтобы познакомиться с клубом, попробовать умную кухню, начать вести дневник питания и пообщаться в чатах.\nЕсли появятся вопросы — пиши мне лично в чате «Наташе», я отвечаю каждый день.\nС заботой, Наталья 💚'
+    : null)
 
   const lostKg = member?.start_weight && member?.weight
     ? +(member.start_weight - member.weight).toFixed(1)
@@ -42,7 +66,7 @@ export default async function DashboardPage() {
     { icon: '🗓', value: String(daysInClub), label: 'ДЕНЬ В КЛУБЕ', bg: 'var(--pur)', color: '#fff', valueBg: 'rgba(255,255,255,0.2)' },
     { icon: '🍳', value: String(savedCount ?? 0), label: 'рецептов', bg: 'var(--ora)', color: '#fff', valueBg: 'rgba(255,255,255,0.2)', href: '/dashboard/favorites' },
     { icon: '⚖️', value: lostKg != null && lostKg > 0 ? `−${lostKg} кг` : '—', label: 'МИНУС КГ', bg: 'var(--yel)', color: 'var(--text)', valueBg: 'rgba(45,31,110,0.1)' },
-    { icon: '✨', value: isTrial ? 'Триал' : 'Клуб', label: 'твой статус', bg: 'var(--grn)', color: '#1A5C3A', valueBg: 'rgba(26,92,58,0.1)' },
+    { icon: clubRank ? clubRank.icon : '✨', value: isTrial ? 'Триал' : (clubRank?.label ?? 'Клуб'), label: 'твой статус', bg: clubRank ? clubRank.bg : 'var(--grn)', color: clubRank ? clubRank.color : '#1A5C3A', valueBg: 'rgba(26,92,58,0.1)' },
   ]
 
   const sections = [
@@ -61,12 +85,17 @@ export default async function DashboardPage() {
 
       {/* ── Mobile header ── */}
       <header
-        className="lg:hidden flex items-center justify-between px-4 py-4 sticky top-0 z-40"
+        className="lg:hidden flex items-center justify-between px-4 py-3 sticky top-0 z-40"
         style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}
       >
-        <p className="text-base font-bold" style={{ fontFamily: 'var(--font-unbounded)', color: 'var(--pur)' }}>
-          Вкус Жизни
-        </p>
+        <div>
+          <p className="text-base font-bold leading-tight" style={{ fontFamily: 'var(--font-unbounded)', color: 'var(--pur)' }}>
+            Вкус Жизни
+          </p>
+          <p className="text-[11px] font-medium leading-none mt-0.5" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
+            клуб стройных и здоровых
+          </p>
+        </div>
       </header>
 
       <div className="max-w-2xl mx-auto px-4 py-6 lg:px-8 lg:py-8 flex flex-col gap-5">
@@ -222,26 +251,28 @@ export default async function DashboardPage() {
           })}
         </div>
 
-        {/* ── Наташа's advice ── */}
-        <div
-          className="rounded-2xl p-4 flex gap-3"
-          style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-        >
+        {/* ── Важное от Наташи ── */}
+        {announcementText && (
           <div
-            className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-lg"
-            style={{ background: 'var(--pur-light)' }}
+            className="rounded-2xl p-4 flex gap-3"
+            style={{ background: 'linear-gradient(135deg, #F0EEFF 0%, #FAF8FF 100%)', border: '1px solid var(--pur-br, #DDD5FF)' }}
           >
-            👩‍⚕️
+            <div
+              className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-lg"
+              style={{ background: 'var(--pur)', flexShrink: 0 }}
+            >
+              <span style={{ fontSize: 18 }}>👩‍⚕️</span>
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-bold mb-1.5" style={{ color: 'var(--pur)', fontFamily: 'var(--font-nunito)' }}>
+                📢 Важное от Наташи!
+              </p>
+              <p className="text-sm leading-relaxed whitespace-pre-line" style={{ color: 'var(--text)', fontFamily: 'var(--font-nunito)' }}>
+                {announcementText}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs font-bold mb-1" style={{ color: 'var(--pur)', fontFamily: 'var(--font-nunito)' }}>
-              Совет от Натальи
-            </p>
-            <p className="text-sm leading-relaxed" style={{ color: 'var(--text)', fontFamily: 'var(--font-nunito)' }}>
-              Начни день со стакана тёплой воды — это запускает обмен веществ и помогает гормональному балансу. Умное питание — это забота о себе, не ограничения! 💜
-            </p>
-          </div>
-        </div>
+        )}
 
         {/* ── «С чего начать» кнопка ── */}
         <Link
@@ -314,6 +345,13 @@ export default async function DashboardPage() {
             Любой маленький шаг — это уже победа!
           </p>
           <DashboardWinInput />
+          <Link
+            href="/dashboard/wins"
+            className="mt-3 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold btn-lift"
+            style={{ background: 'var(--pur-light)', color: 'var(--pur)', fontFamily: 'var(--font-nunito)' }}
+          >
+            Все мои победы →
+          </Link>
         </div>
 
         {/* bottom padding for mobile nav */}
