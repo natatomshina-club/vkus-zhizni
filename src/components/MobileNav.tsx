@@ -51,6 +51,15 @@ function IconChat() {
   )
 }
 
+function IconWebinars() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="23 7 16 12 23 17 23 7" />
+      <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+    </svg>
+  )
+}
+
 function IconAdmin() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -61,11 +70,11 @@ function IconAdmin() {
 }
 
 const items = [
-  { href: '/dashboard',         label: 'Главная', Icon: IconHome,    hasUnread: false },
-  { href: '/dashboard/kitchen', label: 'Кухня',   Icon: IconKitchen, hasUnread: false },
-  { href: '/dashboard/diary',   label: 'Дневник',  Icon: IconDiary,   hasUnread: false },
-  { href: '/dashboard/profile', label: 'Профиль',  Icon: IconProfile, hasUnread: false },
-  { href: '/dashboard/channel', label: 'Чат',      Icon: IconChat,    hasUnread: true  },
+  { href: '/dashboard',          label: 'Главная',  Icon: IconHome,     hasUnread: false },
+  { href: '/dashboard/kitchen',  label: 'Кухня',    Icon: IconKitchen,  hasUnread: false },
+  { href: '/dashboard/webinars', label: 'Вебинары', Icon: IconWebinars, hasUnread: false },
+  { href: '/dashboard/diary',    label: 'Дневник',  Icon: IconDiary,    hasUnread: false },
+  { href: '/dashboard/channel',  label: 'Чат',      Icon: IconChat,     hasUnread: true  },
 ]
 
 export default function MobileNav() {
