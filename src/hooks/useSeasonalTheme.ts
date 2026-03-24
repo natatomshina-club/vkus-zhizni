@@ -15,7 +15,7 @@ export type SeasonalTheme = {
 }
 
 const CACHE_KEY = 'seasonal-theme-cache'
-const CACHE_TTL = 60 * 60 * 1000 // 1 hour
+const CACHE_TTL = 2 * 60 * 1000 // 2 minutes
 
 export function useSeasonalTheme() {
   const [theme, setTheme] = useState<SeasonalTheme | null>(null)
