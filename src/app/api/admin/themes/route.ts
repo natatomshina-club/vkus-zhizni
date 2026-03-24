@@ -45,6 +45,7 @@ export async function POST(req: Request) {
       start_date: body.start_date,
       end_date: body.end_date,
       is_forced: false,
+      is_system: body.is_system === true,
     })
     .select()
     .single()

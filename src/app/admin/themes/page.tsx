@@ -26,12 +26,14 @@ const PARTICLE_OPTIONS = [
 ]
 
 const PRESET_THEMES = [
-  { title: 'Новый год',         emoji: '🎄', particle_type: 'snow',     accent_color: '#2A9D5C', accent_light: '#D0F5E8', start_date: '12-15', end_date: '01-10' },
-  { title: 'День влюблённых',   emoji: '💜', particle_type: 'hearts',   accent_color: '#E91E8C', accent_light: '#FFE4F5', start_date: '02-10', end_date: '02-16' },
-  { title: '8 марта',           emoji: '🌷', particle_type: 'petals',   accent_color: '#FF6B9D', accent_light: '#FFE4F0', start_date: '03-06', end_date: '03-10' },
-  { title: 'Весна',             emoji: '🌸', particle_type: 'petals',   accent_color: '#FF9DC5', accent_light: '#FFF0F7', start_date: '03-20', end_date: '05-31' },
-  { title: 'Осень',             emoji: '🍂', particle_type: 'leaves',   accent_color: '#FF9F43', accent_light: '#FFF3E0', start_date: '09-01', end_date: '11-30' },
-  { title: 'Праздник',          emoji: '🎉', particle_type: 'confetti', accent_color: '#7C5CFC', accent_light: '#F0EEFF', start_date: '01-01', end_date: '01-07' },
+  { slug: 'new_year',      title: 'Новый год',              emoji: '🎄', particle_type: 'snow',     accent_color: '#2A9D5C', accent_light: '#D0F5E8', start_date: '12-15', end_date: '01-10', is_system: true },
+  { slug: 'valentine',     title: 'День влюблённых',        emoji: '💝', particle_type: 'hearts',   accent_color: '#E91E8C', accent_light: '#FFE4F5', start_date: '02-10', end_date: '02-16', is_system: true },
+  { slug: 'womens_day',    title: '8 марта',                emoji: '🌷', particle_type: 'petals',   accent_color: '#FF6B9D', accent_light: '#FFE4F0', start_date: '03-06', end_date: '03-10', is_system: true },
+  { slug: 'easter',        title: 'Пасха',                  emoji: '🥚', particle_type: 'stars',    accent_color: '#A8E6CF', accent_light: '#E8FFF5', start_date: '04-18', end_date: '04-21', is_system: true },
+  { slug: 'may_day',       title: '1 мая',                  emoji: '🌿', particle_type: 'leaves',   accent_color: '#4CAF78', accent_light: '#E8F5EE', start_date: '04-30', end_date: '05-01', is_system: true },
+  { slug: 'victory_day',   title: '9 мая',                  emoji: '🎆', particle_type: 'stars',    accent_color: '#E74C3C', accent_light: '#FFE8E8', start_date: '05-08', end_date: '05-09', is_system: true },
+  { slug: 'new_school',    title: '1 сентября',             emoji: '🍂', particle_type: 'leaves',   accent_color: '#FF9F43', accent_light: '#FFF3E0', start_date: '09-01', end_date: '09-01', is_system: true },
+  { slug: 'club_birthday', title: 'День рождения клуба',   emoji: '🎂', particle_type: 'confetti', accent_color: '#7C5CFC', accent_light: '#F0EEFF', start_date: '10-15', end_date: '10-15', is_system: true },
 ]
 
 function slugify(s: string) {
@@ -77,7 +79,7 @@ export default function ThemesPage() {
   const [form, setForm] = useState({
     title: '', slug: '', emoji: '✨', particle_type: 'stars',
     accent_color: '#7C5CFC', accent_light: '#F0EEFF',
-    start_date: '', end_date: '',
+    start_date: '', end_date: '', is_system: false,
   })
 
   async function load() {
@@ -118,13 +120,14 @@ export default function ThemesPage() {
     setForm(prev => ({
       ...prev,
       title: preset.title,
-      slug: slugify(preset.title) ?? '',
+      slug: preset.slug,
       emoji: preset.emoji,
       particle_type: preset.particle_type,
       accent_color: preset.accent_color,
       accent_light: preset.accent_light,
       start_date: preset.start_date,
       end_date: preset.end_date,
+      is_system: preset.is_system,
     }))
     setShowForm(true)
     setTimeout(() => document.getElementById('theme-form')?.scrollIntoView({ behavior: 'smooth' }), 50)
@@ -147,7 +150,7 @@ export default function ThemesPage() {
     }
     setShowForm(false)
     setCreateError('')
-    setForm({ title: '', slug: '', emoji: '✨', particle_type: 'stars', accent_color: '#7C5CFC', accent_light: '#F0EEFF', start_date: '', end_date: '' })
+    setForm({ title: '', slug: '', emoji: '✨', particle_type: 'stars', accent_color: '#7C5CFC', accent_light: '#F0EEFF', start_date: '', end_date: '', is_system: false })
     load()
   }
 
