@@ -32,6 +32,10 @@ create table if not exists birthday_greetings (
 
 alter table birthday_greetings enable row level security;
 
+-- Добавить поле is_system если таблица уже существует
+alter table seasonal_themes
+  add column if not exists is_system boolean not null default false;
+
 -- Поля в таблице members (добавляем если не существуют)
 alter table members
   add column if not exists birth_date          date,

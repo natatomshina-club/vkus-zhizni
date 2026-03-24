@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import DashboardWinInput from '@/components/DashboardWinInput'
 import DashboardGreeting from '@/components/DashboardGreeting'
 import BirthdayBanner from '@/components/BirthdayBanner'
+import SeasonalBanner from '@/components/SeasonalBanner'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -133,6 +134,9 @@ export default async function DashboardPage() {
         {isBirthday && (
           <BirthdayBanner name={member?.full_name ?? member?.name ?? 'участница'} />
         )}
+
+        {/* ── Seasonal holiday banner ── */}
+        <SeasonalBanner />
 
         {/* ── Greeting ── */}
         <DashboardGreeting />

@@ -13,7 +13,7 @@ export async function GET() {
   // First check if any theme is force-enabled
   const { data: forced } = await admin
     .from('seasonal_themes')
-    .select('id, slug, title, emoji, particle_type, accent_color, accent_light, is_forced')
+    .select('id, slug, title, emoji, particle_type, accent_color, accent_light, is_forced, is_system')
     .eq('is_forced', true)
     .limit(1)
     .maybeSingle()
@@ -25,7 +25,7 @@ export async function GET() {
   // Otherwise check if today falls within any theme's date range
   const { data: themes } = await admin
     .from('seasonal_themes')
-    .select('id, slug, title, emoji, particle_type, accent_color, accent_light, is_forced, start_date, end_date')
+    .select('id, slug, title, emoji, particle_type, accent_color, accent_light, is_forced, is_system, start_date, end_date')
 
   if (!themes || themes.length === 0) {
     return NextResponse.json({ theme: null })

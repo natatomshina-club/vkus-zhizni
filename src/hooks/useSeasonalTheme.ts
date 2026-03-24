@@ -11,6 +11,7 @@ export type SeasonalTheme = {
   accent_color: string
   accent_light: string
   is_forced: boolean
+  is_system: boolean
 }
 
 const CACHE_KEY = 'seasonal-theme-cache'
