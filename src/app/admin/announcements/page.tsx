@@ -17,6 +17,8 @@ export default function AnnouncementsPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   async function load() {
     const res = await fetch('/api/admin/announcements')
@@ -47,6 +49,17 @@ export default function AnnouncementsPage() {
     setText('')
     setSuccess('Объявление опубликовано! Участницы увидят на главной.')
     load()
+  }
+
+  async function deleteAnnouncement(id: string) {
+    setDeleting(true)
+    try {
+      await fetch(`/api/admin/announcements?id=${id}`, { method: 'DELETE' })
+      setList(prev => prev.filter(a => a.id !== id))
+    } finally {
+      setDeleting(false)
+      setConfirmDeleteId(null)
+    }
   }
 
   async function toggleActive(id: string, is_active: boolean) {
@@ -136,17 +149,48 @@ export default function AnnouncementsPage() {
           >
             <div className="flex items-start justify-between gap-3">
               <p className="text-sm leading-relaxed flex-1" style={{ color: 'var(--text)' }}>{a.text}</p>
-              <button
-                onClick={() => toggleActive(a.id, a.is_active)}
-                className="shrink-0 text-xs px-3 py-1.5 rounded-xl font-semibold transition-all"
-                style={{
-                  background: a.is_active ? '#A8E6CF' : 'var(--bg)',
-                  color: a.is_active ? '#1A5C3A' : 'var(--muted)',
-                  border: '1px solid var(--border)',
-                }}
-              >
-                {a.is_active ? '✅ Активно' : 'Скрыто'}
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => toggleActive(a.id, a.is_active)}
+                  className="text-xs px-3 py-1.5 rounded-xl font-semibold transition-all"
+                  style={{
+                    background: a.is_active ? '#A8E6CF' : 'var(--bg)',
+                    color: a.is_active ? '#1A5C3A' : 'var(--muted)',
+                    border: '1px solid var(--border)',
+                  }}
+                >
+                  {a.is_active ? '✅ Активно' : 'Скрыто'}
+                </button>
+
+                {confirmDeleteId === a.id ? (
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold" style={{ color: '#C0392B' }}>Удалить?</span>
+                    <button
+                      onClick={() => deleteAnnouncement(a.id)}
+                      disabled={deleting}
+                      className="text-xs px-2.5 py-1.5 rounded-xl font-bold"
+                      style={{ background: '#C0392B', color: '#fff', border: 'none', cursor: 'pointer', opacity: deleting ? 0.6 : 1 }}
+                    >
+                      Да
+                    </button>
+                    <button
+                      onClick={() => setConfirmDeleteId(null)}
+                      className="text-xs px-2.5 py-1.5 rounded-xl font-semibold"
+                      style={{ background: 'var(--bg)', color: 'var(--muted)', border: '1px solid var(--border)', cursor: 'pointer' }}
+                    >
+                      Нет
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmDeleteId(a.id)}
+                    className="text-xs px-2.5 py-1.5 rounded-xl font-semibold"
+                    style={{ background: '#FFF0F0', color: '#C0392B', border: '1px solid #FFD0D0', cursor: 'pointer' }}
+                  >
+                    🗑
+                  </button>
+                )}
+              </div>
             </div>
             <p className="text-xs" style={{ color: 'var(--muted)' }}>{formatDate(a.created_at)}</p>
           </div>

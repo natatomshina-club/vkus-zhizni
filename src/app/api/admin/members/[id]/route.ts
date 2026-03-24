@@ -22,7 +22,7 @@ export async function GET(
 
   const { data, error: dbErr } = await admin
     .from('members')
-    .select('id, email, full_name, avatar_url, role, subscription_status, tariff, subscription_ends_at, is_blocked, blocked_at, blocked_reason, created_at, weight, height, age')
+    .select('id, email, full_name, avatar_url, role, subscription_status, tariff, subscription_ends_at, is_blocked, blocked_at, blocked_reason, created_at, weight, height, age, birth_date, admin_note, is_manual_subscription')
     .eq('id', id)
     .single()
 
@@ -54,6 +54,21 @@ export async function PATCH(
   if (body.tariff !== undefined) updates.tariff = body.tariff
   if (body.subscription_ends_at !== undefined) updates.subscription_ends_at = body.subscription_ends_at
 
+  // Manual renewal: extend from current end date or today
+  if (body.extend_days !== undefined) {
+    const days = Number(body.extend_days)
+    if (!isNaN(days) && days > 0) {
+      const { data: cur } = await admin.from('members').select('subscription_ends_at').eq('id', id).single()
+      const base = cur?.subscription_ends_at && new Date(cur.subscription_ends_at) > new Date()
+        ? new Date(cur.subscription_ends_at)
+        : new Date()
+      base.setDate(base.getDate() + days)
+      updates.subscription_ends_at = base.toISOString()
+      updates.subscription_status = 'active'
+      if (body.tariff !== undefined) updates.tariff = body.tariff
+    }
+  }
+
   if (body.is_blocked === true) {
     updates.is_blocked = true
     updates.subscription_status = 'blocked'
@@ -72,7 +87,7 @@ export async function PATCH(
     .from('members')
     .update(updates)
     .eq('id', id)
-    .select('id, email, full_name, subscription_status, tariff, subscription_ends_at, is_blocked, blocked_at, blocked_reason')
+    .select('id, email, full_name, subscription_status, tariff, subscription_ends_at, is_blocked, blocked_at, blocked_reason, admin_note, is_manual_subscription')
     .single()
 
   if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 })

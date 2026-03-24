@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
 
     let query = admin
       .from('channel_posts')
-      .select('id, member_id, channel, text, media_url, media_expires_at, meal_tag, is_ai_reply, is_pinned, parent_id, likes_count, expires_at, created_at, member:members(name, full_name, role)')
+      .select('id, member_id, channel, text, media_url, media_expires_at, meal_tag, is_ai_reply, is_pinned, parent_id, likes_count, expires_at, created_at, member:members(name, full_name, role, avatar_url)')
       .eq('channel', channel)
       .is('parent_id', null)
       .or('expires_at.is.null,expires_at.gt.' + new Date().toISOString())

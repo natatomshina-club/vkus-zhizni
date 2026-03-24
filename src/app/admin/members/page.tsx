@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import type { MemberRow, SubscriptionStatus } from '@/types/admin'
+import Avatar from '@/components/Avatar'
 
 const STATUS_TABS: { value: SubscriptionStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'Все' },
@@ -65,23 +66,15 @@ function Skeleton() {
   )
 }
 
-function initials(name: string | null, email: string) {
-  if (name) {
-    const parts = name.trim().split(' ')
-    return parts.slice(0, 2).map(p => p[0]).join('').toUpperCase()
-  }
-  return email[0].toUpperCase()
-}
-
-const AVATAR_COLORS = ['#7C5CFC', '#4CAF78', '#FF9F43', '#FF6B6B', '#56CCF2']
-function avatarColor(id: string) {
-  let hash = 0
-  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) & 0xffffffff
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
-}
-
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+function isBirthdayToday(birth_date: string | null): boolean {
+  if (!birth_date) return false
+  const today = new Date()
+  const bd = new Date(birth_date + 'T00:00:00')
+  return bd.getMonth() === today.getMonth() && bd.getDate() === today.getDate()
 }
 
 export default function MembersPage() {
@@ -93,6 +86,13 @@ export default function MembersPage() {
   const [statusFilter, setStatusFilter] = useState<SubscriptionStatus | 'all'>('all')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+
+  // Add member form
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [addForm, setAddForm] = useState({ email: '', full_name: '', tariff: 'monthly', admin_note: '' })
+  const [addSaving, setAddSaving] = useState(false)
+  const [addError, setAddError] = useState('')
+  const [addToast, setAddToast] = useState('')
 
   const LIMIT = 20
   const totalPages = Math.max(1, Math.ceil(total / LIMIT))
@@ -127,8 +127,48 @@ export default function MembersPage() {
     setPage(1)
   }
 
+  async function handleAddMember(e: React.FormEvent) {
+    e.preventDefault()
+    setAddSaving(true)
+    setAddError('')
+    const res = await fetch('/api/admin/members', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(addForm),
+    })
+    setAddSaving(false)
+    const d = await res.json().catch(() => ({})) as { error?: string; warning?: string; member?: unknown }
+    if (!res.ok) {
+      setAddError(d.error ?? (d as Record<string, string>).message ?? 'Неизвестная ошибка — проверь логи Vercel')
+      return
+    }
+    setShowAddForm(false)
+    setAddForm({ email: '', full_name: '', tariff: 'monthly', admin_note: '' })
+    setAddError('')
+    const toastMsg = d.warning
+      ? `⚠️ ${d.warning}`
+      : '✅ Участница добавлена, приглашение отправлено'
+    setAddToast(toastMsg)
+    setTimeout(() => setAddToast(''), 6000)
+    load()
+  }
+
   return (
-    <div>
+    <div style={{ position: 'relative' }}>
+      {/* Toast */}
+      {addToast && (
+        <div style={{
+          position: 'fixed', top: 72, right: 16, zIndex: 100,
+          background: addToast.startsWith('⚠️') ? '#7A5200' : '#3D2B8A',
+          color: '#fff', padding: '12px 20px',
+          borderRadius: 14, fontSize: 13, fontWeight: 600,
+          boxShadow: '0 4px 20px rgba(60,30,130,0.25)',
+          maxWidth: 360, lineHeight: 1.5,
+        }}>
+          {addToast}
+        </div>
+      )}
+
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
         <Link
@@ -150,7 +190,135 @@ export default function MembersPage() {
         <span style={{ fontSize: 13, color: '#7B6FAA', marginLeft: 'auto' }}>
           {total} чел.
         </span>
+        <button
+          onClick={() => { setShowAddForm(p => !p); setAddError('') }}
+          style={{
+            padding: '8px 16px', borderRadius: 10, border: 'none',
+            background: '#4CAF78', color: '#fff', fontSize: 13,
+            fontWeight: 700, cursor: 'pointer', minHeight: 40,
+            fontFamily: 'var(--font-nunito)',
+          }}
+        >
+          + Добавить
+        </button>
       </div>
+
+      {/* Add member form */}
+      {showAddForm && (
+        <form
+          onSubmit={handleAddMember}
+          style={{
+            background: '#fff', border: '1px solid #EDE8FF', borderRadius: 16,
+            padding: '20px', marginBottom: 20,
+          }}
+        >
+          <p style={{ margin: '0 0 16px', fontSize: 14, fontWeight: 700, color: '#3D2B8A', fontFamily: 'var(--font-nunito)' }}>
+            Добавить участницу вручную
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 12, color: '#7B6FAA', marginBottom: 4 }}>Email *</label>
+              <input
+                type="email"
+                required
+                value={addForm.email}
+                onChange={e => setAddForm(p => ({ ...p, email: e.target.value }))}
+                placeholder="email@example.com"
+                style={{
+                  width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid #EDE8FF',
+                  fontSize: 14, color: '#2D1F6E', background: '#FAF8FF', outline: 'none',
+                  boxSizing: 'border-box', fontFamily: 'var(--font-nunito)',
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 12, color: '#7B6FAA', marginBottom: 4 }}>Имя (Ф.И.О.) *</label>
+              <input
+                type="text"
+                required
+                value={addForm.full_name}
+                onChange={e => setAddForm(p => ({ ...p, full_name: e.target.value }))}
+                placeholder="Иванова Мария"
+                style={{
+                  width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid #EDE8FF',
+                  fontSize: 14, color: '#2D1F6E', background: '#FAF8FF', outline: 'none',
+                  boxSizing: 'border-box', fontFamily: 'var(--font-nunito)',
+                }}
+              />
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: 'block', fontSize: 12, color: '#7B6FAA', marginBottom: 6 }}>Тариф</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {[
+                { value: 'monthly', label: 'Месяц (30 дней)' },
+                { value: 'halfyear', label: 'Полгода (180 дней)' },
+              ].map(o => (
+                <button
+                  key={o.value}
+                  type="button"
+                  onClick={() => setAddForm(p => ({ ...p, tariff: o.value }))}
+                  style={{
+                    padding: '8px 14px', borderRadius: 10, border: '1px solid',
+                    borderColor: addForm.tariff === o.value ? '#7C5CFC' : '#EDE8FF',
+                    background: addForm.tariff === o.value ? '#7C5CFC' : '#fff',
+                    color: addForm.tariff === o.value ? '#fff' : '#7B6FAA',
+                    fontSize: 13, fontWeight: 600, cursor: 'pointer', minHeight: 40,
+                  }}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', fontSize: 12, color: '#7B6FAA', marginBottom: 4 }}>Комментарий (для себя)</label>
+            <input
+              type="text"
+              value={addForm.admin_note}
+              onChange={e => setAddForm(p => ({ ...p, admin_note: e.target.value }))}
+              placeholder="Напр.: оплата на карту, Казахстан"
+              style={{
+                width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid #EDE8FF',
+                fontSize: 14, color: '#2D1F6E', background: '#FAF8FF', outline: 'none',
+                boxSizing: 'border-box', fontFamily: 'var(--font-nunito)',
+              }}
+            />
+          </div>
+
+          {addError && (
+            <p style={{ margin: '0 0 12px', fontSize: 13, color: '#C0392B', fontWeight: 600 }}>{addError}</p>
+          )}
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              type="submit"
+              disabled={addSaving}
+              style={{
+                padding: '10px 20px', borderRadius: 12, background: '#4CAF78', color: '#fff',
+                fontSize: 14, fontWeight: 700, cursor: addSaving ? 'not-allowed' : 'pointer',
+                border: 'none', minHeight: 44, opacity: addSaving ? 0.7 : 1,
+                fontFamily: 'var(--font-nunito)',
+              }}
+            >
+              {addSaving ? 'Добавляю...' : '📩 Добавить и отправить приглашение'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setShowAddForm(false); setAddError('') }}
+              style={{
+                padding: '10px 16px', borderRadius: 12, background: '#fff', color: '#7B6FAA',
+                fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                border: '1px solid #EDE8FF', minHeight: 44,
+              }}
+            >
+              Отмена
+            </button>
+          </div>
+        </form>
+      )}
 
       {/* Filters */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
@@ -260,31 +428,25 @@ export default function MembersPage() {
                   >
                     <td style={{ padding: '12px 12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div
-                          style={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: '50%',
-                            background: avatarColor(m.id),
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#fff',
-                            fontSize: 12,
-                            fontWeight: 700,
-                            flexShrink: 0,
-                          }}
-                        >
-                          {initials(m.full_name, m.email)}
-                        </div>
+                        <Avatar url={m.avatar_url} name={m.full_name ?? m.email} size={36} />
                         <span style={{ color: '#3D2B8A', fontWeight: 600 }}>
                           {m.full_name ?? '—'}
+                          {isBirthdayToday(m.birth_date) && (
+                            <span title="День рождения сегодня!" style={{ marginLeft: 6 }}>🎂</span>
+                          )}
                         </span>
                       </div>
                     </td>
                     <td style={{ padding: '12px 12px', color: '#7B6FAA' }}>{m.email}</td>
                     <td style={{ padding: '12px 12px' }}><StatusBadge status={m.subscription_status} /></td>
-                    <td style={{ padding: '12px 12px', color: '#7B6FAA' }}>{TARIFF_LABEL[m.tariff] ?? m.tariff}</td>
+                    <td style={{ padding: '12px 12px', color: '#7B6FAA' }}>
+                      {TARIFF_LABEL[m.tariff] ?? m.tariff}
+                      {m.is_manual_subscription && (
+                        <span style={{ marginLeft: 6, fontSize: 11, background: '#E8F5E9', color: '#1A5C3A', padding: '1px 6px', borderRadius: 10, fontWeight: 600 }}>
+                          ручн.
+                        </span>
+                      )}
+                    </td>
                     <td style={{ padding: '12px 12px', color: '#7B6FAA', whiteSpace: 'nowrap' }}>{formatDate(m.created_at)}</td>
                     <td style={{ padding: '12px 12px' }}>
                       <Link
@@ -326,26 +488,13 @@ export default function MembersPage() {
                   borderRadius: 14,
                 }}
               >
-                <div
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: '50%',
-                    background: avatarColor(m.id),
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#fff',
-                    fontSize: 14,
-                    fontWeight: 700,
-                    flexShrink: 0,
-                  }}
-                >
-                  {initials(m.full_name, m.email)}
-                </div>
+                <Avatar url={m.avatar_url} name={m.full_name ?? m.email} size={40} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#3D2B8A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {m.full_name ?? m.email}
+                    {isBirthdayToday(m.birth_date) && (
+                      <span title="День рождения сегодня!" style={{ marginLeft: 6 }}>🎂</span>
+                    )}
                   </p>
                   <p style={{ margin: '2px 0 0', fontSize: 12, color: '#7B6FAA', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {m.full_name ? m.email : formatDate(m.created_at)}

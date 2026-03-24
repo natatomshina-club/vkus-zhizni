@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Мини-курс — Вкус Жизни</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800;900&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pur:#7C5CFC;--pur-lt:#F0EEFF;--pur-br:#DDD5FF;
+  --grn:#A8E6CF;--grn-dk:#2D6A4F;
+  --yel:#FFD93D;--yel-dk:#5C4200;
+  --ora:#FF9F43;--red:#FF6B6B;
+  --bg:#FAF8FF;--card:#fff;
+  --text:#2D1F6E;--muted:#7B6FAA;--pale:#9B8FCC;
+  --border:#EDE8FF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Nunito',sans-serif;background:#E8E2FF;
+  display:flex;flex-direction:column;align-items:center;padding:24px;gap:48px}
+
+.section-head{font-family:'Unbounded',sans-serif;font-size:12px;font-weight:700;
+  color:var(--pur);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;text-align:center}
+
+/* ========== MOBILE ========== */
+.m-wrap{display:flex;flex-direction:column;align-items:center}
+.phone{width:375px;height:780px;background:var(--bg);border-radius:36px;overflow:hidden;
+  border:3px solid var(--pur-br);box-shadow:0 24px 64px rgba(124,92,252,.2);
+  display:flex;flex-direction:column}
+
+.sbar{background:var(--card);padding:10px 20px 7px;display:flex;justify-content:space-between;flex-shrink:0}
+.sbar-t{font-size:13px;font-weight:700;color:var(--text)}
+
+.tbar{background:var(--card);padding:8px 16px 10px;display:flex;align-items:center;
+  gap:10px;border-bottom:2px solid var(--border);flex-shrink:0}
+.tb-back{width:32px;height:32px;background:var(--pur-lt);border:none;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;flex-shrink:0}
+.tb-mid{flex:1;text-align:center}
+.tb-title{font-family:'Unbounded',sans-serif;font-size:13px;font-weight:800;color:var(--text)}
+.tb-sub{font-size:10px;color:var(--pale);font-weight:600}
+.tb-ph{width:32px;flex-shrink:0}
+
+.mscroll{flex:1;overflow-y:auto;padding:14px}
+.mscroll::-webkit-scrollbar{width:0}
+
+/* hero */
+.m-hero{background:var(--pur);border-radius:18px;padding:16px;margin-bottom:14px}
+.mh-label{font-size:10px;font-weight:700;color:rgba(255,255,255,.65);
+  text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+.mh-title{font-family:'Unbounded',sans-serif;font-size:17px;font-weight:800;
+  color:#fff;line-height:1.3;margin-bottom:6px}
+.mh-sub{font-size:12px;color:rgba(255,255,255,.75);line-height:1.5;margin-bottom:12px}
+.mh-progress-wrap{}
+.mh-prog-label{display:flex;justify-content:space-between;margin-bottom:5px}
+.mh-pl{font-size:11px;font-weight:700;color:rgba(255,255,255,.7)}
+.mh-bar{height:7px;background:rgba(255,255,255,.2);border-radius:4px;overflow:hidden}
+.mh-fill{height:100%;background:var(--yel);border-radius:4px;transition:width .4s}
+
+/* lesson card mobile */
+.m-lesson{background:var(--card);border:2px solid var(--border);border-radius:16px;
+  overflow:hidden;margin-bottom:10px;transition:border .2s}
+.m-lesson.active{border-color:var(--pur)}
+.m-lesson.done{border-color:var(--grn)}
+.m-lesson.locked{opacity:.6}
+
+/* lesson header */
+.ml-head{padding:13px 14px;display:flex;align-items:center;gap:11px;cursor:pointer}
+.ml-num{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;
+  justify-content:center;font-size:14px;font-weight:800;flex-shrink:0;transition:all .2s}
+.ml-num.done-ico{background:var(--grn);color:var(--grn-dk);font-size:16px}
+.ml-num.active-ico{background:var(--pur);color:#fff}
+.ml-num.locked-ico{background:var(--pur-lt);color:var(--pale)}
+.ml-info{flex:1}
+.ml-title{font-size:13px;font-weight:800;color:var(--text);margin-bottom:3px;line-height:1.3}
+.ml-lesson.locked .ml-title{color:var(--pale)}
+.ml-meta{display:flex;align-items:center;gap:7px}
+.ml-dur{font-size:11px;color:var(--pale);font-weight:600}
+.ml-badge{border-radius:7px;padding:2px 8px;font-size:10px;font-weight:800}
+.ml-badge.done{background:#E8FBF3;color:var(--grn-dk)}
+.ml-badge.active{background:var(--pur-lt);color:var(--pur)}
+.ml-badge.locked{background:var(--pur-lt);color:var(--pale)}
+.ml-chevron{font-size:14px;color:var(--pale);transition:transform .2s;flex-shrink:0}
+.ml-chevron.open{transform:rotate(180deg)}
+
+/* lesson body (expanded) */
+.ml-body{display:none;padding:0 14px 14px}
+.ml-body.open{display:block;animation:slideDown .2s ease}
+@keyframes slideDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+
+/* video player mock */
+.ml-video{background:#1A1040;border-radius:13px;aspect-ratio:16/9;
+  display:flex;align-items:center;justify-content:center;margin-bottom:12px;
+  position:relative;overflow:hidden;cursor:pointer}
+.ml-video-thumb{position:absolute;inset:0;background:linear-gradient(135deg,#2D1F6E,#7C5CFC);opacity:.7}
+.ml-play{width:52px;height:52px;background:rgba(255,255,255,.9);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+  position:relative;z-index:1;transition:transform .15s}
+.ml-video:hover .ml-play{transform:scale(1.08)}
+.ml-video-label{position:absolute;bottom:10px;left:12px;font-size:11px;font-weight:700;
+  color:rgba(255,255,255,.8);z-index:1}
+.ml-video-dur{position:absolute;bottom:10px;right:12px;background:rgba(0,0,0,.5);
+  color:#fff;border-radius:6px;padding:2px 7px;font-size:11px;font-weight:700;z-index:1}
+
+/* description */
+.ml-desc-label{font-size:10px;font-weight:700;color:var(--pale);
+  text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}
+.ml-desc{font-size:13px;color:var(--text);line-height:1.65;font-weight:600;margin-bottom:12px}
+
+/* PDF attachment */
+.ml-pdf{background:#FFF5E8;border:2px solid #FFD4A0;border-radius:12px;
+  padding:11px 13px;display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer;
+  transition:background .13s}
+.ml-pdf:hover{background:#FFE8C0}
+.ml-pdf-ico{width:36px;height:36px;background:#FF9F43;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.ml-pdf-info{flex:1}
+.ml-pdf-name{font-size:13px;font-weight:800;color:#8B4A00;margin-bottom:2px}
+.ml-pdf-size{font-size:11px;color:#C26A00}
+.ml-pdf-dl{background:#FF9F43;color:#fff;border:none;border-radius:8px;
+  padding:6px 12px;font-size:11px;font-weight:800;cursor:pointer;
+  font-family:'Nunito',sans-serif;flex-shrink:0}
+
+/* done button */
+.ml-done-btn{width:100%;background:var(--pur);color:#fff;border:none;border-radius:12px;
+  padding:13px;font-size:14px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;
+  display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .15s}
+.ml-done-btn:hover{opacity:.9}
+.ml-done-btn.confirmed{background:var(--grn);color:var(--grn-dk);cursor:default}
+
+/* CTA after all lessons */
+.m-cta{background:var(--pur);border-radius:16px;padding:16px;text-align:center;margin-top:4px}
+.mcta-t{font-family:'Unbounded',sans-serif;font-size:15px;font-weight:800;color:#fff;margin-bottom:6px}
+.mcta-s{font-size:13px;color:rgba(255,255,255,.78);margin-bottom:14px;line-height:1.5}
+.mcta-btn{width:100%;background:var(--yel);color:var(--yel-dk);border:none;border-radius:12px;
+  padding:14px;font-size:14px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif}
+
+/* bottom nav */
+.bnav{background:var(--card);border-top:2px solid var(--border);padding:8px 4px 12px;
+  display:flex;justify-content:space-around;flex-shrink:0}
+.bn{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;
+  padding:4px 8px;border-radius:11px;border:none;background:transparent;min-width:52px}
+.bn.on{background:var(--pur-lt)}
+.bni{font-size:20px}
+.bnl{font-size:10px;font-weight:700;color:var(--muted)}
+.bn.on .bnl{color:var(--pur)}
+
+
+/* ========== DESKTOP ========== */
+.d-wrap{display:flex;flex-direction:column;align-items:center;width:100%}
+.desk{width:1180px;min-height:780px;background:var(--bg);border-radius:22px;overflow:hidden;
+  border:3px solid var(--pur-br);box-shadow:0 32px 80px rgba(124,92,252,.18);display:flex}
+
+/* sidebar */
+.dsb{width:220px;flex-shrink:0;background:var(--card);border-right:2px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.dsb-brand{padding:18px 16px 14px;border-bottom:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;gap:9px}
+.dsb-ball{width:34px;height:34px;background:var(--pur);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.dsb-nm{font-family:'Unbounded',sans-serif;font-size:10px;font-weight:800;color:var(--text);line-height:1.35}
+.dsb-nm small{display:block;font-size:8px;color:var(--pale);font-weight:600}
+.dsb-user{padding:12px 14px;border-bottom:2px solid var(--border);flex-shrink:0}
+.dsu-name{font-size:14px;font-weight:800;color:var(--text);margin-bottom:1px}
+.dsu-sub{font-size:11px;color:var(--pale)}
+.dsb-nav{flex:1;padding:8px;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
+.dsb-nav::-webkit-scrollbar{width:0}
+.sbn{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:11px;cursor:pointer;border:none;background:transparent;width:100%;text-align:left;transition:background .12s}
+.sbn:hover{background:var(--pur-lt)}.sbn.on{background:var(--pur)}
+.sbn.locked{opacity:.38;cursor:not-allowed}
+.sbn-i{font-size:16px;width:22px;text-align:center;flex-shrink:0}
+.sbn-l{font-size:12px;font-weight:700;color:#4A3A8A;white-space:nowrap;flex:1}.sbn.on .sbn-l{color:#fff}
+.sbn-b{background:var(--red);color:#fff;border-radius:6px;padding:1px 6px;font-size:10px;font-weight:800}.sbn.on .sbn-b{background:rgba(255,255,255,.3)}
+.sbn-lock{font-size:11px;color:var(--pale)}
+.dsb-sep{height:1px;background:var(--border);margin:4px 8px}
+.dsb-plan{margin:8px;background:var(--pur-lt);border-radius:12px;padding:11px;flex-shrink:0}
+.dsp-l{font-size:10px;font-weight:700;color:var(--pale);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+.dsp-name{font-size:12px;font-weight:800;color:var(--text);margin-bottom:7px}
+.dsp-btn{width:100%;background:var(--pur);color:#fff;border:none;border-radius:9px;padding:8px;font-size:11px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif}
+
+/* main */
+.dmain{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+
+/* desktop hero */
+.d-course-hero{background:var(--pur);padding:28px 32px;flex-shrink:0;
+  display:flex;align-items:center;gap:28px}
+.dch-left{flex:1}
+.dch-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);
+  border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:#fff;margin-bottom:10px}
+.dch-title{font-family:'Unbounded',sans-serif;font-size:22px;font-weight:800;
+  color:#fff;line-height:1.3;margin-bottom:6px}
+.dch-sub{font-size:14px;color:rgba(255,255,255,.78);line-height:1.5;max-width:480px}
+.dch-right{flex-shrink:0;text-align:right}
+.dch-prog-lbl{font-size:11px;font-weight:700;color:rgba(255,255,255,.65);
+  text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.dch-prog-bar{width:200px;height:8px;background:rgba(255,255,255,.2);
+  border-radius:4px;overflow:hidden;margin-bottom:6px}
+.dch-prog-fill{height:100%;background:var(--yel);border-radius:4px;width:16%}
+.dch-prog-num{font-size:12px;font-weight:700;color:rgba(255,255,255,.7)}
+
+/* desktop body: two columns */
+.d-body{flex:1;overflow-y:auto;display:grid;grid-template-columns:340px 1fr;
+  min-height:0;align-items:start}
+.d-body::-webkit-scrollbar{width:4px}
+.d-body::-webkit-scrollbar-thumb{background:var(--pur-br);border-radius:2px}
+
+/* left: lesson list */
+.d-list{border-right:2px solid var(--border);padding:20px;
+  display:flex;flex-direction:column;gap:8px;height:100%;overflow-y:auto}
+.d-list::-webkit-scrollbar{width:0}
+
+.dl-item{border:2px solid var(--border);border-radius:14px;padding:13px 14px;
+  cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px}
+.dl-item:hover{border-color:var(--pur-br);background:#F8F5FF}
+.dl-item.selected{border-color:var(--pur);background:var(--pur-lt)}
+.dl-item.done-item{border-color:var(--grn);background:#F0FFF8}
+.dl-item.locked-item{opacity:.5;cursor:not-allowed}
+.dl-item.locked-item:hover{border-color:var(--border);background:transparent}
+
+.dli-num{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;
+  justify-content:center;font-size:14px;font-weight:800;flex-shrink:0}
+.dli-num.done-n{background:var(--grn);color:var(--grn-dk);font-size:18px}
+.dli-num.sel-n{background:var(--pur);color:#fff}
+.dli-num.lock-n{background:var(--pur-lt);color:var(--pale)}
+
+.dli-info{flex:1}
+.dli-title{font-size:13px;font-weight:800;color:var(--text);margin-bottom:3px;line-height:1.3}
+.dl-item.locked-item .dli-title{color:var(--pale)}
+.dli-meta{display:flex;align-items:center;gap:7px}
+.dli-dur{font-size:11px;color:var(--pale);font-weight:600}
+.dli-badge{border-radius:6px;padding:2px 8px;font-size:10px;font-weight:800}
+.dli-badge.done{background:#D4F5E9;color:var(--grn-dk)}
+.dli-badge.sel{background:var(--pur-lt);color:var(--pur)}
+.dli-badge.lock{background:var(--pur-lt);color:var(--pale)}
+
+/* right: lesson content */
+.d-content{padding:24px;overflow-y:auto}
+.d-content::-webkit-scrollbar{width:4px}
+.d-content::-webkit-scrollbar-thumb{background:var(--pur-br);border-radius:2px}
+
+.dc-lesson-num{font-size:11px;font-weight:700;color:var(--pale);
+  text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+.dc-lesson-title{font-family:'Unbounded',sans-serif;font-size:20px;font-weight:800;
+  color:var(--text);line-height:1.3;margin-bottom:16px}
+
+/* desktop video */
+.dc-video{background:#1A1040;border-radius:16px;aspect-ratio:16/9;
+  display:flex;align-items:center;justify-content:center;margin-bottom:20px;
+  position:relative;overflow:hidden;cursor:pointer}
+.dc-video-bg{position:absolute;inset:0;background:linear-gradient(135deg,#2D1F6E,#7C5CFC);opacity:.75}
+.dc-play{width:64px;height:64px;background:rgba(255,255,255,.92);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:26px;
+  position:relative;z-index:1;transition:transform .15s;box-shadow:0 4px 20px rgba(0,0,0,.3)}
+.dc-video:hover .dc-play{transform:scale(1.08)}
+.dc-video-lbl{position:absolute;top:14px;left:16px;font-size:12px;font-weight:700;
+  color:rgba(255,255,255,.8);z-index:1}
+.dc-video-dur{position:absolute;bottom:14px;right:16px;background:rgba(0,0,0,.55);
+  color:#fff;border-radius:7px;padding:3px 9px;font-size:12px;font-weight:700;z-index:1}
+
+/* desktop desc + PDF */
+.dc-sect-lbl{font-size:11px;font-weight:700;color:var(--pale);
+  text-transform:uppercase;letter-spacing:.06em;margin-bottom:9px}
+.dc-desc{font-size:14px;color:var(--text);line-height:1.7;font-weight:600;margin-bottom:20px}
+
+.dc-pdf{background:#FFF5E8;border:2px solid #FFD4A0;border-radius:14px;
+  padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:20px;cursor:pointer;
+  transition:background .13s}
+.dc-pdf:hover{background:#FFE8C0}
+.dc-pdf-ico{width:44px;height:44px;background:#FF9F43;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.dc-pdf-info{flex:1}
+.dc-pdf-name{font-size:14px;font-weight:800;color:#8B4A00;margin-bottom:3px}
+.dc-pdf-size{font-size:12px;color:#C26A00}
+.dc-pdf-dl{background:#FF9F43;color:#fff;border:none;border-radius:10px;
+  padding:10px 18px;font-size:13px;font-weight:800;cursor:pointer;
+  font-family:'Nunito',sans-serif;flex-shrink:0}
+
+/* done button desktop */
+.dc-done-btn{width:100%;background:var(--pur);color:#fff;border:none;border-radius:14px;
+  padding:15px;font-size:15px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;
+  display:flex;align-items:center;justify-content:center;gap:9px;transition:all .2s}
+.dc-done-btn:hover{opacity:.9}
+.dc-done-btn.confirmed{background:var(--grn);color:var(--grn-dk);cursor:default}
+
+/* locked state */
+.dc-locked{text-align:center;padding:40px 20px}
+.dcl-ico{font-size:48px;margin-bottom:16px}
+.dcl-t{font-family:'Unbounded',sans-serif;font-size:18px;font-weight:800;
+  color:var(--text);margin-bottom:8px}
+.dcl-s{font-size:14px;color:var(--muted);line-height:1.6}
+</style>
+</head>
+<body>
+
+<!-- ========== MOBILE ========== -->
+<div class="m-wrap">
+<div class="section-head">Мобайл — Мини-курс</div>
+<div class="phone">
+  <div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-t">📶 🔋</span></div>
+  <div class="tbar">
+    <button class="tb-back">←</button>
+    <div class="tb-mid">
+      <div class="tb-title">Мини-курс</div>
+      <div class="tb-sub">Стройность без голода</div>
+    </div>
+    <div class="tb-ph"></div>
+  </div>
+
+  <div class="mscroll">
+
+    <!-- Hero -->
+    <div class="m-hero">
+      <div class="mh-label">🎓 6 уроков · Бесплатно</div>
+      <div class="mh-title">Стройность без голода</div>
+      <div class="mh-sub">Основы метода Натальи — от правильной тарелки до первого рациона</div>
+      <div class="mh-progress-wrap">
+        <div class="mh-prog-label">
+          <span class="mh-pl">Пройдено 1 из 6</span>
+          <span class="mh-pl">16%</span>
+        </div>
+        <div class="mh-bar"><div class="mh-fill" style="width:16%"></div></div>
+      </div>
+    </div>
+
+    <!-- УРОК 1 — просмотрен -->
+    <div class="m-lesson done" id="m-l1">
+      <div class="ml-head" onclick="mToggle('m-l1')">
+        <div class="ml-num done-ico">✓</div>
+        <div class="ml-info">
+          <div class="ml-title">Урок 1. Правильная тарелка</div>
+          <div class="ml-meta">
+            <span class="ml-dur">⏱ 15 мин</span>
+            <span class="ml-badge done">Просмотрен</span>
+          </div>
+        </div>
+        <div class="ml-chevron" id="m-l1-ch">▾</div>
+      </div>
+      <div class="ml-body" id="m-l1-body">
+        <div class="ml-video">
+          <div class="ml-video-thumb"></div>
+          <div class="ml-play">▶</div>
+          <div class="ml-video-label">Kinescope · Урок 1</div>
+          <div class="ml-video-dur">15:24</div>
+        </div>
+        <div class="ml-desc-label">О чём урок</div>
+        <div class="ml-desc">Узнаешь как должна выглядеть правильная тарелка по методу Натальи: какие продукты занимают половину, какие четверть, и почему именно такие пропорции запускают похудение без голода.</div>
+        <div class="ml-pdf">
+          <div class="ml-pdf-ico">📄</div>
+          <div class="ml-pdf-info">
+            <div class="ml-pdf-name">Схема правильной тарелки.pdf</div>
+            <div class="ml-pdf-size">1.2 МБ · PDF</div>
+          </div>
+          <button class="ml-pdf-dl">↓</button>
+        </div>
+        <button class="ml-done-btn confirmed">✅ Просмотрен</button>
+      </div>
+    </div>
+
+    <!-- УРОК 2 — активный (открытый) -->
+    <div class="m-lesson active" id="m-l2">
+      <div class="ml-head" onclick="mToggle('m-l2')">
+        <div class="ml-num active-ico">2</div>
+        <div class="ml-info">
+          <div class="ml-title">Урок 2. Продукты для снижения веса</div>
+          <div class="ml-meta">
+            <span class="ml-dur">⏱ 18 мин</span>
+            <span class="ml-badge active">Смотри сейчас</span>
+          </div>
+        </div>
+        <div class="ml-chevron open" id="m-l2-ch">▾</div>
+      </div>
+      <div class="ml-body open" id="m-l2-body">
+        <div class="ml-video">
+          <div class="ml-video-thumb"></div>
+          <div class="ml-play">▶</div>
+          <div class="ml-video-label">Kinescope · Урок 2</div>
+          <div class="ml-video-dur">18:07</div>
+        </div>
+        <div class="ml-desc-label">О чём урок</div>
+        <div class="ml-desc">Разберём конкретный список продуктов которые помогают телу снижать вес — белки, полезные жиры и некрахмалистые овощи. Поймёшь почему сливочное масло и яйца — это хорошо, а хлеб и крупы — нет.</div>
+        <div class="ml-pdf">
+          <div class="ml-pdf-ico">📄</div>
+          <div class="ml-pdf-info">
+            <div class="ml-pdf-name">Список продуктов метода.pdf</div>
+            <div class="ml-pdf-size">0.8 МБ · PDF</div>
+          </div>
+          <button class="ml-pdf-dl">↓</button>
+        </div>
+        <button class="ml-done-btn" id="m-btn2" onclick="mDone('m-l2','m-btn2','m-l3')">
+          ✅ Я посмотрела — открыть урок 3
+        </button>
+      </div>
+    </div>
+
+    <!-- УРОКИ 3–6 — заблокированы -->
+    <div class="m-lesson locked" id="m-l3">
+      <div class="ml-head">
+        <div class="ml-num locked-ico">🔒</div>
+        <div class="ml-info">
+          <div class="ml-title" style="color:var(--pale)">Урок 3. Порции и режим питания</div>
+          <div class="ml-meta">
+            <span class="ml-dur">⏱ 14 мин</span>
+            <span class="ml-badge locked">После урока 2</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="m-lesson locked">
+      <div class="ml-head">
+        <div class="ml-num locked-ico">🔒</div>
+        <div class="ml-info">
+          <div class="ml-title" style="color:var(--pale)">Урок 4. Вода как инструмент стройности</div>
+          <div class="ml-meta">
+            <span class="ml-dur">⏱ 12 мин</span>
+            <span class="ml-badge locked">После урока 3</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="m-lesson locked">
+      <div class="ml-head">
+        <div class="ml-num locked-ico">🔒</div>
+        <div class="ml-info">
+          <div class="ml-title" style="color:var(--pale)">Урок 5. Привычки до и после еды</div>
+          <div class="ml-meta">
+            <span class="ml-dur">⏱ 16 мин</span>
+            <span class="ml-badge locked">После урока 4</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="m-lesson locked">
+      <div class="ml-head">
+        <div class="ml-num locked-ico">🔒</div>
+        <div class="ml-info">
+          <div class="ml-title" style="color:var(--pale)">Урок 6. Первый рацион на неделю</div>
+          <div class="ml-meta">
+            <span class="ml-dur">⏱ 20 мин</span>
+            <span class="ml-badge locked">После урока 5</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:12px"></div>
+  </div>
+
+  <div class="bnav">
+    <button class="bn"><div class="bni">🏠</div><div class="bnl">Главная</div></button>
+    <button class="bn"><div class="bni">🧊</div><div class="bnl">Кухня</div></button>
+    <button class="bn"><div class="bni">📓</div><div class="bnl">Дневник</div></button>
+    <button class="bn"><div class="bni">📊</div><div class="bnl">Трекер</div></button>
+    <button class="bn on"><div class="bni">🎓</div><div class="bnl">Курс</div></button>
+  </div>
+</div>
+</div>
+
+
+<!-- ========== DESKTOP ========== -->
+<div class="d-wrap">
+<div class="section-head">Десктоп — Мини-курс</div>
+<div class="desk">
+
+  <!-- SIDEBAR -->
+  <div class="dsb">
+    <div class="dsb-brand"><div class="dsb-ball">🌿</div><div class="dsb-nm">Вкус Жизни<small>Клуб</small></div></div>
+    <div class="dsb-user"><div class="dsu-name">Марина</div><div class="dsu-sub">День 1 · Новенькая 🌱</div></div>
+    <div class="dsb-nav">
+      <div class="sbn"><div class="sbn-i">🏠</div><span class="sbn-l">Главная</span></div>
+      <div class="dsb-sep"></div>
+      <div class="sbn"><div class="sbn-i">🧊</div><span class="sbn-l">Умная кухня</span></div>
+      <div class="sbn"><div class="sbn-i">⭐</div><span class="sbn-l">Избранные рецепты</span></div>
+      <div class="dsb-sep"></div>
+      <div class="sbn"><div class="sbn-i">📊</div><span class="sbn-l">Трекер замеров</span></div>
+      <div class="sbn"><div class="sbn-i">📓</div><span class="sbn-l">Дневник питания</span></div>
+      <div class="sbn"><div class="sbn-i">🏆</div><span class="sbn-l">Маленькие победы</span></div>
+      <div class="dsb-sep"></div>
+      <div class="sbn"><div class="sbn-i">🧬</div><span class="sbn-l">Я и моё тело</span></div>
+      <div class="sbn"><div class="sbn-i">🎥</div><span class="sbn-l">Вебинары</span></div>
+      <div class="sbn"><div class="sbn-i">🧘</div><span class="sbn-l">Медитации</span></div>
+      <div class="sbn on"><div class="sbn-i">🎓</div><span class="sbn-l">Мини-курс</span></div>
+      <div class="dsb-sep"></div>
+      <div class="sbn locked"><div class="sbn-i">🏃</div><span class="sbn-l">Марафон</span><span class="sbn-lock">🔒</span></div>
+      <div class="sbn locked"><div class="sbn-i">🎴</div><span class="sbn-l">Карточки-спасалки</span><span class="sbn-lock">🔒</span></div>
+      <div class="dsb-sep"></div>
+      <div class="sbn"><div class="sbn-i">💬</div><span class="sbn-l">Чат клуба</span><span class="sbn-b">2</span></div>
+      <div class="sbn"><div class="sbn-i">👤</div><span class="sbn-l">Профиль</span></div>
+    </div>
+    <div class="dsb-plan">
+      <div class="dsp-l">Пробный период</div>
+      <div class="dsp-name">7 дней · День 1</div>
+      <button class="dsp-btn">Открыть полный доступ →</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="dmain">
+
+    <!-- Hero -->
+    <div class="d-course-hero">
+      <div class="dch-left">
+        <div class="dch-badge">🎓 Мини-курс · 6 уроков · Бесплатно</div>
+        <div class="dch-title">Стройность без голода</div>
+        <div class="dch-sub">Основы метода Натальи — от правильной тарелки до первого рациона. Смотри в своём темпе, каждый урок открывается после предыдущего.</div>
+      </div>
+      <div class="dch-right">
+        <div class="dch-prog-lbl">Прогресс</div>
+        <div class="dch-prog-bar"><div class="dch-prog-fill"></div></div>
+        <div class="dch-prog-num">1 из 6 уроков пройдено</div>
+      </div>
+    </div>
+
+    <!-- Two-col body -->
+    <div class="d-body">
+
+      <!-- LEFT: list -->
+      <div class="d-list">
+
+        <div class="dl-item done-item" onclick="dSelect(this,'d-c1')">
+          <div class="dli-num done-n">✓</div>
+          <div class="dli-info">
+            <div class="dli-title">Урок 1. Правильная тарелка</div>
+            <div class="dli-meta"><span class="dli-dur">⏱ 15 мин</span><span class="dli-badge done">Просмотрен</span></div>
+          </div>
+        </div>
+
+        <div class="dl-item selected" onclick="dSelect(this,'d-c2')">
+          <div class="dli-num sel-n">2</div>
+          <div class="dli-info">
+            <div class="dli-title">Урок 2. Продукты для снижения веса</div>
+            <div class="dli-meta"><span class="dli-dur">⏱ 18 мин</span><span class="dli-badge sel">Смотри сейчас</span></div>
+          </div>
+        </div>
+
+        <div class="dl-item locked-item">
+          <div class="dli-num lock-n">🔒</div>
+          <div class="dli-info">
+            <div class="dli-title">Урок 3. Порции и режим питания</div>
+            <div class="dli-meta"><span class="dli-dur">⏱ 14 мин</span><span class="dli-badge lock">После урока 2</span></div>
+          </div>
+        </div>
+
+        <div class="dl-item locked-item">
+          <div class="dli-num lock-n">🔒</div>
+          <div class="dli-info">
+            <div class="dli-title">Урок 4. Вода как инструмент стройности</div>
+            <div class="dli-meta"><span class="dli-dur">⏱ 12 мин</span><span class="dli-badge lock">После урока 3</span></div>
+          </div>
+        </div>
+
+        <div class="dl-item locked-item">
+          <div class="dli-num lock-n">🔒</div>
+          <div class="dli-info">
+            <div class="dli-title">Урок 5. Привычки до и после еды</div>
+            <div class="dli-meta"><span class="dli-dur">⏱ 16 мин</span><span class="dli-badge lock">После урока 4</span></div>
+          </div>
+        </div>
+
+        <div class="dl-item locked-item">
+          <div class="dli-num lock-n">🔒</div>
+          <div class="dli-info">
+            <div class="dli-title">Урок 6. Первый рацион на неделю</div>
+            <div class="dli-meta"><span class="dli-dur">⏱ 20 мин</span><span class="dli-badge lock">После урока 5</span></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: content -->
+      <div class="d-content">
+
+        <!-- Урок 1 (просмотрен) -->
+        <div id="d-c1" style="display:none">
+          <div class="dc-lesson-num">Урок 1 из 6 · 15 минут</div>
+          <div class="dc-lesson-title">Правильная тарелка</div>
+          <div class="dc-video">
+            <div class="dc-video-bg"></div>
+            <div class="dc-play">▶</div>
+            <div class="dc-video-lbl">Kinescope · Урок 1</div>
+            <div class="dc-video-dur">15:24</div>
+          </div>
+          <div class="dc-sect-lbl">О чём урок</div>
+          <div class="dc-desc">Узнаешь как должна выглядеть правильная тарелка по методу Натальи: какие продукты занимают половину, какие четверть, и почему именно такие пропорции запускают похудение без голода. Практическое задание — собрать такую тарелку на завтра.</div>
+          <div class="dc-sect-lbl">Материалы к уроку</div>
+          <div class="dc-pdf">
+            <div class="dc-pdf-ico">📄</div>
+            <div class="dc-pdf-info">
+              <div class="dc-pdf-name">Схема правильной тарелки.pdf</div>
+              <div class="dc-pdf-size">1.2 МБ · PDF · Распечатай и повесь на холодильник</div>
+            </div>
+            <button class="dc-pdf-dl">↓ Скачать</button>
+          </div>
+          <button class="dc-done-btn confirmed">✅ Урок просмотрен</button>
+        </div>
+
+        <!-- Урок 2 (активный, по умолчанию) -->
+        <div id="d-c2">
+          <div class="dc-lesson-num">Урок 2 из 6 · 18 минут</div>
+          <div class="dc-lesson-title">Продукты для снижения веса</div>
+          <div class="dc-video">
+            <div class="dc-video-bg"></div>
+            <div class="dc-play">▶</div>
+            <div class="dc-video-lbl">Kinescope · Урок 2</div>
+            <div class="dc-video-dur">18:07</div>
+          </div>
+          <div class="dc-sect-lbl">О чём урок</div>
+          <div class="dc-desc">Разберём конкретный список продуктов которые помогают телу снижать вес — белки, полезные жиры и некрахмалистые овощи. Поймёшь почему сливочное масло и яйца — это хорошо, а хлеб и крупы — нет. После этого урока ты сможешь сама составить любой приём пищи по методу.</div>
+          <div class="dc-sect-lbl">Материалы к уроку</div>
+          <div class="dc-pdf">
+            <div class="dc-pdf-ico">📄</div>
+            <div class="dc-pdf-info">
+              <div class="dc-pdf-name">Список продуктов метода.pdf</div>
+              <div class="dc-pdf-size">0.8 МБ · PDF · Бери в магазин</div>
+            </div>
+            <button class="dc-pdf-dl">↓ Скачать</button>
+          </div>
+          <button class="dc-done-btn" id="d-btn2" onclick="dDone('d-btn2','d-c2')">
+            ✅ Я посмотрела — открыть следующий урок
+          </button>
+        </div>
+
+        <!-- Заглушка заблокированного -->
+        <div id="d-c-locked" style="display:none">
+          <div class="dc-locked">
+            <div class="dcl-ico">🔒</div>
+            <div class="dcl-t">Урок ещё закрыт</div>
+            <div class="dcl-s">Сначала посмотри предыдущий урок и нажми «Я посмотрела» — следующий откроется автоматически</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+// ---- MOBILE ----
+function mToggle(id){
+  const body = document.getElementById(id+'-body');
+  const ch = document.getElementById(id+'-ch');
+  if(!body) return;
+  const isOpen = body.classList.contains('open');
+  // close all
+  document.querySelectorAll('.ml-body').forEach(b=>b.classList.remove('open'));
+  document.querySelectorAll('.ml-chevron').forEach(c=>c.classList.remove('open'));
+  if(!isOpen){ body.classList.add('open'); if(ch) ch.classList.add('open'); }
+}
+
+function mDone(lessonId, btnId, nextId){
+  // mark current as done
+  const lesson = document.getElementById(lessonId);
+  const btn = document.getElementById(btnId);
+  lesson.classList.remove('active');
+  lesson.classList.add('done');
+  lesson.querySelector('.ml-num').className = 'ml-num done-ico';
+  lesson.querySelector('.ml-num').textContent = '✓';
+  lesson.querySelector('.ml-badge').className = 'ml-badge done';
+  lesson.querySelector('.ml-badge').textContent = 'Просмотрен';
+  btn.classList.add('confirmed');
+  btn.textContent = '✅ Просмотрен';
+
+  // unlock next
+  const next = document.getElementById(nextId);
+  if(next){
+    next.classList.remove('locked');
+    next.classList.add('active');
+    next.querySelector('.ml-num').className = 'ml-num active-ico';
+    next.querySelector('.ml-num').textContent = next.id.replace('m-l','');
+    const badge = next.querySelector('.ml-badge');
+    if(badge){ badge.className = 'ml-badge active'; badge.textContent = 'Смотри сейчас'; }
+    // open it
+    setTimeout(()=>{
+      const num = next.id.replace('m-l','');
+      const body = document.getElementById('m-l'+num+'-body');
+      if(body){ body.classList.add('open'); }
+      const ch = document.getElementById('m-l'+num+'-ch');
+      if(ch){ ch.classList.add('open'); }
+      next.scrollIntoView({behavior:'smooth', block:'start'});
+    }, 300);
+    // update progress
+    updateMProgress();
+  }
+}
+
+function updateMProgress(){
+  const done = document.querySelectorAll('.m-lesson.done').length;
+  const pct = Math.round(done/6*100);
+  const fill = document.querySelector('.mh-fill');
+  const labels = document.querySelectorAll('.mh-pl');
+  if(fill) fill.style.width = pct+'%';
+  if(labels[0]) labels[0].textContent = 'Пройдено '+done+' из 6';
+  if(labels[1]) labels[1].textContent = pct+'%';
+}
+
+// ---- DESKTOP ----
+function dSelect(el, contentId){
+  if(el.classList.contains('locked-item')) return;
+  // update list selection
+  document.querySelectorAll('.dl-item:not(.locked-item)').forEach(i=>i.classList.remove('selected'));
+  el.classList.add('selected');
+  // show content
+  document.querySelectorAll('#d-c1,#d-c2,#d-c-locked').forEach(c=>c.style.display='none');
+  const c = document.getElementById(contentId);
+  if(c) c.style.display='block';
+}
+
+function dDone(btnId, contentId){
+  const btn = document.getElementById(btnId);
+  btn.classList.add('confirmed');
+  btn.textContent = '✅ Урок просмотрен';
+  // unlock next item in list
+  const items = document.querySelectorAll('.dl-item');
+  let unlockNext = false;
+  items.forEach((item, i) => {
+    if(item.classList.contains('selected')) unlockNext = true;
+    else if(unlockNext && item.classList.contains('locked-item')){
+      item.classList.remove('locked-item');
+      item.querySelector('.dli-num').className = 'dli-num sel-n';
+      item.querySelector('.dli-num').textContent = i+1;
+      const badge = item.querySelector('.dli-badge');
+      if(badge){ badge.className = 'dli-badge sel'; badge.textContent = 'Смотри сейчас'; }
+      // make clickable
+      item.setAttribute('onclick', "dSelect(this,'d-c-locked')");
+      unlockNext = false;
+    }
+  });
+  // update progress bar
+  const done = document.querySelectorAll('.dl-item.done-item').length + 1;
+  const pct = Math.round(done/6*100);
+  const fill = document.querySelector('.dch-prog-fill');
+  const num = document.querySelector('.dch-prog-num');
+  if(fill) fill.style.width = pct+'%';
+  if(num) num.textContent = done+' из 6 уроков пройдено';
+}
+</script>
+</body>
+</html>

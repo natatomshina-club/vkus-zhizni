@@ -25,7 +25,7 @@ const nav = [
   {
     label: 'Обучение',
     items: [
-      { href: '/dashboard/minicourse', label: 'Мини-курс', icon: '📚' },
+      { href: '/dashboard/courses', label: 'Курсы', icon: '🎓' },
       { href: '/dashboard/body', label: 'Я и моё тело', icon: '🌸' },
       { href: '/dashboard/webinars', label: 'Вебинары', icon: '🎥' },
       { href: '/dashboard/meditations', label: 'Медитации', icon: '🧘' },

@@ -10,7 +10,7 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
 
   const { data, error } = await admin
     .from('members')
-    .select('id, email, full_name, avatar_url, role, subscription_status, tariff, subscription_ends_at, is_blocked, blocked_at, blocked_reason, created_at')
+    .select('id, email, full_name, avatar_url, role, subscription_status, tariff, subscription_ends_at, is_blocked, blocked_at, blocked_reason, created_at, birth_date, admin_note, is_manual_subscription')
     .eq('id', id)
     .single()
 

@@ -36,7 +36,7 @@ export interface ChannelPost {
 export interface PostWithMeta extends ChannelPost {
   liked_by_me: boolean
   comments_count: number
-  member: { name: string | null; full_name: string | null } | null
+  member: { name: string | null; full_name: string | null; avatar_url?: string | null; role?: string } | null
 }
 
 export interface ChannelLike {

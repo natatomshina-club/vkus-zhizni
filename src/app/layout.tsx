@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next'
 import { Unbounded, Nunito } from 'next/font/google'
 import './globals.css'
+import SeasonalParticles from '@/components/SeasonalParticles'
+import SeasonalThemeApplier from '@/components/SeasonalThemeApplier'
 
 const unbounded = Unbounded({
   variable: '--font-unbounded',
@@ -34,6 +36,8 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <body className={`${unbounded.variable} ${nunito.variable} antialiased`}>
+        <SeasonalThemeApplier />
+        <SeasonalParticles />
         {children}
       </body>
     </html>

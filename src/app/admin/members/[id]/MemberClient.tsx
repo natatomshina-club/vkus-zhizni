@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import type { MemberRow, Tariff, SubscriptionStatus } from '@/types/admin'
+import Avatar from '@/components/Avatar'
 
 const STATUS_BADGE: Record<string, { label: string; bg: string; color: string }> = {
   trial: { label: '🟡 Триал', bg: '#FFF3C0', color: '#5C4200' },
@@ -15,21 +16,6 @@ const TARIFF_LABELS: Record<Tariff, string> = {
   trial: 'Пробный (7 дней)',
   monthly: 'Месяц',
   halfyear: 'Полгода',
-}
-
-const AVATAR_COLORS = ['#7C5CFC', '#4CAF78', '#FF9F43', '#FF6B6B', '#56CCF2']
-function avatarColor(id: string) {
-  let hash = 0
-  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) & 0xffffffff
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
-}
-
-function initials(name: string | null, email: string) {
-  if (name) {
-    const parts = name.trim().split(' ')
-    return parts.slice(0, 2).map(p => p[0]).join('').toUpperCase()
-  }
-  return email[0].toUpperCase()
 }
 
 function getClubRank(createdAt: string) {
@@ -70,6 +56,12 @@ export default function MemberClient({ initial }: { initial: MemberRow }) {
   const [newEndsAt, setNewEndsAt] = useState(member.subscription_ends_at?.slice(0, 10) ?? '')
   const [tariffError, setTariffError] = useState('')
 
+  // Manual renewal form
+  const [showRenewForm, setShowRenewForm] = useState(false)
+  const [renewTariff, setRenewTariff] = useState<'monthly' | 'halfyear'>('monthly')
+  const [renewSaving, setRenewSaving] = useState(false)
+  const [renewError, setRenewError] = useState('')
+
   // Block form
   const [showBlockConfirm, setShowBlockConfirm] = useState(false)
   const [blockReason, setBlockReason] = useState('')
@@ -95,6 +87,27 @@ export default function MemberClient({ initial }: { initial: MemberRow }) {
     setMember(m => ({ ...m, ...updated }))
     setShowTariffForm(false)
     showToast('✅ Тариф обновлён')
+  }
+
+  async function renewAccess() {
+    setRenewSaving(true)
+    setRenewError('')
+    const days = renewTariff === 'halfyear' ? 180 : 30
+    const res = await fetch(`/api/admin/members/${member.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ extend_days: days, tariff: renewTariff }),
+    })
+    setRenewSaving(false)
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({})) as { error?: string }
+      setRenewError(e.error ?? 'Ошибка')
+      return
+    }
+    const { member: updated } = await res.json() as { member: MemberRow }
+    setMember(m => ({ ...m, ...updated }))
+    setShowRenewForm(false)
+    showToast('✅ Доступ продлён')
   }
 
   async function blockMember() {
@@ -147,19 +160,30 @@ export default function MemberClient({ initial }: { initial: MemberRow }) {
       {/* Profile */}
       <Card title="Профиль">
         <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-          <div style={{
-            width: 60, height: 60, borderRadius: '50%',
-            background: avatarColor(member.id),
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', fontSize: 20, fontWeight: 700, flexShrink: 0,
-          }}>
-            {initials(member.full_name, member.email)}
-          </div>
+          <Avatar url={member.avatar_url} name={member.full_name ?? member.email} size={64} />
           <div style={{ flex: 1 }}>
-            <p style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 700, color: '#3D2B8A' }}>
-              {member.full_name ?? '—'}
-            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <p style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 700, color: '#3D2B8A' }}>
+                {member.full_name ?? '—'}
+              </p>
+              {member.birth_date && (() => {
+                const today = new Date()
+                const bd = new Date(member.birth_date + 'T00:00:00')
+                const isToday = bd.getMonth() === today.getMonth() && bd.getDate() === today.getDate()
+                const age = today.getFullYear() - bd.getFullYear() - (today < new Date(today.getFullYear(), bd.getMonth(), bd.getDate()) ? 1 : 0)
+                return (
+                  <span style={{ fontSize: 13, background: isToday ? '#FFE4F0' : '#F0EEFF', color: isToday ? '#9B1B5A' : '#7B6FAA', padding: '2px 10px', borderRadius: 20, fontWeight: 600 }}>
+                    {isToday ? '🎂' : '🎈'} {age} лет
+                  </span>
+                )
+              })()}
+            </div>
             <p style={{ margin: '0 0 6px', fontSize: 14, color: '#7B6FAA' }}>{member.email}</p>
+            {member.birth_date && (
+              <p style={{ margin: '0 0 6px', fontSize: 12, color: '#7B6FAA' }}>
+                ДР: {new Date(member.birth_date + 'T00:00:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
+              </p>
+            )}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
               <span style={{ fontSize: 12, color: '#7B6FAA' }}>
                 Вступила {formatDate(member.created_at)}
@@ -266,6 +290,96 @@ export default function MemberClient({ initial }: { initial: MemberRow }) {
           </div>
         )}
       </Card>
+
+      {/* Manual renewal */}
+      <Card title="Продлить доступ вручную">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
+          <div>
+            <p style={{ margin: '0 0 2px', fontSize: 12, color: '#7B6FAA' }}>Текущий доступ до</p>
+            <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#3D2B8A' }}>
+              {member.subscription_ends_at ? formatDate(member.subscription_ends_at) : '—'}
+              {member.subscription_ends_at && new Date(member.subscription_ends_at) < new Date() && (
+                <span style={{ marginLeft: 8, fontSize: 12, background: '#FFE4E4', color: '#7A1E1E', padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
+                  истёк
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
+
+        {!showRenewForm ? (
+          <button
+            onClick={() => setShowRenewForm(true)}
+            style={{
+              padding: '10px 20px', borderRadius: 12, border: '1px solid #EDE8FF',
+              background: '#F0EEFF', color: '#7C5CFC', fontSize: 14, fontWeight: 600,
+              cursor: 'pointer', minHeight: 44,
+            }}
+          >
+            Продлить доступ
+          </button>
+        ) : (
+          <div style={{ background: '#F9F8FF', borderRadius: 14, padding: 16 }}>
+            <p style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 700, color: '#3D2B8A' }}>Выбери срок продления</p>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+              {([
+                { value: 'monthly' as const, label: 'Месяц (+30 дней)' },
+                { value: 'halfyear' as const, label: 'Полгода (+180 дней)' },
+              ]).map(o => (
+                <button
+                  key={o.value}
+                  onClick={() => setRenewTariff(o.value)}
+                  style={{
+                    padding: '8px 14px', borderRadius: 10, border: '1px solid',
+                    borderColor: renewTariff === o.value ? '#7C5CFC' : '#EDE8FF',
+                    background: renewTariff === o.value ? '#7C5CFC' : '#fff',
+                    color: renewTariff === o.value ? '#fff' : '#7B6FAA',
+                    fontSize: 13, fontWeight: 600, cursor: 'pointer', minHeight: 40,
+                  }}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+            <p style={{ margin: '0 0 14px', fontSize: 13, color: '#7B6FAA' }}>
+              Срок прибавляется к текущей дате окончания (или считается от сегодня если доступ истёк).
+            </p>
+            {renewError && <p style={{ margin: '0 0 10px', fontSize: 13, color: '#C0392B' }}>{renewError}</p>}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={renewAccess}
+                disabled={renewSaving}
+                style={{
+                  padding: '10px 20px', borderRadius: 12, background: '#4CAF78', color: '#fff',
+                  fontSize: 14, fontWeight: 700, cursor: renewSaving ? 'not-allowed' : 'pointer',
+                  border: 'none', minHeight: 44, opacity: renewSaving ? 0.7 : 1,
+                }}
+              >
+                {renewSaving ? 'Продлеваю...' : '✅ Продлить'}
+              </button>
+              <button
+                onClick={() => { setShowRenewForm(false); setRenewError('') }}
+                style={{
+                  padding: '10px 16px', borderRadius: 12, background: '#fff', color: '#7B6FAA',
+                  fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                  border: '1px solid #EDE8FF', minHeight: 44,
+                }}
+              >
+                Отмена
+              </button>
+            </div>
+          </div>
+        )}
+      </Card>
+
+      {/* Admin note */}
+      {member.admin_note && (
+        <Card title="Заметка администратора">
+          <p style={{ margin: 0, fontSize: 14, color: '#3D2B8A', lineHeight: 1.6, background: '#FFF9E6', padding: '12px 14px', borderRadius: 10, border: '1px solid #FFE082' }}>
+            📝 {member.admin_note}
+          </p>
+        </Card>
+      )}
 
       {/* Block / Unblock — only for non-admins */}
       {member.role !== 'admin' && (

@@ -3,22 +3,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { PostWithMeta } from '@/types/channel'
+import Avatar from '@/components/Avatar'
 
-const AVATAR_COLORS = ['#7C5CFC', '#2A9D5C', '#FF9F43', '#FF6B9D', '#4ECDC4']
-
-function getAvatarColor(memberId: string): string {
-  let hash = 0
-  for (let i = 0; i < memberId.length; i++) {
-    hash = memberId.charCodeAt(i) + ((hash << 5) - hash)
-  }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
-}
-
-function getInitials(name: string | null, fullName: string | null): string {
-  const src = fullName ?? name ?? '?'
-  const parts = src.trim().split(/\s+/)
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
-  return (parts[0][0] + parts[1][0]).toUpperCase()
+function getDisplayName(name: string | null, fullName: string | null): string {
+  return fullName ?? name ?? 'Участница'
 }
 
 function formatTime(iso: string): string {
@@ -198,9 +186,8 @@ export default function PostCard({ post, currentMemberId, isAdmin, memberName, m
   }, [showComments, post.id])
 
   const memberData = Array.isArray(post.member) ? post.member[0] : post.member
-  const avatarColor = getAvatarColor(post.member_id)
-  const initials = getInitials(memberData?.name ?? null, memberData?.full_name ?? null)
-  const displayName = memberData?.full_name ?? memberData?.name ?? 'Участница'
+  const displayName = getDisplayName(memberData?.name ?? null, memberData?.full_name ?? null)
+  const avatarUrl = (memberData as { avatar_url?: string | null } | null)?.avatar_url ?? null
   const isAuthorAdmin = (memberData as { role?: string } | null)?.role === 'admin'
 
   return (
@@ -217,12 +204,16 @@ export default function PostCard({ post, currentMemberId, isAdmin, memberName, m
       <div className="p-4">
         {/* Header */}
         <div className="flex items-start gap-3 mb-3">
-          <div
-            className="shrink-0 rounded-full flex items-center justify-center text-xs font-bold text-white"
-            style={{ width: 36, height: 36, background: avatarColor, fontFamily: 'var(--font-nunito)' }}
-          >
-            {post.is_ai_reply ? '🤖' : initials}
-          </div>
+          {post.is_ai_reply ? (
+            <div
+              className="shrink-0 rounded-full flex items-center justify-center text-base"
+              style={{ width: 36, height: 36, background: '#FFF8E1', border: '1px solid #FFE58F' }}
+            >
+              🤖
+            </div>
+          ) : (
+            <Avatar url={avatarUrl} name={displayName} size={36} />
+          )}
 
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
@@ -461,6 +452,8 @@ export default function PostCard({ post, currentMemberId, isAdmin, memberName, m
             {comments.map(c => {
               const cm = Array.isArray(c.member) ? c.member[0] : c.member
               const cIsAdmin = (cm as { role?: string } | null)?.role === 'admin'
+              const cName = getDisplayName(cm?.name ?? null, cm?.full_name ?? null)
+              const cAvatarUrl = (cm as { avatar_url?: string | null } | null)?.avatar_url ?? null
               return (
                 <div
                   key={c.id}
@@ -468,20 +461,13 @@ export default function PostCard({ post, currentMemberId, isAdmin, memberName, m
                   style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <div
-                      className="rounded-full flex items-center justify-center font-bold text-white shrink-0"
-                      style={{
-                        width: 22,
-                        height: 22,
-                        fontSize: 9,
-                        background: getAvatarColor(c.member_id),
-                        fontFamily: 'var(--font-nunito)',
-                      }}
-                    >
-                      {c.is_ai_reply ? '🤖' : getInitials(cm?.name ?? null, cm?.full_name ?? null)}
-                    </div>
+                    {c.is_ai_reply ? (
+                      <div className="rounded-full flex items-center justify-center shrink-0" style={{ width: 22, height: 22, background: '#FFF8E1', fontSize: 12 }}>🤖</div>
+                    ) : (
+                      <Avatar url={cAvatarUrl} name={cName} size={22} />
+                    )}
                     <span className="text-xs font-bold" style={{ color: 'var(--text)', fontFamily: 'var(--font-nunito)' }}>
-                      {c.is_ai_reply ? 'Ассистент' : (cm?.full_name ?? cm?.name ?? 'Участница')}
+                      {c.is_ai_reply ? 'Ассистент' : cName}
                     </span>
                     {cIsAdmin && !c.is_ai_reply && (
                       <span

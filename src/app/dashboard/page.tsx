@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import DashboardWinInput from '@/components/DashboardWinInput'
 import DashboardGreeting from '@/components/DashboardGreeting'
+import BirthdayBanner from '@/components/BirthdayBanner'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -12,7 +13,7 @@ export default async function DashboardPage() {
   const [{ data: member }, { count: savedCount }, { data: announcement }] = await Promise.all([
     supabase
       .from('members')
-      .select('name, full_name, status, created_at, age, weight, start_weight, height, goal_weight, activity_level, kbju_calories, kbju_protein, kbju_fat, kbju_carbs, segment')
+      .select('name, full_name, status, created_at, age, weight, start_weight, height, goal_weight, activity_level, kbju_calories, kbju_protein, kbju_fat, kbju_carbs, segment, birth_date')
       .eq('id', user.id)
       .single(),
     supabase
@@ -53,6 +54,15 @@ export default async function DashboardPage() {
   const announcementText = announcement?.text ?? (isTrial && daysInClub <= 1
     ? 'Добро пожаловать в клуб «Вкус Жизни»! 🌿\nЯ рада что ты здесь. У тебя есть 7 дней чтобы познакомиться с клубом, попробовать умную кухню, начать вести дневник питания и пообщаться в чатах.\nЕсли появятся вопросы — пиши мне лично в чате «Наташе», я отвечаю каждый день.\nС заботой, Наталья 💚'
     : null)
+
+  // Birthday check
+  const isBirthday = (() => {
+    const bd = (member as { birth_date?: string | null } | null)?.birth_date
+    if (!bd) return false
+    const today = new Date()
+    const bdDate = new Date(bd + 'T00:00:00')
+    return bdDate.getMonth() === today.getMonth() && bdDate.getDate() === today.getDate()
+  })()
 
   const lostKg = member?.start_weight && member?.weight
     ? +(member.start_weight - member.weight).toFixed(1)
@@ -117,6 +127,11 @@ export default async function DashboardPage() {
               Открыть полный доступ
             </a>
           </div>
+        )}
+
+        {/* ── Birthday banner ── */}
+        {isBirthday && (
+          <BirthdayBanner name={member?.full_name ?? member?.name ?? 'участница'} />
         )}
 
         {/* ── Greeting ── */}
@@ -325,7 +340,7 @@ export default async function DashboardPage() {
             </p>
           </div>
           <Link
-            href="/dashboard/minicourse"
+            href="/dashboard/courses/intro"
             className="shrink-0 flex items-center gap-1.5 text-xs font-bold px-4 py-2.5 rounded-xl whitespace-nowrap"
             style={{ background: '#fff', color: '#C96A00', fontFamily: 'var(--font-nunito)' }}
           >

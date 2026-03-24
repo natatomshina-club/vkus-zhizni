@@ -13,7 +13,8 @@ export default async function ProfilePage() {
       id, email, name, full_name, age, weight, height, goal_weight, initial_weight,
       activity_level, activity_coef, health_conditions, allergies,
       status, trial_ends_at, created_at,
-      kbju_calories, kbju_protein, kbju_fat, kbju_carbs
+      kbju_calories, kbju_protein, kbju_fat, kbju_carbs,
+      avatar_url, birth_date
     `)
     .eq('id', user.id)
     .single()

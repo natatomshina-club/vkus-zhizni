@@ -15,7 +15,7 @@ export async function GET(
 
     const { data: comments, error } = await admin
       .from('channel_posts')
-      .select('id, member_id, text, media_url, is_ai_reply, likes_count, created_at, member:members(name, full_name, role)')
+      .select('id, member_id, text, media_url, is_ai_reply, likes_count, created_at, member:members(name, full_name, role, avatar_url)')
       .eq('parent_id', id)
       .order('created_at', { ascending: true })
 

@@ -67,6 +67,18 @@ const SECTIONS = [
     ),
   },
   {
+    label: 'Курсы',
+    desc: 'Уроки и материалы',
+    href: '/admin/courses',
+    active: true,
+    icon: (
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#FF9F43" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+      </svg>
+    ),
+  },
+  {
     label: 'Я и моё тело',
     desc: 'Контент для участниц',
     href: '/admin/body',
@@ -122,6 +134,18 @@ const SECTIONS = [
         <line x1="18" y1="20" x2="18" y2="10" />
         <line x1="12" y1="20" x2="12" y2="4" />
         <line x1="6" y1="20" x2="6" y2="14" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Оформление',
+    desc: 'Сезонные темы и частицы',
+    href: '/admin/themes',
+    active: true,
+    icon: (
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#FF9DC5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
       </svg>
     ),
   },

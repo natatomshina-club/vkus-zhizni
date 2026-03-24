@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useMember } from '@/contexts/MemberContext'
 import { calculateKBJU, type ActivityLevel } from '@/lib/kbju'
+import AvatarUpload from '@/app/dashboard/profile/AvatarUpload'
 
 // ── Types ──────────────────────────────────────────────
 type Member = {
@@ -23,10 +24,12 @@ type Member = {
   status?: string | null
   trial_ends_at?: string | null
   created_at?: string | null
+  avatar_url?: string | null
   kbju_calories?: number | null
   kbju_protein?: number | null
   kbju_fat?: number | null
   kbju_carbs?: number | null
+  birth_date?: string | null
 } | null
 
 type Props = {
@@ -127,6 +130,9 @@ export default function ProfileClient({ userId, userEmail, member }: Props) {
   const subscriptionStatus = getSubscriptionStatus(member)
   const displayName = member?.full_name ?? member?.name ?? ''
 
+  // ── Avatar state ──
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(member?.avatar_url ?? null)
+
   // ── Edit profile state ──
   const [editingProfile, setEditingProfile] = useState(false)
   const [profileForm, setProfileForm] = useState({
@@ -137,6 +143,7 @@ export default function ProfileClient({ userId, userEmail, member }: Props) {
     goal_weight:    String(member?.goal_weight    ?? ''),
     initial_weight: String(member?.initial_weight ?? ''),
     activity:       guessActivityValue(member),
+    birth_date:     member?.birth_date ?? '',
   })
   const [profileSaving, setProfileSaving] = useState(false)
   const [profileError, setProfileError]   = useState('')
@@ -178,6 +185,7 @@ export default function ProfileClient({ userId, userEmail, member }: Props) {
       kbju_protein:   newKbju.protein,
       kbju_fat:       newKbju.fat,
       kbju_carbs:     newKbju.carbs,
+      birth_date:     profileForm.birth_date || null,
     }).eq('id', userId)
 
     setProfileSaving(false)
@@ -220,6 +228,17 @@ export default function ProfileClient({ userId, userEmail, member }: Props) {
 
   return (
     <div className="flex flex-col gap-4 pb-10">
+
+      {/* ── 0. АВАТАР ── */}
+      <Card>
+        <SectionLabel>Фото профиля</SectionLabel>
+        <AvatarUpload
+          userId={userId}
+          currentUrl={avatarUrl}
+          displayName={displayName || userEmail}
+          onUpdated={setAvatarUrl}
+        />
+      </Card>
 
       {/* ── 1. ДАННЫЕ УЧАСТНИЦЫ ── */}
       <Card>
@@ -324,6 +343,22 @@ export default function ProfileClient({ userId, userEmail, member }: Props) {
               </div>
             </div>
 
+            <div>
+              <p className="text-xs mb-1" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>Дата рождения</p>
+              <input
+                type="date"
+                value={profileForm.birth_date}
+                onChange={e => handleProfileChange('birth_date', e.target.value)}
+                className={inputClass}
+                style={inputStyle}
+                onFocus={e => (e.target.style.borderColor = 'var(--pur)')}
+                onBlur={e => (e.target.style.borderColor = 'var(--border)')}
+              />
+              <p className="text-[10px] mt-1" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
+                Необязательно — для поздравления в день рождения
+              </p>
+            </div>
+
             {profileError && (
               <p className="text-xs" style={{ color: '#E74C3C', fontFamily: 'var(--font-nunito)' }}>{profileError}</p>
             )}
@@ -364,6 +399,7 @@ export default function ProfileClient({ userId, userEmail, member }: Props) {
                 { label: 'Рост',           value: member?.height         ? `${member.height} см`          : '—' },
                 { label: 'Желаемый вес',   value: member?.goal_weight    ? `${member.goal_weight} кг`     : '—' },
                 { label: 'Начальный вес',  value: member?.initial_weight ? `${member.initial_weight} кг`  : '—' },
+                { label: 'Дата рождения',  value: member?.birth_date     ? new Date(member.birth_date + 'T00:00:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }) : '—' },
               ].map(({ label, value }) => (
                 <div
                   key={label}
@@ -581,7 +617,41 @@ export default function ProfileClient({ userId, userEmail, member }: Props) {
         )}
       </Card>
 
-      {/* ── 5. ВЫХОД ── */}
+      {/* ── 5. ДОКУМЕНТЫ ── */}
+      <Card>
+        <SectionLabel>Документы</SectionLabel>
+        <div className="flex flex-col gap-1">
+          {[
+            { href: '/legal/terms',      label: 'Пользовательское соглашение' },
+            { href: '/legal/privacy',    label: 'Политика конфиденциальности' },
+            { href: '/legal/disclaimer', label: 'Медицинский дисклеймер' },
+            { href: '/legal/rules',      label: 'Правила клуба' },
+            { href: '/legal/refund',     label: 'Политика возврата' },
+          ].map(({ href, label }) => (
+            <a
+              key={href}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between px-3 py-2.5 rounded-xl transition-all"
+              style={{
+                fontFamily: 'var(--font-nunito)',
+                fontSize: 13,
+                color: 'var(--text)',
+                background: 'var(--bg)',
+                textDecoration: 'none',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--pur-light)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg)')}
+            >
+              <span>{label}</span>
+              <span style={{ color: 'var(--muted)', fontSize: 12 }}>↗</span>
+            </a>
+          ))}
+        </div>
+      </Card>
+
+      {/* ── 6. ВЫХОД ── */}
       <button
         onClick={handleSignOut}
         className="w-full py-3.5 rounded-2xl text-sm font-semibold border transition-all"

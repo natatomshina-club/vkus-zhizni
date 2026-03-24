@@ -2,6 +2,8 @@
   "regions": ["fra1"],
   "crons": [
     { "path": "/api/cron/cleanup-media", "schedule": "0 3 * * *" },
-    { "path": "/api/cron/cleanup-posts", "schedule": "0 3 * * *" }
+    { "path": "/api/cron/cleanup-posts", "schedule": "0 3 * * *" },
+    { "path": "/api/birthdays/check", "schedule": "0 6 * * *" },
+    { "path": "/api/cron/subscription-reminders", "schedule": "0 7 * * *" }
   ]
 }

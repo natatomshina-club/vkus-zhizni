@@ -14,6 +14,9 @@ export interface MemberRow {
   blocked_at: string | null
   blocked_reason: string | null
   created_at: string
+  birth_date: string | null
+  admin_note: string | null
+  is_manual_subscription: boolean
 }
 
 export interface AdminStats {

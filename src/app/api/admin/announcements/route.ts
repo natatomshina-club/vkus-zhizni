@@ -52,6 +52,21 @@ export async function POST(req: Request) {
   return NextResponse.json({ announcement: data }, { status: 201 })
 }
 
+// DELETE — remove announcement by id (?id=...)
+export async function DELETE(req: Request) {
+  const { user, error, status } = await requireAdmin()
+  if (!user) return NextResponse.json({ error }, { status })
+
+  const { searchParams } = new URL(req.url)
+  const id = searchParams.get('id')
+  if (!id) return NextResponse.json({ error: 'id обязателен' }, { status: 400 })
+
+  const admin = createServiceClient()
+  const { error: delErr } = await admin.from('announcements').delete().eq('id', id)
+  if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 })
+  return NextResponse.json({ ok: true })
+}
+
 // PATCH — toggle is_active
 export async function PATCH(req: Request) {
   const { user, error, status } = await requireAdmin()
