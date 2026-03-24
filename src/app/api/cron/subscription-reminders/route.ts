@@ -69,11 +69,11 @@ export async function GET(req: Request) {
     const displayName = m.full_name ?? m.name ?? 'участница'
     const firstName = displayName.split(' ')[0]
     const endsDate = formatDateRu(m.subscription_ends_at!)
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://vkuszhizni.ru'
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://club.nata-tomshina.ru'
 
     // 1. Send email
     await resend.emails.send({
-      from: 'Наталья Томшина <hello@vkuszhizni.ru>',
+      from: 'Наталья Томшина <onboarding@resend.dev>',
       to: m.email,
       subject: `${firstName}, твой доступ в Клуб «Вкус Жизни» скоро заканчивается`,
       html: `

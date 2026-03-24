@@ -123,7 +123,7 @@ export async function POST(req: Request) {
   }
 
   // Generate magic link
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://vkuszhizni.ru'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://club.nata-tomshina.ru'
   const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
     type: 'magiclink',
     email,
