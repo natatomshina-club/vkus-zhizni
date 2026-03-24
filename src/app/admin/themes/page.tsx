@@ -367,7 +367,7 @@ export default function ThemesPage() {
                 <input
                   className={inputCls} style={inputSt}
                   value={form.title}
-                  onChange={e => setForm(p => ({ ...p, title: e.target.value, slug: slugify(e.target.value) }))}
+                  onChange={e => setForm(p => ({ ...p, title: e.target.value, slug: slugify(e.target.value) ?? '' }))}
                   placeholder="Новый год"
                 />
               </div>
