@@ -15,7 +15,7 @@ export async function GET(req: Request) {
   }
 
   const admin = createServiceClient()
-  const resend = new Resend(process.env.RESEND_API_KEY)
+  const resend = new Resend()
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)

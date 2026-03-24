@@ -142,7 +142,7 @@ export async function POST(req: Request) {
   const firstName = full_name.split(' ')[0]
 
   // Send invite email via Resend
-  const resend = new Resend(process.env.RESEND_API_KEY)
+  const resend = new Resend()
   const emailResult = await resend.emails.send({
     from: 'Наталья Томшина <hello@vkuszhizni.ru>',
     to: email,
