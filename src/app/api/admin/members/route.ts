@@ -145,7 +145,7 @@ export async function POST(req: Request) {
   // Send invite email via Resend SDK
   const resend = new Resend(process.env.RESEND_API_KEY)
   const { data: emailData, error: emailErr } = await resend.emails.send({
-    from: 'Наталья Томшина <hello@vkuszhizni.ru>',
+    from: 'Наталья Томшина <onboarding@resend.dev>',
     to: email,
     subject: 'Наталья Томшина приглашает тебя в Клуб «Вкус Жизни»',
     html: `
