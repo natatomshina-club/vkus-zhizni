@@ -78,25 +78,19 @@ export async function GET(req: Request) {
     const { data: channelData } = await admin
       .from('channel_channels')
       .select('id')
-      .eq('slug', 'general')
+      .eq('slug', 'boltalka')
       .maybeSingle()
 
-    if (channelData) {
-      // Find admin user for channel post
-      const { data: adminMemberForChannel } = await admin
-        .from('members')
-        .select('id')
-        .eq('role', 'admin')
-        .limit(1)
-        .maybeSingle()
+    console.log('[birthdays] boltalka channel:', channelData?.id ?? 'NOT FOUND')
 
-      if (adminMemberForChannel) {
-        await admin.from('channel_posts').insert({
-          channel_id: channelData.id,
-          author_id: adminMemberForChannel.id,
-          text: channelPost,
-        })
-      }
+    if (channelData && adminMember) {
+      const { error: postErr } = await admin.from('channel_posts').insert({
+        channel_id: channelData.id,
+        author_id: adminMember.id,
+        text: channelPost,
+      })
+      if (postErr) console.error('[birthdays] channel_posts insert error:', postErr)
+      else console.log('[birthdays] channel post created for', member.email)
     }
 
     // Record that we greeted this member this year
