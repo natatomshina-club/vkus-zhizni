@@ -64,33 +64,26 @@ export async function GET(req: Request) {
       .limit(1)
       .maybeSingle()
 
-    if (adminMember) {
-      await admin.from('private_messages').insert({
-        sender_id: adminMember.id,
-        receiver_id: member.id,
-        text: message,
-      })
-    }
+    await admin.from('private_messages').insert({
+      member_id: member.id,
+      text: message,
+      from_admin: true,
+      is_read: false,
+    })
 
     // Post to channel
     const channelPost = `🎂 Сегодня День Рождения у нашей участницы — ${displayName}!\n\nПоздравим её вместе! Желаем здоровья, красоты и достижения всех целей! 💜🌸`
 
-    const { data: channelData } = await admin
-      .from('channel_channels')
-      .select('id')
-      .eq('slug', 'boltalka')
-      .maybeSingle()
-
-    console.log('[birthdays] boltalka channel:', channelData?.id ?? 'NOT FOUND')
-
-    if (channelData && adminMember) {
+    if (adminMember) {
       const { error: postErr } = await admin.from('channel_posts').insert({
-        channel_id: channelData.id,
-        author_id: adminMember.id,
+        channel: 'boltalka',
+        member_id: adminMember.id,
         text: channelPost,
       })
       if (postErr) console.error('[birthdays] channel_posts insert error:', postErr)
       else console.log('[birthdays] channel post created for', member.email)
+    } else {
+      console.error('[birthdays] no admin member found, skipping channel post')
     }
 
     // Record that we greeted this member this year
