@@ -9,7 +9,22 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(npx vercel:*)"
+      "Bash(npx vercel:*)",
+      "Bash(for f:*)",
+      "Bash(do)",
+      "Bash(sed -i '' 's|https://club.nata-tomshina.ru/join|https://nata-tomshina.ru/club|g' \"$f\")",
+      "Bash(echo \"Fixed: $f\")",
+      "Bash(done)",
+      "Bash(ls -la /Users/macbook/Desktop/vkus-zhizni/src/app/\\\\\\(club\\\\\\)/admin/)",
+      "Bash(ls -la \"/Users/macbook/Desktop/vkus-zhizni/src/app/\\(club\\)/admin/\")",
+      "Bash(cat:*)",
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "Bash(cat \"/Users/macbook/Desktop/vkus-zhizni/src/app/\\(club\\)/admin/members/page.tsx\")",
+      "Bash(find /Users/macbook/Desktop/vkus-zhizni/src -type d -name *page* -o -type d -name *result* -o -type d -name *case*)",
+      "Bash(npm install:*)",
+      "Bash(/Users/macbook/Desktop/vkus-zhizni/.env.local:*)",
+      "Bash(ls /Users/macbook/Desktop/vkus-zhizni/src/app/\\\\\\(club\\\\\\)/admin/members/)",
+      "Bash(npm cache:*)"
     ]
   }
 }

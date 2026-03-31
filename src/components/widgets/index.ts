@@ -1,0 +1,5 @@
+export { default as IRTestWidget } from './IRTestWidget'
+export { default as WhyTestWidget } from './WhyTestWidget'
+export { default as ThyroidTestWidget } from './ThyroidTestWidget'
+export { default as EatingTestWidget } from './EatingTestWidget'
+export { default as CalcWidget } from './CalcWidget'

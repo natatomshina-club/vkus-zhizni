@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Клуб «Вкус Жизни» — похудеть без голода и подсчёта калорий</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&family=Nunito:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --green: #4CAF78;
+  --green-light: #E8F5EE;
+  --green-dark: #2E7D50;
+  --purple: #3D2B8A;
+  --purple-light: #EDE8FF;
+  --purple-mid: #7C5CFC;
+  --cream: #FAF8FF;
+  --border: #EDE8FF;
+  --text: #1A1230;
+  --muted: #6B5E8E;
+  --white: #FFFFFF;
+  --coral: #E8845A;
+  --gold: #F5A623;
+  --radius: 20px;
+  --shadow: 0 8px 40px rgba(61,43,138,0.10);
+}
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Nunito', sans-serif;
+  background: var(--cream);
+  color: var(--text);
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* ── NAV ── */
+.top-nav {
+  background: rgba(250,248,255,0.94);
+  backdrop-filter: blur(16px);
+  border-bottom: 1.5px solid var(--border);
+  padding: 14px 5%;
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.nav-logo { font-family:'Unbounded',sans-serif; font-size:15px; font-weight:700; color:var(--purple); text-decoration:none; display:flex; align-items:center; gap:8px; }
+.nav-logo-dot { width:28px; height:28px; border-radius:50%; background:var(--green); display:flex; align-items:center; justify-content:center; font-size:14px; }
+.nav-links { display:flex; align-items:center; gap:6px; }
+.nav-link { font-size:13px; font-weight:600; color:var(--muted); text-decoration:none; padding:6px 14px; border-radius:20px; transition:.2s; }
+.nav-link:hover { background:var(--purple-light); color:var(--purple); }
+.nav-cta { background:var(--green); color:#fff; padding:10px 22px; border-radius:24px; font-size:13px; font-weight:700; text-decoration:none; transition:.2s; box-shadow:0 4px 14px rgba(76,175,120,.3); }
+.nav-cta:hover { background:var(--green-dark); transform:translateY(-1px); }
+
+/* ── HERO ── */
+.hero {
+  min-height: 100vh;
+  background: var(--cream);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 0;
+  position: relative;
+  overflow: hidden;
+}
+.hero-blob {
+  position: absolute; border-radius: 50%;
+  filter: blur(80px); opacity: .35; pointer-events: none;
+}
+.blob1 { width:600px; height:600px; background:var(--purple-light); top:-200px; right:-100px; }
+.blob2 { width:400px; height:400px; background:var(--green-light); bottom:-100px; left:5%; }
+
+.hero-left { padding: 80px 5% 80px 7%; position: relative; z-index: 2; }
+
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--purple-light); color: var(--purple);
+  padding: 8px 18px; border-radius: 20px;
+  font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  margin-bottom: 24px;
+}
+.hero-badge-dot { width:8px; height:8px; border-radius:50%; background:var(--green); }
+
+h1 {
+  font-family: 'Unbounded', sans-serif;
+  font-size: clamp(26px, 3.2vw, 46px);
+  font-weight: 700; line-height: 1.15;
+  color: var(--purple); margin-bottom: 8px;
+}
+.h1-accent {
+  display: inline-block;
+  background: var(--green); color: #fff;
+  padding: 2px 16px; border-radius: 12px;
+  margin: 3px 0;
+}
+.hero-sub { font-size:17px; color:var(--muted); line-height:1.7; margin:20px 0 36px; max-width:460px; }
+
+.hero-actions { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:36px; }
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--green); color: #fff;
+  font-family: 'Unbounded', sans-serif; font-size:14px; font-weight:700;
+  padding: 15px 30px; border-radius: 28px; text-decoration: none;
+  transition: .2s; box-shadow: 0 6px 24px rgba(76,175,120,.35);
+}
+.btn-primary:hover { background:var(--green-dark); transform:translateY(-2px); box-shadow:0 10px 28px rgba(76,175,120,.45); }
+.btn-secondary {
+  display:inline-flex; align-items:center; gap:8px;
+  background:var(--white); color:var(--purple);
+  font-size:14px; font-weight:600;
+  padding:15px 28px; border-radius:28px; text-decoration:none;
+  border: 1.5px solid var(--border); transition:.2s;
+}
+.btn-secondary:hover { border-color:var(--purple-mid); background:var(--purple-light); transform:translateY(-2px); }
+
+.hero-social-proof {
+  display: inline-flex; gap:24px; flex-wrap:wrap;
+  padding: 18px 24px; background: var(--white);
+  border-radius: 20px; border:1.5px solid var(--border);
+}
+.sp-stat strong {
+  display:block;
+  font-family:'Unbounded',sans-serif; font-size:22px; font-weight:700; color:var(--purple);
+}
+.sp-stat span { font-size:11px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
+
+/* Hero right */
+.hero-right {
+  position: relative; z-index: 2;
+  display: flex; align-items: flex-end; justify-content: center;
+  padding: 40px 5% 0 0; height: 100%;
+}
+.hero-photo-wrap { position: relative; width: 420px; max-width: 100%; }
+.hero-photo {
+  width: 100%; border-radius: 32px 32px 0 0;
+  object-fit: cover; object-position: top center;
+  display: block; max-height: 600px;
+  background: linear-gradient(160deg, var(--purple-light) 0%, #D4C8FF 100%);
+}
+.hero-photo-placeholder {
+  width:100%; aspect-ratio: 3/4; min-height: 480px;
+  background: linear-gradient(160deg, var(--purple-light) 0%, #D4C8FF 100%);
+  border-radius: 32px 32px 0 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family:'Unbounded',sans-serif; font-size:64px; font-weight:700;
+  color: rgba(61,43,138,0.15);
+}
+
+.float-card {
+  position: absolute;
+  background: var(--white); border:1.5px solid var(--border);
+  border-radius: 16px; padding: 11px 16px;
+  box-shadow: 0 8px 32px rgba(61,43,138,.12);
+  font-size:13px; font-weight:600; color:var(--text);
+  display:flex; align-items:center; gap:10px;
+  animation: floatY 3s ease-in-out infinite;
+}
+.float-card:nth-child(2) { animation-delay: .8s; }
+.float-card:nth-child(3) { animation-delay: 1.6s; }
+.fc-emoji { font-size: 22px; }
+.fc-small { display:block; font-size:11px; color:var(--muted); font-weight:500; margin-top:1px; }
+.fc-1 { top:60px; left:-28px; }
+.fc-2 { top:200px; right:-24px; }
+.fc-3 { bottom:120px; left:-24px; }
+
+@keyframes floatY { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+@keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+.hero-left > * { animation: fadeUp .5s ease both; }
+.hero-left > *:nth-child(1){animation-delay:.1s}
+.hero-left > *:nth-child(2){animation-delay:.2s}
+.hero-left > *:nth-child(3){animation-delay:.3s}
+.hero-left > *:nth-child(4){animation-delay:.4s}
+.hero-left > *:nth-child(5){animation-delay:.5s}
+
+/* ── SECTIONS BASE ── */
+section { padding: 80px 6%; }
+.container { max-width: 1000px; margin: 0 auto; }
+
+.s-tag {
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--green-dark); margin-bottom:14px;
+}
+.s-tag::before { content:''; display:block; width:20px; height:2px; background:var(--green); border-radius:2px; }
+
+h2 {
+  font-family:'Unbounded',sans-serif;
+  font-size: clamp(22px, 3vw, 36px);
+  font-weight:700; line-height:1.2;
+  color:var(--purple); margin-bottom:10px;
+}
+h2 em { font-style:normal; color:var(--green); }
+h2 .c { color:var(--coral); font-style:normal; }
+.s-sub { font-size:16px; color:var(--muted); line-height:1.7; max-width:580px; margin-bottom:48px; }
+
+/* ── PAIN / RECOGNITION ── */
+.pain-section {
+  background: linear-gradient(135deg, #1A0E4E 0%, var(--purple) 60%, #5B3FA8 100%);
+  position: relative; overflow: hidden;
+}
+.pain-section::before {
+  content:''; position:absolute;
+  width:500px; height:500px; border-radius:50%;
+  background: radial-gradient(circle, rgba(76,175,120,.12) 0%, transparent 70%);
+  top:-150px; right:-100px;
+}
+.pain-section .s-tag { color:#7BDFAA; }
+.pain-section .s-tag::before { background:#7BDFAA; }
+.pain-section h2 { color:#fff; }
+.pain-section h2 em { color:rgba(255,255,255,0.5); }
+.pain-section .s-sub { color:rgba(255,255,255,.6); }
+
+.pain-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px; position:relative; z-index:1;
+}
+.pain-card {
+  background: rgba(255,255,255,.07);
+  border: 1.5px solid rgba(255,255,255,.1);
+  border-radius: 20px; padding: 26px 22px;
+  transition: .2s;
+}
+.pain-card:hover { background:rgba(255,255,255,.12); transform:translateY(-3px); }
+.pain-emoji { font-size:32px; margin-bottom:14px; display:block; }
+.pain-title { font-family:'Unbounded',sans-serif; font-size:15px; font-weight:600; color:#fff; margin-bottom:8px; line-height:1.3; }
+.pain-desc { font-size:13px; color:rgba(255,255,255,.55); line-height:1.65; }
+
+.pain-bottom {
+  margin-top: 40px; padding-top: 32px;
+  border-top: 1px solid rgba(255,255,255,.1);
+  text-align: center; position:relative; z-index:1;
+}
+.pain-bottom-text {
+  font-family:'Unbounded',sans-serif; font-size:18px; font-weight:600;
+  color:#fff; margin-bottom:20px;
+}
+.pain-bottom-text span { color:#7BDFAA; }
+
+/* ── METHOD ── */
+.method-section { background: var(--white); }
+.method-grid { display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:center; }
+.method-text {}
+.method-steps { display:flex; flex-direction:column; gap:20px; }
+.method-step {
+  display:flex; gap:18px; align-items:flex-start;
+  padding: 22px; background:var(--cream);
+  border: 1.5px solid var(--border); border-radius:16px;
+  transition:.2s;
+}
+.method-step:hover { border-color:var(--purple-mid); transform:translateX(4px); }
+.method-step-num {
+  width:44px; height:44px; border-radius:14px;
+  background: var(--purple); color:#fff;
+  font-family:'Unbounded',sans-serif; font-size:16px; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+}
+.method-step-title { font-weight:700; font-size:15px; color:var(--purple); margin-bottom:5px; }
+.method-step-desc { font-size:14px; color:var(--muted); line-height:1.6; }
+
+.method-visual {
+  background: linear-gradient(160deg, var(--purple) 0%, #5B3FA8 100%);
+  border-radius: 28px; padding: 36px 32px;
+  position:sticky; top:90px;
+}
+.method-visual-title {
+  font-family:'Unbounded',sans-serif; font-size:16px; font-weight:700;
+  color:#fff; margin-bottom:24px; text-align:center;
+}
+.method-vs { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.method-vs-col { background:rgba(255,255,255,.08); border-radius:16px; padding:20px; }
+.method-vs-label {
+  font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  margin-bottom:14px;
+}
+.method-vs-col:first-child .method-vs-label { color:rgba(255,255,255,.35); }
+.method-vs-col:last-child .method-vs-label { color:#7BDFAA; }
+.method-vs-col:last-child { background:rgba(76,175,120,.15); border:1px solid rgba(76,175,120,.3); }
+.method-vs-item {
+  font-size:13px; color:rgba(255,255,255,.65);
+  padding:7px 0; border-bottom:1px solid rgba(255,255,255,.07);
+  display:flex; gap:8px; align-items:flex-start;
+}
+.method-vs-item:last-child { border-bottom:none; }
+.method-vs-item .i { flex-shrink:0; font-size:13px; }
+.method-vs-col:last-child .method-vs-item { color:rgba(255,255,255,.85); }
+
+/* ── FOR WHOM ── */
+.forwho-section {}
+.diagn-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.diagn-card {
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: 16px; padding: 18px 16px;
+  display:flex; flex-direction:column; align-items:flex-start; gap:10px;
+  transition:.2s;
+}
+.diagn-card:hover { border-color:var(--purple-mid); transform:translateY(-3px); box-shadow:var(--shadow); }
+.diagn-icon {
+  width:40px; height:40px; border-radius:12px;
+  background:var(--purple-light);
+  display:flex; align-items:center; justify-content:center; font-size:18px;
+}
+.diagn-title { font-weight:700; font-size:14px; color:var(--purple); line-height:1.3; }
+.diagn-desc { font-size:12px; color:var(--muted); line-height:1.5; }
+
+/* ── WHAT'S INSIDE ── */
+.inside-section { background:var(--white); }
+.inside-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+.inside-card {
+  border-radius:24px; padding:28px 24px;
+  border: 1.5px solid var(--border);
+  transition:.2s; position:relative; overflow:hidden;
+}
+.inside-card::before {
+  content:''; position:absolute;
+  top:0; left:0; right:0; height:3px; border-radius:3px 3px 0 0;
+}
+.inside-card:nth-child(1)::before { background:var(--green); }
+.inside-card:nth-child(2)::before { background:var(--purple-mid); }
+.inside-card:nth-child(3)::before { background:var(--coral); }
+.inside-card:nth-child(4)::before { background:var(--gold); }
+.inside-card:nth-child(5)::before { background:var(--green); }
+.inside-card:nth-child(6)::before { background:var(--purple-mid); }
+.inside-card:hover { transform:translateY(-4px); box-shadow:var(--shadow); }
+.inside-emoji { font-size:36px; margin-bottom:14px; display:block; }
+.inside-title { font-family:'Unbounded',sans-serif; font-size:15px; font-weight:700; color:var(--purple); margin-bottom:10px; line-height:1.3; }
+.inside-desc { font-size:14px; color:var(--muted); line-height:1.65; }
+.inside-tag {
+  display:inline-block; margin-top:14px;
+  background:var(--purple-light); color:var(--purple);
+  padding:4px 12px; border-radius:10px;
+  font-size:11px; font-weight:700; letter-spacing:.05em;
+}
+
+/* ── RESULTS ── */
+.results-section {
+  background: linear-gradient(135deg, #1A0E4E 0%, #2E1A6E 100%);
+  position:relative; overflow:hidden;
+}
+.results-section::before {
+  content:''; position:absolute; inset:0;
+  background: radial-gradient(ellipse at 20% 50%, rgba(76,175,120,.1) 0%, transparent 50%),
+              radial-gradient(ellipse at 80% 50%, rgba(124,92,252,.12) 0%, transparent 50%);
+}
+.results-section .s-tag { color:#7BDFAA; }
+.results-section .s-tag::before { background:#7BDFAA; }
+.results-section h2 { color:#fff; }
+.results-section .s-sub { color:rgba(255,255,255,.6); }
+
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px; position:relative; z-index:1;
+}
+.result-card {
+  background: rgba(255,255,255,.07);
+  border: 1.5px solid rgba(255,255,255,.1);
+  border-radius: 22px; padding: 26px;
+  transition:.2s; position:relative; overflow:hidden;
+}
+.result-card:hover { background:rgba(255,255,255,.11); transform:translateY(-3px); }
+.result-kg {
+  font-family:'Unbounded',sans-serif; font-size:42px; font-weight:700;
+  color:#7BDFAA; line-height:1; margin-bottom:4px;
+}
+.result-name { font-size:12px; font-weight:700; color:rgba(255,255,255,.9); margin-bottom:12px; text-transform:uppercase; letter-spacing:.05em; }
+.result-quote { font-size:13px; color:rgba(255,255,255,.6); line-height:1.65; font-style:italic; margin-bottom:14px; }
+.result-extra {
+  font-size:12px; font-weight:600; color:#7BDFAA;
+  background:rgba(76,175,120,.15); padding:5px 12px; border-radius:10px;
+  display:inline-block;
+}
+
+/* ── OBJECTIONS / FAQ ── */
+.faq-section {}
+.faq-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.faq-item {
+  background:var(--white); border:1.5px solid var(--border);
+  border-radius:20px; padding:24px 26px; transition:.2s;
+  cursor:pointer;
+}
+.faq-item:hover { border-color:var(--purple-mid); box-shadow:0 6px 20px rgba(61,43,138,.08); }
+.faq-q {
+  font-size:15px; font-weight:700; color:var(--purple);
+  margin-bottom:0; line-height:1.4;
+  display:flex; justify-content:space-between; align-items:flex-start; gap:12px;
+}
+.faq-q-toggle {
+  width:28px; height:28px; border-radius:50%;
+  background:var(--purple-light); flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:16px; transition:.3s; color:var(--purple); font-weight:400;
+  margin-top:1px;
+}
+.faq-a {
+  font-size:14px; color:var(--muted); line-height:1.7;
+  display:none; padding-top:14px; border-top:1.5px solid var(--border); margin-top:14px;
+}
+.faq-item.open .faq-a { display:block; }
+.faq-item.open .faq-q-toggle { background:var(--purple); color:#fff; transform:rotate(45deg); }
+
+/* ── PRICING ── */
+.pricing-section {
+  background: linear-gradient(135deg, #1A0E4E 0%, var(--purple) 60%, #5B3FA8 100%);
+  position:relative; overflow:hidden;
+}
+.pricing-section::before {
+  content:''; position:absolute; inset:0;
+  background: radial-gradient(ellipse at 30% 60%, rgba(76,175,120,.13) 0%, transparent 55%),
+              radial-gradient(ellipse at 70% 40%, rgba(232,132,90,.08) 0%, transparent 55%);
+}
+.pricing-section .s-tag { color:#7BDFAA; }
+.pricing-section .s-tag::before { background:#7BDFAA; }
+.pricing-section h2 { color:#fff; text-align:center; }
+.pricing-section .s-sub { color:rgba(255,255,255,.6); margin:0 auto 48px; }
+
+.pricing-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px; max-width: 860px; margin: 0 auto;
+  position: relative; z-index: 1;
+}
+.pricing-card {
+  background: rgba(255,255,255,.08);
+  border: 1.5px solid rgba(255,255,255,.12);
+  border-radius: 28px; padding: 32px 28px;
+  position: relative; transition:.2s;
+  text-align: center;
+}
+.pricing-card:hover { background:rgba(255,255,255,.12); transform:translateY(-4px); }
+.pricing-card.featured {
+  background: var(--white); border-color:var(--white);
+  transform: scale(1.04);
+}
+.pricing-card.featured:hover { transform:scale(1.04) translateY(-4px); }
+.featured-badge {
+  position:absolute; top:-12px; left:50%; transform:translateX(-50%);
+  background:var(--green); color:#fff;
+  padding:5px 18px; border-radius:16px;
+  font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  white-space:nowrap;
+}
+.pc-name { font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:rgba(255,255,255,.4); margin-bottom:14px; }
+.pricing-card.featured .pc-name { color:var(--muted); }
+.pc-price {
+  font-family:'Unbounded',sans-serif; font-size:44px; font-weight:700;
+  color:#fff; line-height:1; margin-bottom:4px;
+}
+.pricing-card.featured .pc-price { color:var(--purple); }
+.pc-period { font-size:13px; color:rgba(255,255,255,.5); margin-bottom:6px; }
+.pricing-card.featured .pc-period { color:var(--muted); }
+.pc-save { font-size:13px; font-weight:600; color:#7BDFAA; margin-bottom:24px; min-height:20px; }
+.pricing-card.featured .pc-save { color:var(--green-dark); }
+.pc-list { list-style:none; margin-bottom:28px; text-align:left; }
+.pc-list li {
+  font-size:13px; color:rgba(255,255,255,.7);
+  padding:8px 0; border-bottom:1px solid rgba(255,255,255,.07);
+  display:flex; align-items:center; gap:10px;
+}
+.pricing-card.featured .pc-list li { color:var(--text); border-bottom-color:var(--border); }
+.pc-list li::before { content:'✓'; color:var(--green); font-weight:700; flex-shrink:0; }
+.pc-btn {
+  display:block; width:100%;
+  padding:15px; border-radius:20px;
+  font-size:14px; font-weight:700;
+  text-decoration:none; text-align:center; transition:.2s;
+  background:rgba(255,255,255,.12); color:#fff;
+  border:1.5px solid rgba(255,255,255,.2);
+}
+.pc-btn:hover { background:rgba(255,255,255,.2); transform:translateY(-1px); }
+.pricing-card.featured .pc-btn {
+  background:var(--green); color:#fff; border-color:var(--green);
+  box-shadow:0 6px 20px rgba(76,175,120,.35);
+}
+.pricing-card.featured .pc-btn:hover { background:var(--green-dark); box-shadow:0 8px 24px rgba(76,175,120,.45); }
+.pricing-note { text-align:center; margin-top:28px; font-size:13px; color:rgba(255,255,255,.35); position:relative; z-index:1; }
+
+/* ── FINAL CTA ── */
+.final-cta-section { background:var(--cream); padding:80px 6%; }
+.final-cta-box {
+  background: linear-gradient(135deg, var(--purple) 0%, #5B3FA8 100%);
+  border-radius:32px; padding:64px 48px; text-align:center;
+  position:relative; overflow:hidden; max-width:860px; margin:0 auto;
+}
+.final-cta-box::before {
+  content:''; position:absolute; width:400px; height:400px; border-radius:50%;
+  background:rgba(76,175,120,.13); top:-160px; right:-100px;
+}
+.final-cta-box::after {
+  content:''; position:absolute; width:250px; height:250px; border-radius:50%;
+  background:rgba(255,255,255,.05); bottom:-80px; left:-40px;
+}
+.final-cta-box h2 { color:#fff; font-size:clamp(24px,3.5vw,36px); margin-bottom:12px; position:relative; }
+.final-cta-box p { color:rgba(255,255,255,.7); font-size:17px; max-width:500px; margin:0 auto 36px; position:relative; }
+.final-cta-box .btn-primary { position:relative; font-size:15px; padding:17px 36px; }
+.cta-fine { display:block; font-size:13px; color:rgba(255,255,255,.35); margin-top:14px; position:relative; }
+
+/* ── FOOTER ── */
+footer {
+  background: #1A0E4E; padding:32px 6%;
+  display:flex; align-items:center; justify-content:space-between;
+}
+footer p { font-size:12px; color:rgba(255,255,255,.3); }
+footer a { color:rgba(255,255,255,.5); text-decoration:none; font-size:12px; font-weight:600; }
+footer a:hover { color:#7BDFAA; }
+
+/* ── RESPONSIVE ── */
+@media(max-width:1000px) {
+  .pain-grid { grid-template-columns:repeat(2,1fr); }
+  .diagn-grid { grid-template-columns:repeat(2,1fr); }
+  .inside-grid { grid-template-columns:repeat(2,1fr); }
+  .results-grid { grid-template-columns:repeat(2,1fr); }
+  .pricing-cards { grid-template-columns:1fr; max-width:400px; }
+  .pricing-card.featured { transform:none; }
+  .pricing-card.featured:hover { transform:translateY(-4px); }
+}
+@media(max-width:840px) {
+  .hero { grid-template-columns:1fr; }
+  .hero-right { display:none; }
+  .method-grid { grid-template-columns:1fr; }
+  .method-visual { position:static; }
+  .faq-grid { grid-template-columns:1fr; }
+  section { padding:56px 5%; }
+  .nav-links .nav-link { display:none; }
+  .final-cta-box { padding:48px 28px; }
+}
+@media(max-width:600px) {
+  .pain-grid,.diagn-grid,.inside-grid,.results-grid { grid-template-columns:1fr; }
+  footer { flex-direction:column; gap:12px; text-align:center; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="top-nav">
+  <a href="/" class="nav-logo">
+    <div class="nav-logo-dot">🌿</div>
+    Вкус Жизни
+  </a>
+  <div class="nav-links">
+    <a href="/about" class="nav-link">О Наташе</a>
+    <a href="#results" class="nav-link">Результаты</a>
+    <a href="#faq" class="nav-link">Вопросы</a>
+    <a href="#pricing" class="nav-cta">Попробовать за 49 ₽</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-left">
+    <div class="hero-badge"><span class="hero-badge-dot"></span> Клуб стройных и здоровых</div>
+    <h1>
+      Ты ешь правильно.<br>
+      Но вес<br>
+      <span class="h1-accent">не уходит.</span>
+    </h1>
+    <p class="hero-sub">Наташа знает почему — и объяснит тебе это простым языком. Не очередная диета. Понимание того, как работают гормоны твоего тела.</p>
+    <div class="hero-actions">
+      <a href="#pricing" class="btn-primary">
+        Попробовать 7 дней за 49 ₽
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      <a href="#inside" class="btn-secondary">Что внутри клуба →</a>
+    </div>
+    <div class="hero-social-proof">
+      <div class="sp-stat"><strong>4 000+</strong><span>участниц</span></div>
+      <div class="sp-stat"><strong>с 2017</strong><span>года</span></div>
+      <div class="sp-stat"><strong>до −83 кг</strong><span>рекорд</span></div>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <div class="hero-photo-wrap">
+      <img class="hero-photo" src="/images/natalia.jpg" alt="Наталья Томшина"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="hero-photo-placeholder" style="display:none">НТ</div>
+
+      <div class="float-card fc-1">
+        <span class="fc-emoji">⚡</span>
+        <div>Энергия вернулась<span class="fc-small">уже за 1 неделю</span></div>
+      </div>
+      <div class="float-card fc-2">
+        <span class="fc-emoji">👖</span>
+        <div>Джинсы застегнулись!<span class="fc-small">Лада · −36 кг</span></div>
+      </div>
+      <div class="float-card fc-3">
+        <span class="fc-emoji">💊</span>
+        <div>Отменила 13 таблеток<span class="fc-small">Ирина · 14 диагнозов</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-blob blob1"></div>
+  <div class="hero-blob blob2"></div>
+</div>
+
+<!-- PAIN / RECOGNITION -->
+<section class="pain-section">
+  <div class="container">
+    <div class="s-tag">Узнай себя</div>
+    <h2>Хотя бы один пункт — <em>это про тебя?</em></h2>
+    <p class="s-sub">Если да — значит дело не в силе воли. Дело в том, что никто не объяснил тебе как работают гормоны.</p>
+
+    <div class="pain-grid">
+      <div class="pain-card">
+        <span class="pain-emoji">🤷‍♀️</span>
+        <p class="pain-title">Ешь мало — а вес стоит</p>
+        <p class="pain-desc">Делаешь всё «правильно» по всем советам. Но весы уже месяцами показывают одно и то же.</p>
+      </div>
+      <div class="pain-card">
+        <span class="pain-emoji">🍫</span>
+        <p class="pain-title">Постоянно хочется сладкого</p>
+        <p class="pain-desc">Думаешь — нет силы воли. На самом деле это биохимия: инсулин и грелин командуют мозгом.</p>
+      </div>
+      <div class="pain-card">
+        <span class="pain-emoji">😔</span>
+        <p class="pain-title">Срывалась уже столько раз</p>
+        <p class="pain-desc">Каждый раз начинаешь с понедельника. Держишься две недели. Срыв — и всё сначала.</p>
+      </div>
+      <div class="pain-card">
+        <span class="pain-emoji">😴</span>
+        <p class="pain-title">Вечная усталость — нет сил</p>
+        <p class="pain-desc">Кофе уже не помогает. После обеда хочется лечь. Ты забыла каково это — чувствовать себя бодрой.</p>
+      </div>
+      <div class="pain-card">
+        <span class="pain-emoji">🏥</span>
+        <p class="pain-title">Есть диагнозы — врачи говорят «норма»</p>
+        <p class="pain-desc">Гипотиреоз, инсулинорезистентность, СПКЯ — и ощущение что тело живёт своей жизнью.</p>
+      </div>
+      <div class="pain-card">
+        <span class="pain-emoji">📅</span>
+        <p class="pain-title">После 40 — всё пошло не так</p>
+        <p class="pain-desc">Делаешь то же что всегда — но результата нет. Никто не объяснял почему после 40 это не работает.</p>
+      </div>
+    </div>
+
+    <div class="pain-bottom">
+      <p class="pain-bottom-text">Это не слабость характера. <span>Это гормоны.</span></p>
+      <a href="#method" class="btn-primary">Узнать в чём причина →</a>
+    </div>
+  </div>
+</section>
+
+<!-- METHOD -->
+<section class="method-section" id="method">
+  <div class="container">
+    <div class="s-tag">Метод</div>
+    <h2>Почему обычные диеты <em>не работают</em></h2>
+    <p class="s-sub">И почему система метаболического питания даёт результат там, где всё остальное провалилось.</p>
+
+    <div class="method-grid">
+      <div class="method-steps">
+        <div class="method-step">
+          <div class="method-step-num">01</div>
+          <div>
+            <div class="method-step-title">Управляем инсулином, а не калориями</div>
+            <div class="method-step-desc">Когда инсулин постоянно высок — тело накапливает жир, что бы ты ни ела. Сокращаем приёмы пищи до 2–3 в день без перекусов — инсулин снижается и организм переключается в режим жиросжигания.</div>
+          </div>
+        </div>
+        <div class="method-step">
+          <div class="method-step-num">02</div>
+          <div>
+            <div class="method-step-title">Убираем голод через физиологию</div>
+            <div class="method-step-desc">Едим нутритивно плотную еду — белки и правильные жиры до настоящей сытости. Гормон голода грелин выключается сам, не через силу воли. Через 2–3 недели ты перестаёшь думать о еде.</div>
+          </div>
+        </div>
+        <div class="method-step">
+          <div class="method-step-num">03</div>
+          <div>
+            <div class="method-step-title">Восстанавливаем гормоны</div>
+            <div class="method-step-desc">Белок, железо, цинк, селен, йод — строительный материал для щитовидной железы и половых гормонов. Тело начинает работать правильно, а вес уходит как побочный эффект здоровья.</div>
+          </div>
+        </div>
+        <div class="method-step">
+          <div class="method-step-num">04</div>
+          <div>
+            <div class="method-step-title">Это образ жизни, а не временная диета</div>
+            <div class="method-step-desc">Участницы клуба держат результат 3–4 года — потому что не «сидят на диете», а живут в системе, которая им комфортна. Алёна похудела на 43 кг — и держит вес уже четвёртый год.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="method-visual">
+        <div class="method-visual-title">Обычная диета vs. Метод Натальи</div>
+        <div class="method-vs">
+          <div class="method-vs-col">
+            <div class="method-vs-label">Обычно</div>
+            <div class="method-vs-item"><span class="i">✗</span> Считать калории</div>
+            <div class="method-vs-item"><span class="i">✗</span> Есть каждые 2 часа</div>
+            <div class="method-vs-item"><span class="i">✗</span> Обезжиренные продукты</div>
+            <div class="method-vs-item"><span class="i">✗</span> Терпеть голод</div>
+            <div class="method-vs-item"><span class="i">✗</span> Результат на 2 мес.</div>
+            <div class="method-vs-item"><span class="i">✗</span> Вес возвращается</div>
+          </div>
+          <div class="method-vs-col">
+            <div class="method-vs-label">Метод Натальи</div>
+            <div class="method-vs-item"><span class="i">✓</span> Есть до сытости</div>
+            <div class="method-vs-item"><span class="i">✓</span> 2–3 раза в день</div>
+            <div class="method-vs-item"><span class="i">✓</span> Жирное — полезно</div>
+            <div class="method-vs-item"><span class="i">✓</span> Голода нет</div>
+            <div class="method-vs-item"><span class="i">✓</span> Результат годами</div>
+            <div class="method-vs-item"><span class="i">✓</span> Вес держится</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOR WHOM -->
+<section class="forwho-section">
+  <div class="container">
+    <div class="s-tag">Для кого</div>
+    <h2>Работает, даже если у тебя...</h2>
+    <p class="s-sub">Большинство участниц приходят с одним или несколькими из этих состояний — и уходят с результатом.</p>
+
+    <div class="diagn-grid">
+      <div class="diagn-card">
+        <div class="diagn-icon">🦋</div>
+        <div class="diagn-title">Гипотиреоз / АИТ</div>
+        <div class="diagn-desc">Питание даёт щитовидке нужные нутриенты вместо того, чтобы её «выключать» диетой</div>
+      </div>
+      <div class="diagn-card">
+        <div class="diagn-icon">📈</div>
+        <div class="diagn-title">Инсулинорезистентность</div>
+        <div class="diagn-desc">Снижение инсулина — и есть лечение корня проблемы, а не симптомов</div>
+      </div>
+      <div class="diagn-card">
+        <div class="diagn-icon">💉</div>
+        <div class="diagn-title">Диабет 2 типа / преддиабет</div>
+        <div class="diagn-desc">Участницы снижают сахар, врачи сами отменяют таблетки</div>
+      </div>
+      <div class="diagn-card">
+        <div class="diagn-icon">🌸</div>
+        <div class="diagn-title">СПКЯ и проблемы с циклом</div>
+        <div class="diagn-desc">Снижение инсулина восстанавливает гормональный цикл</div>
+      </div>
+      <div class="diagn-card">
+        <div class="diagn-icon">🫶</div>
+        <div class="diagn-title">Менопауза / климакс</div>
+        <div class="diagn-desc">Тамара похудела на 18 кг в 62 года — это возможно</div>
+      </div>
+      <div class="diagn-card">
+        <div class="diagn-icon">⚖️</div>
+        <div class="diagn-title">Вес 100+ кг</div>
+        <div class="diagn-desc">Рекорд клуба — минус 83 кг. Начинала с 185 кг</div>
+      </div>
+      <div class="diagn-card">
+        <div class="diagn-icon">🔁</div>
+        <div class="diagn-title">«Ветеран диет»</div>
+        <div class="diagn-desc">Перепробовала всё — потому что работала со следствием, а не с причиной</div>
+      </div>
+      <div class="diagn-card">
+        <div class="diagn-icon">🫀</div>
+        <div class="diagn-title">Гипертония / подагра</div>
+        <div class="diagn-desc">Лариса отменила таблетки от давления, снизив вес на 39 кг</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHAT'S INSIDE -->
+<section class="inside-section" id="inside">
+  <div class="container">
+    <div class="s-tag">Что внутри</div>
+    <h2>Всё что нужно — <em>в одном месте</em></h2>
+    <p class="s-sub">Клуб — это не набор видеоуроков, которые нужно «успеть пройти». Это живая среда, где ты получаешь поддержку каждый день.</p>
+
+    <div class="inside-grid">
+      <div class="inside-card">
+        <span class="inside-emoji">🍳</span>
+        <div class="inside-title">Умная кухня</div>
+        <div class="inside-desc">ИИ-помощник по питанию. Напиши что есть в холодильнике — получи рецепт под метод Натальи. Сохрани в избранное одним касанием.</div>
+        <span class="inside-tag">Каждый день</span>
+      </div>
+      <div class="inside-card">
+        <span class="inside-emoji">📚</span>
+        <div class="inside-title">Курсы и вебинары</div>
+        <div class="inside-desc">300+ уроков: метаболизм, гормоны, щитовидная железа, волосы, кожа, добавки. Понимаешь один раз — и результат держится годами.</div>
+        <span class="inside-tag">300+ уроков</span>
+      </div>
+      <div class="inside-card">
+        <span class="inside-emoji">🏃‍♀️</span>
+        <div class="inside-title">Марафоны каждый месяц</div>
+        <div class="inside-desc">14 дней интенсивного фокуса раз в месяц. Каждый марафон — разная тема. Наташа ведёт лично. Включено в подписку.</div>
+        <span class="inside-tag">Каждый месяц</span>
+      </div>
+      <div class="inside-card">
+        <span class="inside-emoji">🧘</span>
+        <div class="inside-title">Медитации</div>
+        <div class="inside-desc">Аудиомедитации для работы с пищевым поведением, стрессом и пищевой зависимостью. Слушай когда угодно.</div>
+        <span class="inside-tag">Всегда доступны</span>
+      </div>
+      <div class="inside-card">
+        <span class="inside-emoji">💬</span>
+        <div class="inside-title">Живое сообщество</div>
+        <div class="inside-desc">Закрытый чат клуба — тысячи женщин поддерживают друг друга каждый день. Болталка, тарелочки, вопросы Наташе лично.</div>
+        <span class="inside-tag">Поддержка 24/7</span>
+      </div>
+      <div class="inside-card">
+        <span class="inside-emoji">📊</span>
+        <div class="inside-title">Трекер и дневник</div>
+        <div class="inside-desc">Фиксируй вес, объёмы, самочувствие, тягу к сладкому. Видишь прогресс — держишь мотивацию даже в сложные недели.</div>
+        <span class="inside-tag">Твой прогресс</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RESULTS -->
+<section class="results-section" id="results">
+  <div class="container">
+    <div class="s-tag">Истории участниц</div>
+    <h2>Они тоже сомневались. <em>И всё равно попробовали.</em></h2>
+    <p class="s-sub">Обычные женщины — разного возраста, с разными диагнозами. У них получилось.</p>
+
+    <div class="results-grid">
+      <div class="result-card">
+        <div class="result-kg">−43 кг</div>
+        <div class="result-name">Алёна · за год</div>
+        <p class="result-quote">«Начинала с 106 кг. Кожа не обвисла — подтянулась. Я теперь хочу двигаться просто потому что могу.»</p>
+        <span class="result-extra">Держит вес 4-й год</span>
+      </div>
+      <div class="result-card">
+        <div class="result-kg">−39 кг</div>
+        <div class="result-name">Лариса · 55 лет</div>
+        <p class="result-quote">«Давление ушло со 170 до 125. Кардиолог сам отменил таблетки. Теперь хожу в горы — суставы не болят.»</p>
+        <span class="result-extra">+ отменила таблетки</span>
+      </div>
+      <div class="result-card">
+        <div class="result-kg">13 💊</div>
+        <div class="result-name">Ирина · 14 диагнозов</div>
+        <p class="result-quote">«14 таблеток ежедневно. Через 2 недели в клубе почувствовала себя другим человеком. Сделала ремонт своими руками.»</p>
+        <span class="result-extra">Отменила 13 препаратов</span>
+      </div>
+      <div class="result-card">
+        <div class="result-kg">−26 кг</div>
+        <div class="result-name">Нина</div>
+        <p class="result-quote">«Мир стал ярче буквально — цвета насыщеннее. Как будто убрали запотевшее стекло. Я начала ходить на работу пешком.»</p>
+        <span class="result-extra">+ вернулась энергия</span>
+      </div>
+      <div class="result-card">
+        <div class="result-kg">−18 кг</div>
+        <div class="result-name">Тамара · 62 года · гипотиреоз</div>
+        <p class="result-quote">«Врачи говорили — при гипотиреозе в 62 года это невозможно. Я им показала анализы. Они удивились.»</p>
+        <span class="result-extra">Колени не болят</span>
+      </div>
+      <div class="result-card">
+        <div class="result-kg">−83 кг</div>
+        <div class="result-name">Анонимная участница</div>
+        <p class="result-quote">«Начинала с 185 кг. Думала — не для меня. Система работает для всех, кто готов понять как устроен организм.»</p>
+        <span class="result-extra">Рекорд клуба</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ / OBJECTIONS -->
+<section class="faq-section" id="faq">
+  <div class="container">
+    <div class="s-tag">Вопросы</div>
+    <h2>Что тебя <em>останавливает</em></h2>
+    <p class="s-sub">Разбираем самые частые сомнения — честно, без давления.</p>
+
+    <div class="faq-grid">
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">«Смогу ли я так есть всю жизнь?» <span class="faq-q-toggle">+</span></div>
+        <div class="faq-a">Это не диета с ограничениями — это система питания, которая становится образом жизни. Участницы едят вкусно: мясо, рыба, яйца, жирный сыр, сливки, авокадо. Привыкаешь за 2–3 недели — и старая еда просто перестаёт казаться привлекательной.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">«Я уже пробовала всё — почему это будет иначе?» <span class="faq-q-toggle">+</span></div>
+        <div class="faq-a">Потому что ты впервые поймёшь механику — как именно конкретные продукты влияют на твои гормоны. Когда понимаешь это, не нужно себя заставлять. Ты не «сидишь на диете», ты просто знаешь зачем делаешь то, что делаешь.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">«Подходит ли это при гипотиреозе / диабете?» <span class="faq-q-toggle">+</span></div>
+        <div class="faq-a">Метод разработан с учётом именно этих проблем. Снижение инсулина — это лечение корня инсулинорезистентности. Нутриенты для щитовидки — прямо в рационе: белок, железо, цинк, селен. Участницы с гипотиреозом и диабетом 2 типа улучшают анализы и отменяют таблетки.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">«Не слишком ли дорого есть мясо каждый день?» <span class="faq-q-toggle">+</span></div>
+        <div class="faq-a">Мы считали. Мясо с тушёными овощами дешевле, чем гречка + куриная грудка + обезжиренный творог + пачка печенья «для срыва». Плюс ты перестаёшь тратить деньги на постоянные перекусы.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">«Нужно ли готовить отдельно от семьи?» <span class="faq-q-toggle">+</span></div>
+        <div class="faq-a">Нет. Семья ест то же самое — только у них на тарелке может быть гарнир. Аня готовила для семьи — муж сам попросил то же самое и похудел на 25 кг, даже не зная что «на диете».</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">«Можно ли похудеть в 55 / 60 / 65 лет?» <span class="faq-q-toggle">+</span></div>
+        <div class="faq-a">Тамара похудела на 18 кг в 62 года с гипотиреозом. Другая участница — на 23 кг в 66 лет. Возраст не является ограничением, когда ты работаешь с причиной, а не со следствием.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">«А если я сорвусь?» <span class="faq-q-toggle">+</span></div>
+        <div class="faq-a">Срывы случаются — это нормально. Система не рушится от одного праздничного ужина. Ты знаешь как вернуться — без вины и «следующего понедельника». Именно поэтому это работает долго.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">«Почему вес может стоять первые дни?» <span class="faq-q-toggle">+</span></div>
+        <div class="faq-a">В первые 3–5 дней организм перестраивается: почки начинают выводить лишнюю воду и натрий. Уходят отёки. Потом, как правило, результат становится очень заметным. В клубе Наташа объясняет каждый этап адаптации.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing-section" id="pricing">
+  <div class="container">
+    <div class="s-tag" style="justify-content:center">Вступление</div>
+    <h2>Выбери свой формат</h2>
+    <p class="s-sub" style="text-align:center">Начни с 7 дней — посмотри изнутри. Без обязательств.</p>
+
+    <div class="pricing-cards">
+      <div class="pricing-card">
+        <p class="pc-name">🌱 Попробовать</p>
+        <p class="pc-price">49</p>
+        <p class="pc-period">₽ за 7 дней · полный доступ</p>
+        <p class="pc-save">Потом 1 500 ₽/мес</p>
+        <ul class="pc-list">
+          <li>Умная кухня + рецепты</li>
+          <li>Все курсы и вебинары</li>
+          <li>Чат клуба</li>
+          <li>Дневник и трекер</li>
+          <li>Отмена в 1 клик</li>
+        </ul>
+        <a href="https://club.nata-tomshina.ru/join" class="pc-btn">Начать за 49 ₽ →</a>
+      </div>
+
+      <div class="pricing-card featured">
+        <span class="featured-badge">⭐ Популярный</span>
+        <p class="pc-name">Месяц</p>
+        <p class="pc-price">1 500</p>
+        <p class="pc-period">₽ в месяц · автопродление</p>
+        <p class="pc-save">&nbsp;</p>
+        <ul class="pc-list">
+          <li>Всё включено</li>
+          <li>Марафон месяца</li>
+          <li>Медитации</li>
+          <li>Личные вопросы Наташе</li>
+          <li>Отмена в любой момент</li>
+        </ul>
+        <a href="https://club.nata-tomshina.ru/join" class="pc-btn">Вступить на месяц →</a>
+      </div>
+
+      <div class="pricing-card">
+        <p class="pc-name">💎 Полгода</p>
+        <p class="pc-price">6 000</p>
+        <p class="pc-period">₽ за 6 месяцев</p>
+        <p class="pc-save">Экономия 3 000 ₽</p>
+        <ul class="pc-list">
+          <li>Всё включено</li>
+          <li>6 марафонов</li>
+          <li>Накопительный статус</li>
+          <li>Приоритет в чате</li>
+          <li>Бесплатные вебинары</li>
+        </ul>
+        <a href="https://club.nata-tomshina.ru/join" class="pc-btn">Вступить на полгода →</a>
+      </div>
+    </div>
+
+    <p class="pricing-note">Без скрытых платежей. Отмена в личном кабинете в 1 клик.</p>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final-cta-section">
+  <div class="container">
+    <div class="final-cta-box">
+      <h2>Хватит воевать с собственным телом</h2>
+      <p>Ты заслуживаешь чувствовать себя лёгкой, энергичной и здоровой. Начни с 7 дней — и убедись сама.</p>
+      <a href="https://club.nata-tomshina.ru/join" class="btn-primary">
+        Попробовать 7 дней за 49 ₽
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      <span class="cta-fine">Без обязательств. Отмена в 1 клик.</span>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2026 Наталья Томшина · Клуб «Вкус Жизни»</p>
+  <div style="display:flex; gap:20px; flex-wrap:wrap; justify-content:center;">
+    <a href="/about">Об авторе</a>
+    <a href="/blog">Блог</a>
+    <a href="/results">Результаты</a>
+    <a href="https://club.nata-tomshina.ru/legal/privacy">Конфиденциальность</a>
+    <a href="https://club.nata-tomshina.ru/legal/offer">Оферта</a>
+  </div>
+</footer>
+
+<script>
+function toggleFaq(el) {
+  const isOpen = el.classList.contains('open');
+  document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+  if (!isOpen) el.classList.add('open');
+}
+</script>
+</body>
+</html>

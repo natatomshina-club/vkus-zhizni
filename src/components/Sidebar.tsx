@@ -25,8 +25,7 @@ const nav = [
   {
     label: 'Обучение',
     items: [
-      { href: '/dashboard/courses', label: 'Курсы', icon: '🎓' },
-      { href: '/dashboard/body', label: 'Я и моё тело', icon: '🌸' },
+      { href: '/dashboard/courses', label: 'Я и моё тело', icon: '🌿' },
       { href: '/dashboard/webinars', label: 'Вебинары', icon: '🎥' },
       { href: '/dashboard/meditations', label: 'Медитации', icon: '🧘' },
     ],
@@ -68,7 +67,9 @@ export default function Sidebar() {
   }, [])
 
   const isAdmin = member?.role === 'admin'
-  const isTrial = member?.status === 'trial' || !member?.status
+  const isCurator = member?.role === 'curator'
+  const effectiveStatus = member?.subscription_status || member?.status
+  const isTrial = effectiveStatus === 'trial' || !effectiveStatus
   const day = getDayInClub((member as unknown as { created_at?: string })?.created_at)
 
   const kbzhu = [
@@ -92,12 +93,14 @@ export default function Sidebar() {
     >
       {/* Logo */}
       <div className="px-5 pt-6 pb-5 border-b" style={{ borderColor: 'var(--border)' }}>
-        <p className="text-base font-bold leading-none" style={{ fontFamily: 'var(--font-unbounded)', color: 'var(--pur)' }}>
-          Вкус Жизни
-        </p>
-        <p className="text-[11px] mt-1 font-medium leading-snug" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
-          клуб стройных и здоровых
-        </p>
+        <Link href="/dashboard" style={{ textDecoration: 'none' }}>
+          <p className="text-base font-bold leading-none" style={{ fontFamily: 'var(--font-unbounded)', color: 'var(--pur)' }}>
+            Вкус Жизни
+          </p>
+          <p className="text-[11px] mt-1 font-medium leading-snug" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
+            клуб стройных и здоровых
+          </p>
+        </Link>
       </div>
 
       {/* Member block */}
@@ -141,12 +144,16 @@ export default function Sidebar() {
                 <Link
                   key={href}
                   href={href}
-                  className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-[13px] transition-all"
+                  className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-[13px] transition-colors"
                   style={{
                     background: isActive ? 'var(--pur)' : 'transparent',
                     color: isActive ? '#fff' : 'var(--text)',
                     fontWeight: isActive ? 600 : 400,
                     opacity: isActive ? 1 : 0.8,
+                    WebkitAppearance: 'none',
+                    boxShadow: 'none',
+                    outline: 'none',
+                    textDecoration: 'none',
                   }}
                 >
                   <span className="text-base leading-none">{icon}</span>
@@ -166,16 +173,20 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      {/* Admin link */}
-      {isAdmin && (
+      {/* Admin / Curator link */}
+      {(isAdmin || isCurator) && (
         <div className="px-2 pb-1">
           <Link
-            href="/admin"
-            className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-[13px] transition-all"
+            href={isCurator ? '/admin/marathons' : '/admin'}
+            className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-[13px] transition-colors"
             style={{
               background: pathname.startsWith('/admin') ? 'var(--pur)' : 'var(--pur-lt)',
               color: pathname.startsWith('/admin') ? '#fff' : 'var(--pur)',
               fontWeight: 600,
+              WebkitAppearance: 'none',
+              boxShadow: 'none',
+              outline: 'none',
+              textDecoration: 'none',
             }}
           >
             <span className="text-base leading-none">⚙️</span>
@@ -189,9 +200,9 @@ export default function Sidebar() {
         {isTrial ? (
           <div className="rounded-2xl px-3 py-3 text-center" style={{ background: 'linear-gradient(135deg, var(--pur) 0%, #9B7CFF 100%)' }}>
             <p className="text-xs font-bold text-white leading-snug">⏳ Пробный период</p>
-            <p className="text-[10px] text-white/70 mt-0.5">7 дней · 49₽</p>
+            <p className="text-[10px] text-white/70 mt-0.5">7 дней · 149₽</p>
             <a
-              href="/join"
+              href="/dashboard/upgrade"
               className="mt-2 inline-block text-[10px] font-semibold px-3 py-1 rounded-full"
               style={{ background: 'rgba(255,255,255,0.25)', color: '#fff' }}
             >

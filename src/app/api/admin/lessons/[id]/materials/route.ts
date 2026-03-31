@@ -19,8 +19,24 @@ export async function POST(
 
   const { id: lessonId } = await params
   const admin = createServiceClient()
+  const contentType = req.headers.get('content-type') ?? ''
 
-  // Get lesson to find webinar_id
+  // ── JSON path: client already uploaded to storage, just save DB record ──
+  if (contentType.includes('application/json')) {
+    const body = await req.json().catch(() => null) as { title?: string; url?: string; webinar_id?: string } | null
+    if (!body?.title || !body?.url || !body?.webinar_id) {
+      return NextResponse.json({ error: 'title, url и webinar_id обязательны' }, { status: 400 })
+    }
+    const { data: material, error: insErr } = await admin
+      .from('webinar_materials')
+      .insert({ webinar_id: body.webinar_id, lesson_id: lessonId, type: 'pdf', title: body.title.trim(), url: body.url, sort_order: 0 })
+      .select()
+      .single()
+    if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 })
+    return NextResponse.json({ material }, { status: 201 })
+  }
+
+  // ── Multipart path: server-side upload (for small files) ──
   const { data: lesson } = await admin
     .from('webinar_lessons')
     .select('webinar_id')
@@ -50,14 +66,7 @@ export async function POST(
 
   const { data: material, error: insErr } = await admin
     .from('webinar_materials')
-    .insert({
-      webinar_id: lesson.webinar_id,
-      lesson_id: lessonId,
-      type: 'pdf',
-      title,
-      url: publicUrl,
-      sort_order: 0,
-    })
+    .insert({ webinar_id: lesson.webinar_id, lesson_id: lessonId, type: 'pdf', title, url: publicUrl, sort_order: 0 })
     .select()
     .single()
 

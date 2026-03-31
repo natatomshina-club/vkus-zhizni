@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Я и моё тело — Вкус Жизни</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800;900&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pur:#7C5CFC;--pur-lt:#F0EEFF;--pur-br:#DDD5FF;
+  --grn:#A8E6CF;--grn-dk:#2D6A4F;
+  --yel:#FFD93D;--yel-dk:#5C4200;
+  --ora:#FF9F43;--pnk:#FFB3C1;
+  --red:#FF6B6B;--bg:#FAF8FF;--card:#fff;
+  --text:#2D1F6E;--muted:#7B6FAA;--pale:#9B8FCC;
+  --border:#EDE8FF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Nunito',sans-serif;background:#E8E2FF;
+  display:flex;flex-direction:column;align-items:center;padding:24px;gap:48px}
+
+.section-head{font-family:'Unbounded',sans-serif;font-size:12px;font-weight:700;
+  color:var(--pur);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;text-align:center}
+
+/* format badge colors */
+.fmt{border-radius:20px;padding:3px 9px;font-size:10px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
+.fmt.video{background:#FFE4EC;color:#8B1A3A}
+.fmt.article{background:var(--pur-lt);color:var(--pur)}
+.fmt.pdf{background:#FFF5E8;color:#C26A00}
+.fmt.audio{background:#E8FBF3;color:var(--grn-dk)}
+
+/* topic tag */
+.topic{border-radius:7px;padding:2px 8px;font-size:10px;font-weight:700;color:var(--muted);background:#F4F0FF}
+
+/* new badge */
+.new-badge{background:var(--red);color:#fff;border-radius:6px;padding:2px 7px;font-size:10px;font-weight:800}
+
+/* ==================== MOBILE ==================== */
+.m-wrap{display:flex;flex-direction:column;align-items:center}
+.phone{width:375px;height:780px;background:var(--bg);border-radius:36px;overflow:hidden;
+  border:3px solid var(--pur-br);box-shadow:0 24px 64px rgba(124,92,252,.2);
+  display:flex;flex-direction:column}
+
+.sbar{background:var(--card);padding:10px 20px 7px;display:flex;justify-content:space-between;flex-shrink:0}
+.sbar-t{font-size:13px;font-weight:700;color:var(--text)}
+.tbar{background:var(--card);padding:8px 16px 10px;display:flex;align-items:center;
+  gap:10px;border-bottom:2px solid var(--border);flex-shrink:0}
+.tb-back{width:32px;height:32px;background:var(--pur-lt);border:none;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer}
+.tb-mid{flex:1;text-align:center}
+.tb-title{font-family:'Unbounded',sans-serif;font-size:13px;font-weight:800;color:var(--text)}
+.tb-sub{font-size:10px;color:var(--pale);font-weight:600}
+.tb-ph{width:32px}
+
+.mscroll{flex:1;overflow-y:auto;padding:14px}
+.mscroll::-webkit-scrollbar{width:0}
+
+/* mobile filter tabs */
+.m-filters{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin-bottom:14px}
+.m-filters::-webkit-scrollbar{width:0;height:0}
+.mf{background:var(--card);border:2px solid var(--border);border-radius:20px;
+  padding:6px 13px;font-size:12px;font-weight:700;color:var(--muted);
+  cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .13s}
+.mf.on{background:var(--pur);border-color:var(--pur);color:#fff}
+
+/* format filter row */
+.m-fmt-filters{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.mff{background:var(--card);border:2px solid var(--border);border-radius:18px;
+  padding:5px 11px;font-size:11px;font-weight:700;color:var(--muted);
+  cursor:pointer;white-space:nowrap;transition:all .13s;display:flex;align-items:center;gap:4px}
+.mff.on{border-color:var(--pur);background:var(--pur-lt);color:var(--pur)}
+
+/* mobile card */
+.m-item{background:var(--card);border:2px solid var(--border);border-radius:16px;
+  padding:13px 14px;margin-bottom:10px;cursor:pointer;transition:border .15s}
+.m-item:hover{border-color:var(--pur-br)}
+.m-item-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
+.m-item-title{font-size:14px;font-weight:800;color:var(--text);line-height:1.35;flex:1}
+.m-item-meta{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.m-item-desc{font-size:12px;color:var(--muted);line-height:1.5}
+.m-item-footer{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
+.m-item-dur{font-size:11px;color:var(--pale);font-weight:600}
+.m-open-btn{background:var(--pur-lt);border:none;border-radius:9px;padding:6px 13px;
+  font-size:12px;font-weight:700;color:var(--pur);cursor:pointer;font-family:'Nunito',sans-serif}
+
+/* thumbnail */
+.m-thumb{width:100%;height:110px;border-radius:11px;margin-bottom:10px;
+  display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.m-play{position:absolute;width:40px;height:40px;background:rgba(255,255,255,.9);
+  border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px}
+
+/* locked overlay */
+.m-locked{position:absolute;inset:0;background:rgba(45,31,110,.5);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:11px}
+.ml-ico{font-size:24px;margin-bottom:4px}
+.ml-t{font-size:11px;font-weight:800;color:#fff}
+
+/* section label */
+.m-sec-lbl{font-size:11px;font-weight:700;color:var(--pale);text-transform:uppercase;
+  letter-spacing:.07em;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.m-sec-lbl::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* bottom nav */
+.bnav{background:var(--card);border-top:2px solid var(--border);padding:8px 4px 12px;
+  display:flex;justify-content:space-around;flex-shrink:0}
+.bn{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;
+  padding:4px 8px;border-radius:11px;border:none;background:transparent;min-width:52px}
+.bn.on{background:var(--pur-lt)}
+.bni{font-size:20px}
+.bnl{font-size:10px;font-weight:700;color:var(--muted)}
+.bn.on .bnl{color:var(--pur)}
+
+
+/* ==================== DESKTOP ==================== */
+.d-wrap{display:flex;flex-direction:column;align-items:center;width:100%}
+.desk{width:1180px;height:780px;background:var(--bg);border-radius:22px;overflow:hidden;
+  border:3px solid var(--pur-br);box-shadow:0 32px 80px rgba(124,92,252,.18);display:flex}
+
+.dsb{width:220px;flex-shrink:0;background:var(--card);border-right:2px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.dsb-brand{padding:18px 16px 14px;border-bottom:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;gap:9px}
+.dsb-ball{width:34px;height:34px;background:var(--pur);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.dsb-nm{font-family:'Unbounded',sans-serif;font-size:10px;font-weight:800;color:var(--text);line-height:1.35}
+.dsb-nm small{display:block;font-size:8px;color:var(--pale);font-weight:600}
+.dsb-user{padding:12px 14px;border-bottom:2px solid var(--border);flex-shrink:0}
+.dsu-name{font-size:14px;font-weight:800;color:var(--text);margin-bottom:1px}
+.dsu-sub{font-size:11px;color:var(--pale)}
+.dsb-nav{flex:1;padding:8px;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
+.dsb-nav::-webkit-scrollbar{width:0}
+.sbn{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:11px;cursor:pointer;border:none;background:transparent;width:100%;text-align:left;transition:background .12s}
+.sbn:hover{background:var(--pur-lt)}.sbn.on{background:var(--pur)}
+.sbn-i{font-size:16px;width:22px;text-align:center;flex-shrink:0}
+.sbn-l{font-size:12px;font-weight:700;color:#4A3A8A;white-space:nowrap;flex:1}.sbn.on .sbn-l{color:#fff}
+.dsb-sep{height:1px;background:var(--border);margin:4px 8px}
+
+.dmain{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.dheader{background:var(--card);border-bottom:2px solid var(--border);padding:14px 28px;
+  display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0}
+.dh-left{}
+.dh-title{font-family:'Unbounded',sans-serif;font-size:18px;font-weight:800;color:var(--text);margin-bottom:3px}
+.dh-sub{font-size:13px;color:var(--muted)}
+
+/* desktop filters bar */
+.d-filterbar{background:var(--card);border-bottom:2px solid var(--border);
+  padding:10px 28px;display:flex;align-items:center;gap:16px;flex-shrink:0;overflow-x:auto}
+.d-filterbar::-webkit-scrollbar{width:0;height:0}
+.d-filter-group{display:flex;gap:5px;align-items:center;flex-shrink:0}
+.d-filter-sep{width:1px;height:24px;background:var(--border);flex-shrink:0}
+.df{background:transparent;border:2px solid var(--border);border-radius:20px;
+  padding:5px 13px;font-size:12px;font-weight:700;color:var(--muted);
+  cursor:pointer;white-space:nowrap;transition:all .13s;font-family:'Nunito',sans-serif}
+.df:hover{border-color:var(--pur-br);color:var(--pur)}
+.df.on{background:var(--pur);border-color:var(--pur);color:#fff}
+.df.fmt-v.on{background:#8B1A3A;border-color:#8B1A3A}
+.df.fmt-a.on{background:var(--pur);border-color:var(--pur)}
+.df.fmt-p.on{background:#C26A00;border-color:#C26A00}
+.df.fmt-pod.on{background:var(--grn-dk);border-color:var(--grn-dk)}
+.d-search{background:#F8F5FF;border:2px solid var(--border);border-radius:22px;
+  padding:7px 14px;font-size:13px;font-family:'Nunito',sans-serif;color:var(--text);
+  outline:none;width:200px;transition:border .18s;margin-left:auto;flex-shrink:0}
+.d-search:focus{border-color:var(--pur)}
+
+/* desktop body: left topics + right content */
+.dbody{flex:1;overflow:hidden;display:flex}
+
+/* topic sidebar */
+.d-topics{width:200px;flex-shrink:0;border-right:2px solid var(--border);
+  padding:16px 10px;overflow-y:auto;display:flex;flex-direction:column;gap:3px}
+.d-topics::-webkit-scrollbar{width:0}
+.dt{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:12px;
+  cursor:pointer;transition:background .13s}
+.dt:hover{background:var(--pur-lt)}
+.dt.on{background:var(--pur)}
+.dt-ico{font-size:18px;flex-shrink:0}
+.dt-lbl{font-size:12px;font-weight:700;color:#4A3A8A;flex:1;line-height:1.3}
+.dt.on .dt-lbl{color:#fff}
+.dt-cnt{font-size:10px;font-weight:800;color:var(--pale);background:var(--pur-lt);
+  border-radius:6px;padding:1px 6px;flex-shrink:0}
+.dt.on .dt-cnt{background:rgba(255,255,255,.25);color:#fff}
+
+/* content grid */
+.d-content{flex:1;overflow-y:auto;padding:20px 24px}
+.d-content::-webkit-scrollbar{width:4px}
+.d-content::-webkit-scrollbar-thumb{background:var(--pur-br);border-radius:2px}
+
+.d-sec-lbl{font-size:11px;font-weight:700;color:var(--pale);text-transform:uppercase;
+  letter-spacing:.07em;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.d-sec-lbl::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* desktop card */
+.d-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px}
+.d-card{background:var(--card);border:2px solid var(--border);border-radius:16px;
+  overflow:hidden;cursor:pointer;transition:all .15s}
+.d-card:hover{border-color:var(--pur-br);transform:translateY(-2px);box-shadow:0 6px 20px rgba(124,92,252,.1)}
+.d-card.locked{opacity:.55;cursor:not-allowed}
+.d-card.locked:hover{transform:none;box-shadow:none;border-color:var(--border)}
+.dc-thumb{width:100%;height:130px;display:flex;align-items:center;justify-content:center;
+  position:relative;font-size:40px}
+.dc-play{position:absolute;width:44px;height:44px;background:rgba(255,255,255,.92);
+  border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;
+  box-shadow:0 2px 12px rgba(0,0,0,.2)}
+.dc-lock-overlay{position:absolute;inset:0;background:rgba(45,31,110,.45);
+  display:flex;flex-direction:column;align-items:center;justify-content:center}
+.dc-lock-ico{font-size:28px;margin-bottom:4px}
+.dc-lock-t{font-size:11px;font-weight:800;color:#fff}
+.dc-body{padding:12px 14px}
+.dc-meta{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px;align-items:center}
+.dc-title{font-size:13px;font-weight:800;color:var(--text);line-height:1.35;margin-bottom:6px}
+.dc-desc{font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:8px}
+.dc-footer{display:flex;align-items:center;justify-content:space-between}
+.dc-dur{font-size:11px;color:var(--pale);font-weight:600}
+.dc-open{background:var(--pur-lt);border:none;border-radius:8px;padding:5px 12px;
+  font-size:11px;font-weight:700;color:var(--pur);cursor:pointer;font-family:'Nunito',sans-serif}
+</style>
+</head>
+<body>
+
+<!-- ==================== MOBILE ==================== -->
+<div class="m-wrap">
+<div class="section-head">Мобайл — Я и моё тело</div>
+<div class="phone">
+  <div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-t">📶 🔋</span></div>
+  <div class="tbar">
+    <button class="tb-back">←</button>
+    <div class="tb-mid">
+      <div class="tb-title">Я и моё тело</div>
+      <div class="tb-sub">18 материалов</div>
+    </div>
+    <div class="tb-ph"></div>
+  </div>
+
+  <div class="mscroll">
+
+    <!-- Тема-фильтры -->
+    <div class="m-filters">
+      <button class="mf on" onclick="mFilterTopic(this)">Все темы</button>
+      <button class="mf" onclick="mFilterTopic(this)">🧬 Гормоны</button>
+      <button class="mf" onclick="mFilterTopic(this)">✨ Кожа</button>
+      <button class="mf" onclick="mFilterTopic(this)">😤 Стресс</button>
+      <button class="mf" style="opacity:.5" onclick="mFilterTopic(this)">💤 Сон 🔒</button>
+      <button class="mf" style="opacity:.5" onclick="mFilterTopic(this)">🌿 Пищев. 🔒</button>
+      <button class="mf" style="opacity:.5" onclick="mFilterTopic(this)">💊 БАДы 🔒</button>
+    </div>
+
+    <!-- Формат-фильтры -->
+    <div class="m-fmt-filters">
+      <button class="mff on" onclick="mFilterFmt(this)">Все форматы</button>
+      <button class="mff" onclick="mFilterFmt(this)">🎥 Видео</button>
+      <button class="mff" onclick="mFilterFmt(this)">📄 Статья</button>
+      <button class="mff" onclick="mFilterFmt(this)">📎 PDF</button>
+      <button class="mff" onclick="mFilterFmt(this)">🎧 Подкаст</button>
+    </div>
+
+    <!-- Баннер триала -->
+    <div style="background:#FFF5E8;border:2px solid #FFD4A0;border-radius:14px;padding:11px 13px;margin-bottom:14px;display:flex;align-items:center;gap:9px">
+      <div style="font-size:20px;flex-shrink:0">🎁</div>
+      <div>
+        <div style="font-size:12px;font-weight:800;color:#8B4A00;margin-bottom:2px">Пробный доступ — 3 темы открыты</div>
+        <div style="font-size:11px;color:#C26A00;line-height:1.45">Гормоны, Кожа и Стресс — для знакомства с библиотекой. В полном клубе — все 9 тем.</div>
+      </div>
+    </div>
+
+    <!-- ===== ОТКРЫТЫЕ ТЕМЫ ===== -->
+
+    <div class="m-sec-lbl">🧬 Гормоны и вес <span style="font-size:10px;color:var(--grn-dk);background:var(--grn);border-radius:6px;padding:1px 7px;margin-left:4px;font-weight:800">Открыто</span></div>
+
+    <div class="m-item">
+      <div class="m-item-top">
+        <div class="m-item-title">Гормоны и лишний вес — почему мы набираем</div>
+        <span class="new-badge">NEW</span>
+      </div>
+      <div class="m-item-meta">
+        <span class="fmt video">🎥 Видео</span>
+        <span class="m-item-dur">18 мин</span>
+        <span style="font-size:11px;color:var(--pale)">👁 142</span>
+      </div>
+      <div class="m-item-desc">Почему калории не главное и как гормоны управляют твоим весом — основа метода Натальи</div>
+      <div class="m-item-footer"><span></span><button class="m-open-btn">Смотреть →</button></div>
+    </div>
+
+    <div class="m-item">
+      <div class="m-item-top">
+        <div class="m-item-title">Инсулинорезистентность — что это и как работать</div>
+      </div>
+      <div class="m-item-meta">
+        <span class="fmt article">📄 Статья</span>
+        <span class="m-item-dur">8 мин чтения</span>
+      </div>
+      <div class="m-item-desc">Подробная статья о главном враге стройности с практическими рекомендациями по питанию</div>
+      <div class="m-item-footer"><span></span><button class="m-open-btn">Читать →</button></div>
+    </div>
+
+    <div class="m-item">
+      <div class="m-item-top">
+        <div class="m-item-title">Схема: инсулин, жир и питание</div>
+      </div>
+      <div class="m-item-meta">
+        <span class="fmt pdf">📎 PDF</span>
+        <span style="font-size:11px;color:var(--pale)">👁 98 скачиваний</span>
+      </div>
+      <div class="m-item-desc">Наглядная схема на одном листе — распечатай и повесь на холодильник</div>
+      <div class="m-item-footer"><span></span><button class="m-open-btn">Скачать →</button></div>
+    </div>
+
+    <div class="m-sec-lbl">✨ Кожа и питание <span style="font-size:10px;color:var(--grn-dk);background:var(--grn);border-radius:6px;padding:1px 7px;margin-left:4px;font-weight:800">Открыто</span></div>
+
+    <div class="m-item">
+      <div class="m-item-top">
+        <div class="m-item-title">Что есть для красивой кожи — 10 продуктов</div>
+      </div>
+      <div class="m-item-meta">
+        <span class="fmt video">🎥 Видео</span>
+        <span class="m-item-dur">14 мин</span>
+      </div>
+      <div class="m-item-desc">Конкретный список с объяснением механизма действия каждого продукта</div>
+      <div class="m-item-footer"><span></span><button class="m-open-btn">Смотреть →</button></div>
+    </div>
+
+    <div class="m-item">
+      <div class="m-item-top">
+        <div class="m-item-title">Таблица: продукты для кожи vs продукты-враги</div>
+      </div>
+      <div class="m-item-meta">
+        <span class="fmt pdf">📎 PDF</span>
+      </div>
+      <div class="m-item-desc">Шпаргалка — что добавить в рацион и от чего отказаться для красивой кожи</div>
+      <div class="m-item-footer"><span></span><button class="m-open-btn">Скачать →</button></div>
+    </div>
+
+    <div class="m-sec-lbl">😤 Стресс и еда <span style="font-size:10px;color:var(--grn-dk);background:var(--grn);border-radius:6px;padding:1px 7px;margin-left:4px;font-weight:800">Открыто</span></div>
+
+    <div class="m-item">
+      <div class="m-item-top">
+        <div class="m-item-title">Как стресс мешает похудеть — и что делать</div>
+        <span class="new-badge">NEW</span>
+      </div>
+      <div class="m-item-meta">
+        <span class="fmt video">🎥 Видео</span>
+        <span class="m-item-dur">22 мин</span>
+      </div>
+      <div class="m-item-desc">Кортизол блокирует жиросжигание. Конкретные техники снижения стресса от Наташи</div>
+      <div class="m-item-footer"><span></span><button class="m-open-btn">Смотреть →</button></div>
+    </div>
+
+    <div class="m-item">
+      <div class="m-item-top">
+        <div class="m-item-title">Подкаст: почему мы «заедаем» эмоции</div>
+        <span class="new-badge">NEW</span>
+      </div>
+      <div class="m-item-meta">
+        <span class="fmt audio">🎧 Подкаст</span>
+        <span class="m-item-dur">35 мин</span>
+      </div>
+      <div class="m-item-desc">Слушай в дороге или на прогулке. Природа эмоционального питания и как остановить</div>
+      <div class="m-item-footer"><span></span><button class="m-open-btn">Слушать →</button></div>
+    </div>
+
+    <!-- ===== ЗАБЛОКИРОВАННЫЕ ТЕМЫ ===== -->
+    <div style="background:var(--pur);border-radius:18px;padding:15px;margin-top:6px;margin-bottom:12px">
+      <div style="font-size:13px;font-weight:800;color:#fff;margin-bottom:8px">🔒 Ещё 6 тем в полном клубе</div>
+
+      <!-- Тизер заблокированных тем -->
+      <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:14px">
+        <div style="background:rgba(255,255,255,.12);border-radius:11px;padding:9px 12px;display:flex;align-items:center;gap:9px">
+          <span style="font-size:16px">💤</span>
+          <div style="flex:1">
+            <div style="font-size:12px;font-weight:800;color:#fff">Сон и вес</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.65)">2 материала · Видео + Подкаст</div>
+          </div>
+          <span style="font-size:14px;opacity:.6">🔒</span>
+        </div>
+        <div style="background:rgba(255,255,255,.12);border-radius:11px;padding:9px 12px;display:flex;align-items:center;gap:9px">
+          <span style="font-size:16px">🌿</span>
+          <div style="flex:1">
+            <div style="font-size:12px;font-weight:800;color:#fff">Пищеварение</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.65)">2 материала · Статья + PDF</div>
+          </div>
+          <span style="font-size:14px;opacity:.6">🔒</span>
+        </div>
+        <div style="background:rgba(255,255,255,.12);border-radius:11px;padding:9px 12px;display:flex;align-items:center;gap:9px">
+          <span style="font-size:16px">💊</span>
+          <div style="flex:1">
+            <div style="font-size:12px;font-weight:800;color:#fff">БАДы — что реально работает</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.65)">1 материал · Видео</div>
+          </div>
+          <span style="font-size:14px;opacity:.6">🔒</span>
+        </div>
+        <div style="background:rgba(255,255,255,.12);border-radius:11px;padding:9px 12px;display:flex;align-items:center;gap:9px">
+          <span style="font-size:16px">💇</span>
+          <div style="flex:1">
+            <div style="font-size:12px;font-weight:800;color:#fff">Волосы и питание</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.65)">2 материала</div>
+          </div>
+          <span style="font-size:14px;opacity:.6">🔒</span>
+        </div>
+        <div style="background:rgba(255,255,255,.12);border-radius:11px;padding:9px 12px;display:flex;align-items:center;gap:9px">
+          <span style="font-size:16px">🌸</span>
+          <div style="flex:1">
+            <div style="font-size:12px;font-weight:800;color:#fff">Менопауза и вес</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.65)">1 материал · Видео</div>
+          </div>
+          <span style="font-size:14px;opacity:.6">🔒</span>
+        </div>
+        <div style="background:rgba(255,255,255,.12);border-radius:11px;padding:9px 12px;display:flex;align-items:center;gap:9px">
+          <span style="font-size:16px">💪</span>
+          <div style="flex:1">
+            <div style="font-size:12px;font-weight:800;color:#fff">Лекарства и вес</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.65)">1 материал · Статья</div>
+          </div>
+          <span style="font-size:14px;opacity:.6">🔒</span>
+        </div>
+      </div>
+
+      <button style="width:100%;background:var(--yel);color:var(--yel-dk);border:none;border-radius:11px;padding:12px;font-size:13px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif">Открыть все темы → 1 500 ₽/мес</button>
+    </div>
+
+    <div style="height:12px"></div>
+  </div>
+
+  <div class="bnav">
+    <button class="bn"><div class="bni">🏠</div><div class="bnl">Главная</div></button>
+    <button class="bn"><div class="bni">🧊</div><div class="bnl">Кухня</div></button>
+    <button class="bn"><div class="bni">📓</div><div class="bnl">Дневник</div></button>
+    <button class="bn"><div class="bni">📊</div><div class="bnl">Трекер</div></button>
+    <button class="bn on"><div class="bni">🧬</div><div class="bnl">Тело</div></button>
+  </div>
+</div>
+</div>
+
+
+<!-- ==================== DESKTOP ==================== -->
+<div class="d-wrap">
+<div class="section-head">Десктоп — Я и моё тело</div>
+<div class="desk">
+
+  <!-- SIDEBAR -->
+  <div class="dsb">
+    <div class="dsb-brand"><div class="dsb-ball">🌿</div><div class="dsb-nm">Вкус Жизни<small>Клуб</small></div></div>
+    <div class="dsb-user"><div class="dsu-name">Марина</div><div class="dsu-sub">День 32 · Новенькая 🌱</div></div>
+    <div class="dsb-nav">
+      <div class="sbn"><div class="sbn-i">🏠</div><span class="sbn-l">Главная</span></div>
+      <div class="dsb-sep"></div>
+      <div class="sbn"><div class="sbn-i">🧊</div><span class="sbn-l">Умная кухня</span></div>
+      <div class="sbn"><div class="sbn-i">⭐</div><span class="sbn-l">Избранные рецепты</span></div>
+      <div class="dsb-sep"></div>
+      <div class="sbn"><div class="sbn-i">📊</div><span class="sbn-l">Трекер замеров</span></div>
+      <div class="sbn"><div class="sbn-i">📓</div><span class="sbn-l">Дневник питания</span></div>
+      <div class="sbn"><div class="sbn-i">🏆</div><span class="sbn-l">Маленькие победы</span></div>
+      <div class="dsb-sep"></div>
+      <div class="sbn on"><div class="sbn-i">🧬</div><span class="sbn-l">Я и моё тело</span></div>
+      <div class="sbn"><div class="sbn-i">🎥</div><span class="sbn-l">Вебинары</span></div>
+      <div class="sbn"><div class="sbn-i">🧘</div><span class="sbn-l">Медитации</span></div>
+      <div class="sbn"><div class="sbn-i">🎓</div><span class="sbn-l">Мини-курс</span></div>
+      <div class="dsb-sep"></div>
+      <div class="sbn"><div class="sbn-i">🏃</div><span class="sbn-l">Марафон</span></div>
+      <div class="dsb-sep"></div>
+      <div class="sbn"><div class="sbn-i">💬</div><span class="sbn-l">Чат с Наташей</span></div>
+      <div class="sbn"><div class="sbn-i">👤</div><span class="sbn-l">Профиль</span></div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="dmain">
+
+    <!-- Header -->
+    <div class="dheader">
+      <div class="dh-left">
+        <div class="dh-title">🧬 Я и моё тело</div>
+        <div class="dh-sub">18 материалов · Видео, статьи, подкасты, PDF от Наташи</div>
+      </div>
+    </div>
+
+    <!-- Filters bar -->
+    <div class="d-filterbar">
+      <div class="d-filter-group">
+        <button class="df on" onclick="dFilter(this,'all')">Все</button>
+        <button class="df fmt-v" onclick="dFilter(this,'video')">🎥 Видео</button>
+        <button class="df fmt-a" onclick="dFilter(this,'article')">📄 Статья</button>
+        <button class="df fmt-p" onclick="dFilter(this,'pdf')">📎 PDF</button>
+        <button class="df fmt-pod" onclick="dFilter(this,'podcast')">🎧 Подкаст</button>
+      </div>
+      <div class="d-filter-sep"></div>
+      <div class="d-filter-group">
+        <button class="df" onclick="dFilter(this,'new')">🆕 Новое</button>
+        <button class="df" onclick="dFilter(this,'popular')">🔥 Популярное</button>
+      </div>
+      <input class="d-search" placeholder="🔍 Поиск по теме или названию">
+    </div>
+
+    <div class="dbody">
+
+      <!-- Topic sidebar — открытые выделены, заблокированные серые -->
+      <div class="d-topics">
+        <div style="font-size:10px;font-weight:700;color:var(--pale);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;padding:0 4px">Темы</div>
+        <div class="dt on" onclick="dTopic(this)"><div class="dt-ico">📚</div><div class="dt-lbl">Все темы</div><div class="dt-cnt">18</div></div>
+
+        <div style="font-size:9px;font-weight:700;color:var(--grn-dk);text-transform:uppercase;letter-spacing:.06em;margin:8px 4px 5px;display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;background:var(--grn);border-radius:50%;flex-shrink:0"></span>Открыто в триале</div>
+        <div class="dt" onclick="dTopic(this)"><div class="dt-ico">🧬</div><div class="dt-lbl">Гормоны и вес</div><div class="dt-cnt">5</div></div>
+        <div class="dt" onclick="dTopic(this)"><div class="dt-ico">✨</div><div class="dt-lbl">Кожа и питание</div><div class="dt-cnt">3</div></div>
+        <div class="dt" onclick="dTopic(this)"><div class="dt-ico">😤</div><div class="dt-lbl">Стресс и еда</div><div class="dt-cnt">2</div></div>
+
+        <div style="font-size:9px;font-weight:700;color:var(--pale);text-transform:uppercase;letter-spacing:.06em;margin:8px 4px 5px;display:flex;align-items:center;gap:5px"><span style="font-size:10px">🔒</span>Только в клубе</div>
+        <div class="dt" style="opacity:.45;cursor:not-allowed"><div class="dt-ico">💤</div><div class="dt-lbl">Сон и вес</div><div class="dt-cnt">2</div></div>
+        <div class="dt" style="opacity:.45;cursor:not-allowed"><div class="dt-ico">💇</div><div class="dt-lbl">Волосы</div><div class="dt-cnt">2</div></div>
+        <div class="dt" style="opacity:.45;cursor:not-allowed"><div class="dt-ico">🌿</div><div class="dt-lbl">Пищеварение</div><div class="dt-cnt">2</div></div>
+        <div class="dt" style="opacity:.45;cursor:not-allowed"><div class="dt-ico">🌸</div><div class="dt-lbl">Менопауза</div><div class="dt-cnt">1</div></div>
+        <div class="dt" style="opacity:.45;cursor:not-allowed"><div class="dt-ico">💊</div><div class="dt-lbl">БАДы</div><div class="dt-cnt">1</div></div>
+        <div class="dt" style="opacity:.45;cursor:not-allowed"><div class="dt-ico">💪</div><div class="dt-lbl">Лекарства и вес</div><div class="dt-cnt">1</div></div>
+
+        <!-- Апгрейд -->
+        <div style="margin-top:10px;background:var(--pur);border-radius:13px;padding:11px 10px;text-align:center">
+          <div style="font-size:11px;font-weight:800;color:#fff;margin-bottom:6px">+9 тем в клубе</div>
+          <button style="width:100%;background:var(--yel);color:var(--yel-dk);border:none;border-radius:9px;padding:8px;font-size:11px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif">Открыть →</button>
+        </div>
+      </div>
+
+      <!-- Content — только открытые темы + тизер закрытых -->
+      <div class="d-content">
+
+        <!-- Баннер триала -->
+        <div style="background:#FFF5E8;border:2px solid #FFD4A0;border-radius:14px;padding:12px 16px;margin-bottom:18px;display:flex;align-items:center;gap:12px">
+          <div style="font-size:22px;flex-shrink:0">🎁</div>
+          <div>
+            <div style="font-size:13px;font-weight:800;color:#8B4A00;margin-bottom:2px">Пробный доступ — 3 темы открыты для знакомства</div>
+            <div style="font-size:12px;color:#C26A00">Гормоны, Кожа и Стресс. В полном клубе — все 9 тем, неограниченно.</div>
+          </div>
+        </div>
+
+        <!-- ГОРМОНЫ -->
+        <div class="d-sec-lbl">🧬 Гормоны и вес <span style="font-size:10px;color:var(--grn-dk);background:var(--grn);border-radius:6px;padding:1px 8px;font-weight:800;letter-spacing:0">Открыто</span></div>
+        <div class="d-grid" style="grid-template-columns:repeat(3,1fr)">
+          <div class="d-card">
+            <div class="dc-thumb" style="background:linear-gradient(135deg,var(--pur),#9B6BFF)">🧬<div class="dc-play">▶</div></div>
+            <div class="dc-body">
+              <div class="dc-meta"><span class="fmt video">🎥 Видео</span><span class="new-badge">NEW</span></div>
+              <div class="dc-title">Гормоны и лишний вес — почему мы набираем</div>
+              <div class="dc-desc">Почему калории не главное. Основа метода Натальи</div>
+              <div class="dc-footer"><span class="dc-dur">18 мин · 👁 142</span><button class="dc-open">Смотреть →</button></div>
+            </div>
+          </div>
+          <div class="d-card">
+            <div class="dc-thumb" style="background:linear-gradient(135deg,#F0EEFF,#DDD5FF)">📄</div>
+            <div class="dc-body">
+              <div class="dc-meta"><span class="fmt article">📄 Статья</span></div>
+              <div class="dc-title">Инсулинорезистентность — что это и как работать</div>
+              <div class="dc-desc">Главный враг стройности с практическими рекомендациями</div>
+              <div class="dc-footer"><span class="dc-dur">8 мин чтения</span><button class="dc-open">Читать →</button></div>
+            </div>
+          </div>
+          <div class="d-card">
+            <div class="dc-thumb" style="background:linear-gradient(135deg,#FFF5E8,#FFD4A0)">📎</div>
+            <div class="dc-body">
+              <div class="dc-meta"><span class="fmt pdf">📎 PDF</span></div>
+              <div class="dc-title">Схема: инсулин, жир и питание</div>
+              <div class="dc-desc">Наглядная схема на одном листе — распечатай на холодильник</div>
+              <div class="dc-footer"><span class="dc-dur">👁 98 скач.</span><button class="dc-open">Скачать →</button></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- КОЖА -->
+        <div class="d-sec-lbl">✨ Кожа и питание <span style="font-size:10px;color:var(--grn-dk);background:var(--grn);border-radius:6px;padding:1px 8px;font-weight:800;letter-spacing:0">Открыто</span></div>
+        <div class="d-grid" style="grid-template-columns:repeat(3,1fr)">
+          <div class="d-card">
+            <div class="dc-thumb" style="background:linear-gradient(135deg,#FFB3C1,#FF6B9D)">✨<div class="dc-play">▶</div></div>
+            <div class="dc-body">
+              <div class="dc-meta"><span class="fmt video">🎥 Видео</span></div>
+              <div class="dc-title">Что есть для красивой кожи — 10 продуктов</div>
+              <div class="dc-desc">Конкретный список с объяснением механизма действия</div>
+              <div class="dc-footer"><span class="dc-dur">14 мин</span><button class="dc-open">Смотреть →</button></div>
+            </div>
+          </div>
+          <div class="d-card">
+            <div class="dc-thumb" style="background:linear-gradient(135deg,#FFF5E8,#FFD4A0)">📎</div>
+            <div class="dc-body">
+              <div class="dc-meta"><span class="fmt pdf">📎 PDF</span></div>
+              <div class="dc-title">Таблица: продукты для кожи vs продукты-враги</div>
+              <div class="dc-desc">Шпаргалка — что добавить в рацион и от чего отказаться</div>
+              <div class="dc-footer"><span class="dc-dur">1 стр.</span><button class="dc-open">Скачать →</button></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- СТРЕСС -->
+        <div class="d-sec-lbl">😤 Стресс и еда <span style="font-size:10px;color:var(--grn-dk);background:var(--grn);border-radius:6px;padding:1px 8px;font-weight:800;letter-spacing:0">Открыто</span></div>
+        <div class="d-grid" style="grid-template-columns:repeat(3,1fr)">
+          <div class="d-card">
+            <div class="dc-thumb" style="background:linear-gradient(135deg,#FF6B6B,#FF9F43)">😤<div class="dc-play">▶</div></div>
+            <div class="dc-body">
+              <div class="dc-meta"><span class="fmt video">🎥 Видео</span><span class="new-badge">NEW</span></div>
+              <div class="dc-title">Как стресс мешает похудеть — и что с этим делать</div>
+              <div class="dc-desc">Кортизол блокирует жиросжигание. Техники снижения стресса</div>
+              <div class="dc-footer"><span class="dc-dur">22 мин</span><button class="dc-open">Смотреть →</button></div>
+            </div>
+          </div>
+          <div class="d-card">
+            <div class="dc-thumb" style="background:linear-gradient(135deg,#A8E6CF,#2D6A4F)">🎧</div>
+            <div class="dc-body">
+              <div class="dc-meta"><span class="fmt audio">🎧 Подкаст</span><span class="new-badge">NEW</span></div>
+              <div class="dc-title">Почему мы «заедаем» эмоции — и как остановиться</div>
+              <div class="dc-desc">Слушай в дороге. Природа эмоционального питания</div>
+              <div class="dc-footer"><span class="dc-dur">35 мин</span><button class="dc-open">Слушать →</button></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ЗАБЛОКИРОВАННЫЕ — тизер в виде сетки с замками -->
+        <div class="d-sec-lbl">🔒 Остальные темы — в полном клубе</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px">
+          <div style="background:#F8F5FF;border:2px solid var(--border);border-radius:14px;padding:16px;opacity:.6">
+            <div style="font-size:24px;margin-bottom:8px">💤</div>
+            <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:3px">Сон и вес</div>
+            <div style="font-size:11px;color:var(--pale)">2 материала · Видео + Подкаст</div>
+          </div>
+          <div style="background:#F8F5FF;border:2px solid var(--border);border-radius:14px;padding:16px;opacity:.6">
+            <div style="font-size:24px;margin-bottom:8px">💇</div>
+            <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:3px">Волосы и питание</div>
+            <div style="font-size:11px;color:var(--pale)">2 материала · Видео + PDF</div>
+          </div>
+          <div style="background:#F8F5FF;border:2px solid var(--border);border-radius:14px;padding:16px;opacity:.6">
+            <div style="font-size:24px;margin-bottom:8px">🌿</div>
+            <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:3px">Пищеварение</div>
+            <div style="font-size:11px;color:var(--pale)">2 материала · Статья + PDF</div>
+          </div>
+          <div style="background:#F8F5FF;border:2px solid var(--border);border-radius:14px;padding:16px;opacity:.6">
+            <div style="font-size:24px;margin-bottom:8px">🌸</div>
+            <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:3px">Менопауза и вес</div>
+            <div style="font-size:11px;color:var(--pale)">1 материал · Видео</div>
+          </div>
+          <div style="background:#F8F5FF;border:2px solid var(--border);border-radius:14px;padding:16px;opacity:.6">
+            <div style="font-size:24px;margin-bottom:8px">💊</div>
+            <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:3px">БАДы — что работает</div>
+            <div style="font-size:11px;color:var(--pale)">1 материал · Видео</div>
+          </div>
+          <div style="background:#F8F5FF;border:2px solid var(--border);border-radius:14px;padding:16px;opacity:.6">
+            <div style="font-size:24px;margin-bottom:8px">💪</div>
+            <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:3px">Лекарства и вес</div>
+            <div style="font-size:11px;color:var(--pale)">1 материал · Статья</div>
+          </div>
+        </div>
+
+        <!-- Апгрейд баннер -->
+        <div style="background:var(--pur);border-radius:18px;padding:18px 22px;display:flex;align-items:center;gap:16px">
+          <div style="flex:1">
+            <div style="font-size:15px;font-weight:800;color:#fff;margin-bottom:4px">🔒 Открой все 9 тем и 18+ материалов</div>
+            <div style="font-size:13px;color:rgba(255,255,255,.78)">Видео, подкасты, статьи и PDF пополняются каждый месяц</div>
+          </div>
+          <button style="background:var(--yel);color:var(--yel-dk);border:none;border-radius:13px;padding:13px 22px;font-size:14px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;white-space:nowrap">Полный клуб → 1 500 ₽/мес</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+function mFilterTopic(btn){
+  document.querySelectorAll('.m-filters .mf').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
+function mFilterFmt(btn){
+  document.querySelectorAll('.m-fmt-filters .mff').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
+function dFilter(btn,type){
+  document.querySelectorAll('.d-filterbar .df').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
+function dTopic(el){
+  document.querySelectorAll('.dt').forEach(d=>d.classList.remove('on'));
+  el.classList.add('on');
+}
+</script>
+</body>
+</html>

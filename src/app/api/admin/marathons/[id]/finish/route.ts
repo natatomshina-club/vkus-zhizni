@@ -9,7 +9,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   // Admin only
   const { data: member } = await supabase
     .from('members').select('role').eq('id', user.id).single()
-  if (member?.role !== 'admin') {
+  if (member?.role !== 'admin' && member?.role !== 'curator') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 

@@ -2,9 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { calculateKBJU, type ActivityLevel } from '@/lib/kbju'
 import { LEGAL_DOCS } from '@/lib/legal'
+import { usePushNotifications } from '@/hooks/usePushNotifications'
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
@@ -154,7 +154,7 @@ function ConsentRow({
   )
 }
 
-export default function OnboardingForm({ userId }: { userId: string }) {
+export default function OnboardingForm() {
   const router = useRouter()
 
   const [form, setForm] = useState({
@@ -170,6 +170,8 @@ export default function OnboardingForm({ userId }: { userId: string }) {
   const [noneChecked, setNoneChecked] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  const { isSubscribed: pushSubscribed, isSupported: pushSupported, isLoading: pushLoading, sdkReady, subscribe: pushSubscribe } = usePushNotifications()
 
   // Consent state
   const [agreedTerms, setAgreedTerms] = useState(false)
@@ -210,25 +212,21 @@ export default function OnboardingForm({ userId }: { userId: string }) {
 
     setLoading(true)
     setError('')
+    console.log('[Onboarding] submit started')
 
-    const w = parseFloat(form.weight)
-    const h = parseFloat(form.height)
-    const a = parseInt(form.age)
-    const activity = form.activity as ActivityLevel
-    const kbju = calculateKBJU({ weight: w, height: h, age: a, activity })
-    const conditions = noneChecked ? [] : form.health_conditions
+    try {
+      const w = parseFloat(form.weight)
+      const h = parseFloat(form.height)
+      const a = parseInt(form.age)
+      const activity = form.activity as ActivityLevel
+      const kbju = calculateKBJU({ weight: w, height: h, age: a, activity })
+      const conditions = noneChecked ? [] : form.health_conditions
 
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    const { error: dbError } = await supabase.from('members').upsert(
-      {
-        id: userId,
-        email: user?.email,
+      const payload = {
         name: form.full_name.trim(),
         age: a,
         weight: w,
         start_weight: w,
-        initial_weight: w,
         height: h,
         goal_weight: parseFloat(form.goal_weight),
         activity_level: activity,
@@ -238,28 +236,39 @@ export default function OnboardingForm({ userId }: { userId: string }) {
         kbju_protein:  kbju.protein,
         kbju_fat:      kbju.fat,
         kbju_carbs:    kbju.carbs,
-        status: 'trial',
         agreed_terms_at: new Date().toISOString(),
         agreed_disclaimer_at: new Date().toISOString(),
         agreed_personal_data_at: new Date().toISOString(),
-      },
-      { onConflict: 'id' }
-    )
+      }
+      console.log('[Onboarding] saving profile data...')
 
-    if (dbError) {
-      console.error('Onboarding upsert error:', JSON.stringify(dbError, null, 2))
-      console.error('userId:', userId)
-      console.error('payload:', JSON.stringify({
-        id: userId, name: form.full_name.trim(), age: a, weight: w, height: h,
-        goal_weight: parseFloat(form.goal_weight), activity_level: activity,
-        health_conditions: conditions, kbju_calories: kbju.calories,
-      }, null, 2))
-      setError(`Ошибка: ${dbError.message} (code: ${dbError.code})`)
+      const res = await fetch('/api/onboarding/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      console.log('[Onboarding] profile save response:', res.status)
+
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({})) as { error?: string }
+        setError(`Ошибка: ${errBody.error ?? 'неизвестная ошибка'}`)
+        return
+      }
+
+      // Push — пробуем, но никогда не блокируем переход
+      if (sdkReady && pushSupported && !pushSubscribed) {
+        console.log('[Onboarding] attempting push subscribe...')
+        try { await pushSubscribe() } catch (err) { console.warn('[Onboarding] push failed, continuing:', err) }
+      }
+
+      console.log('[Onboarding] redirecting to dashboard...')
+      router.push('/dashboard')
+    } catch (err) {
+      console.error('[Onboarding] unexpected error:', err)
+      setError('Произошла ошибка. Попробуй ещё раз.')
+    } finally {
       setLoading(false)
-      return
     }
-
-    router.push('/dashboard')
   }
 
   const inputClass = "w-full px-4 py-3 rounded-2xl border text-sm outline-none transition-all"
@@ -524,6 +533,49 @@ export default function OnboardingForm({ userId }: { userId: string }) {
           openDoc={openDoc}
           setOpenDoc={setOpenDoc}
         />
+      </div>
+
+      {/* ── Push notifications opt-in ── */}
+      <div
+        className="rounded-2xl p-4 flex items-center gap-4"
+        style={{ background: pushSubscribed ? '#D0F5E8' : '#F0EEFF', border: `1px solid ${pushSubscribed ? '#A0DEC4' : 'var(--border)'}` }}
+      >
+        <span style={{ fontSize: 28, flexShrink: 0 }}>🔔</span>
+        <div className="flex-1">
+          {pushSupported ? (
+            <>
+              <p className="text-sm font-bold" style={{ color: pushSubscribed ? '#1A5C3A' : 'var(--text)', fontFamily: 'var(--font-nunito)', margin: '0 0 2px' }}>
+                {pushSubscribed ? 'Уведомления включены!' : 'Будьте в курсе всего'}
+              </p>
+              <p className="text-xs" style={{ color: pushSubscribed ? '#2A7A50' : 'var(--muted)', fontFamily: 'var(--font-nunito)', margin: 0 }}>
+                {pushSubscribed ? 'Получишь уведомления о новых уроках и марафонах' : 'Новые уроки, марафоны и сообщения от Наташи'}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-bold" style={{ color: 'var(--text)', fontFamily: 'var(--font-nunito)', margin: '0 0 2px' }}>
+                Уведомления на телефон
+              </p>
+              <p className="text-xs" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)', margin: 0 }}>
+                📱 Установите клуб на главный экран — и получайте уведомления на телефон
+              </p>
+            </>
+          )}
+        </div>
+        {pushSupported && !pushSubscribed && (
+          <button
+            type="button"
+            onClick={pushSubscribe}
+            disabled={!sdkReady || pushLoading}
+            className="shrink-0 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+            style={{
+              background: 'var(--pur)', color: '#fff', border: 'none',
+              padding: '8px 14px', cursor: 'pointer', fontFamily: 'var(--font-nunito)',
+            }}
+          >
+            {pushLoading ? 'Подключаем...' : 'Включить'}
+          </button>
+        )}
       </div>
 
       {error && (

@@ -52,9 +52,147 @@ h1, h2, h3, h4 {
   box-shadow: none;
 }
 
+/* ── Driver.js onboarding tour ─────────────────── */
+.vkus-tour-popover {
+  font-family: var(--font-nunito), system-ui, sans-serif !important;
+  border-radius: 20px !important;
+  box-shadow: 0 24px 64px rgba(45, 31, 110, 0.22) !important;
+  border: 1.5px solid #EDE8FF !important;
+  max-width: 320px !important;
+}
+.vkus-tour-popover .driver-popover-title {
+  font-family: var(--font-unbounded), system-ui, sans-serif !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: #3D2B8A !important;
+  margin-bottom: 6px !important;
+}
+.vkus-tour-popover .driver-popover-description {
+  font-size: 13px !important;
+  color: #7B6FAA !important;
+  line-height: 1.6 !important;
+}
+.vkus-tour-popover .driver-popover-progress-text {
+  font-size: 11px !important;
+  color: #9B8FCC !important;
+}
+.vkus-tour-popover .driver-popover-footer button {
+  border-radius: 10px !important;
+  font-family: var(--font-nunito), system-ui, sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  padding: 7px 14px !important;
+}
+.vkus-tour-popover .driver-popover-next-btn {
+  background: #7C5CFC !important;
+  border-color: #7C5CFC !important;
+  color: #fff !important;
+}
+.vkus-tour-popover .driver-popover-next-btn:hover {
+  background: #6B4CE5 !important;
+  border-color: #6B4CE5 !important;
+}
+.vkus-tour-popover .driver-popover-prev-btn {
+  background: #F0EEFF !important;
+  border-color: #EDE8FF !important;
+  color: #7C5CFC !important;
+}
+.vkus-tour-popover .driver-popover-close-btn {
+  color: #9B8FCC !important;
+}
+.driver-overlay {
+  background: rgba(45, 31, 110, 0.45) !important;
+}
+
+/* ── Meditation player animations ─────────────── */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* ── Mobile fixes (max-width: 1023px) ─────────── */
 @media (max-width: 1023px) {
   body {
     overflow-x: hidden;
   }
+}
+
+/* ── Global tap / hover effects ───────────────── */
+
+/* Убираем синюю вспышку при tap на iOS */
+button,
+a,
+[role="button"],
+[type="submit"],
+[type="button"],
+[type="reset"],
+label[for] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Плавные переходы для всех интерактивных элементов */
+button:not(:disabled),
+a,
+[role="button"] {
+  transition: opacity 0.15s ease, transform 0.15s ease, background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Эффект нажатия — scale + opacity.
+   Исключаем: disabled, textarea, input, элементы с position:fixed (навигация) */
+button:not(:disabled):not(.no-press):active,
+[role="button"]:active {
+  opacity: 0.72;
+  transform: scale(0.96);
+}
+
+/* Нижняя навигация — только opacity, без scale (fixed элемент) */
+.no-press:active {
+  opacity: 0.55 !important;
+  transform: none !important;
+}
+
+/* Кликабельные карточки */
+.pressable:active {
+  opacity: 0.85;
+  transform: translateY(0) scale(0.99);
+}
+
+/* Кнопка «←» назад в хедере */
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  transition: background 0.15s ease, opacity 0.15s ease, transform 0.15s ease;
+}
+.btn-back:hover {
+  background: #EDE8FF;
+}
+.btn-back:active {
+  opacity: 0.7;
+  transform: scale(0.88);
+}
+
+/* Таб-кнопки каналов (pill) — дополнительный эффект поверх inline стилей */
+.channel-pill:active {
+  opacity: 0.8;
+  transform: scale(0.96);
+}
+
+/* ── Content protection ────────────────────────── */
+.protected-content {
+  user-select: none;
+  -webkit-user-select: none;
+}
+.protected-content img {
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-drag: none;
+  -webkit-touch-callout: none;
 }

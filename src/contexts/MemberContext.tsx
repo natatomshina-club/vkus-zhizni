@@ -1,7 +1,6 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
 
 type Member = {
   id: string
@@ -9,7 +8,9 @@ type Member = {
   email: string
   role: string
   status: string
+  subscription_status: string
   trial_ends_at: string | null
+  created_at: string | null
   age: number | null
   weight: number | null
   height: number | null
@@ -36,28 +37,26 @@ const MemberContext = createContext<MemberContextType>({
 export function MemberProvider({ children }: { children: React.ReactNode }) {
   const [member, setMember] = useState<Member | null>(null)
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
 
   const fetchMember = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { setLoading(false); return }
-    const { data } = await supabase
-      .from('members')
-      .select('id,email,name,full_name,role,status,trial_ends_at,age,weight,height,goal_weight,health_conditions,allergies,kbju_calories,kbju_protein,kbju_fat,kbju_carbs,kitchen_requests_today')
-      .eq('id', user.id)
-      .single()
-    if (data) setMember({
-      ...data,
-      name: data.full_name || data.name || 'Участница',
-      role: data.role ?? 'user',
-      health_conditions: data.health_conditions || [],
-      kitchen_requests_today: data.kitchen_requests_today ?? 0,
-    })
-    setLoading(false)
-  }, [supabase])
+    try {
+      const res = await fetch('/api/member/me')
+      if (!res.ok) { setLoading(false); return }
+      const json = await res.json() as { member: Member & { full_name?: string } }
+      const data = json.member
+      if (data) setMember({
+        ...data,
+        name: data.full_name || data.name || 'Участница',
+        role: data.role ?? 'user',
+        health_conditions: data.health_conditions || [],
+        kitchen_requests_today: data.kitchen_requests_today ?? 0,
+      })
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
-    // fetchMember is async — setState is called inside the resolved promise, not synchronously
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchMember()
   }, [fetchMember])

@@ -2,23 +2,42 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 // GET /api/diary/entries?date=YYYY-MM-DD
+// GET /api/diary/entries?from=YYYY-MM-DD&to=YYYY-MM-DD
+// GET /api/diary/entries  → defaults to last 30 days, max 90 rows
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const date = request.nextUrl.searchParams.get('date')
-    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      return NextResponse.json({ error: 'Неверный формат даты' }, { status: 400 })
+    const sp = request.nextUrl.searchParams
+    const date = sp.get('date')
+    const from = sp.get('from')
+    const to   = sp.get('to')
+
+    let query = supabase
+      .from('diary_entries')
+      .select('id, meal_type, title, calories, protein, fat, carbs, source, date')
+      .eq('member_id', user.id)
+      .order('created_at', { ascending: true })
+      .limit(90)
+
+    if (date) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return NextResponse.json({ error: 'Неверный формат даты' }, { status: 400 })
+      }
+      query = query.eq('date', date)
+    } else if (from || to) {
+      if (from) query = query.gte('date', from)
+      if (to)   query = query.lte('date', to)
+    } else {
+      // Default: last 30 days
+      const cutoff = new Date()
+      cutoff.setDate(cutoff.getDate() - 30)
+      query = query.gte('date', cutoff.toISOString().slice(0, 10))
     }
 
-    const { data, error } = await supabase
-      .from('diary_entries')
-      .select('id, meal_type, title, calories, protein, fat, carbs, source')
-      .eq('member_id', user.id)
-      .eq('date', date)
-      .order('created_at', { ascending: true })
+    const { data, error } = await query
 
     if (error) {
       console.error('diary entries GET error:', error)

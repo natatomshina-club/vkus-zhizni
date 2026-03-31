@@ -21,7 +21,7 @@ export async function PATCH(
   const body = await req.json().catch(() => null)
   if (!body) return NextResponse.json({ error: 'Некорректный запрос' }, { status: 400 })
 
-  const allowed = ['title', 'short_desc', 'full_desc', 'price', 'emoji', 'color_from', 'color_to', 'is_published', 'sort_order']
+  const allowed = ['title', 'slug', 'short_desc', 'full_desc', 'price', 'emoji', 'color_from', 'color_to', 'is_published', 'sort_order', 'content_type']
   const updates: Record<string, unknown> = {}
   for (const key of allowed) {
     if (key in body) updates[key] = body[key]

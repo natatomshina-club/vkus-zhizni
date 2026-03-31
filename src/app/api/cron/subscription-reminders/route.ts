@@ -63,64 +63,108 @@ export async function GET(req: Request) {
     return diff === 1 || diff === 5
   })
 
-  let reminded = 0
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://club.nata-tomshina.ru'
 
-  for (const m of targets) {
+  // Send emails + PMs in parallel
+  await Promise.all(targets.map(async m => {
     const displayName = m.full_name ?? m.name ?? 'участница'
     const firstName = displayName.split(' ')[0]
     const endsDate = formatDateRu(m.subscription_ends_at!)
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://club.nata-tomshina.ru'
 
-    // 1. Send email
-    await resend.emails.send({
-      from: 'Наталья Томшина <onboarding@resend.dev>',
+    const emailPromise = resend.emails.send({
+      from: 'Вкус Жизни <noreply@nata-tomshina.ru>',
       to: m.email,
       subject: `${firstName}, твой доступ в Клуб «Вкус Жизни» скоро заканчивается`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; color: #2D1F6E;">
-          <div style="background: linear-gradient(135deg, #7C5CFC 0%, #9B7CFF 100%); padding: 28px 24px; border-radius: 16px 16px 0 0; text-align: center;">
-            <p style="color: #fff; font-size: 20px; font-weight: 700; margin: 0;">Вкус Жизни</p>
-            <p style="color: rgba(255,255,255,0.8); font-size: 13px; margin: 4px 0 0;">Клуб стройных и здоровых</p>
-          </div>
-          <div style="background: #fff; padding: 28px 24px; border-radius: 0 0 16px 16px; border: 1px solid #EDE8FF; border-top: none;">
-            <p style="font-size: 16px; margin: 0 0 16px;">Привет, ${firstName}! 🌿</p>
-            <p style="font-size: 15px; line-height: 1.6; margin: 0 0 20px; color: #3D2B8A;">
-              Твой доступ в Клуб стройных и здоровых «Вкус Жизни» заканчивается <strong>${endsDate}</strong>.
-            </p>
-            <p style="font-size: 15px; line-height: 1.6; margin: 0 0 28px; color: #2D1F6E;">
-              Чтобы продолжить — напиши Наталье напрямую, она поможет с продлением.
-            </p>
-            <div style="text-align: center; margin-bottom: 24px;">
-              <a href="${siteUrl}/dashboard/channel" style="display: inline-block; background: linear-gradient(135deg, #2A9D5C 0%, #52C98D 100%); color: #fff; text-decoration: none; padding: 14px 32px; border-radius: 12px; font-size: 15px; font-weight: 700;">
-                Написать Наталье →
-              </a>
-            </div>
-          </div>
-          <p style="text-align: center; font-size: 12px; color: #9B8FCC; margin-top: 16px;">
-            С заботой, Наталья Томшина 💚
-          </p>
-        </div>
-      `,
+      html: `<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#FAF8FF;font-family:Arial,Helvetica,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#FAF8FF;padding:24px 16px;">
+<tr><td align="center">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+
+  <!-- Header -->
+  <tr><td style="background:#3D2B8A;border-radius:16px 16px 0 0;padding:24px;text-align:center;">
+    <p style="margin:0;font-size:20px;font-weight:700;color:#fff;letter-spacing:-0.3px;">🌿 Клуб Вкус Жизни</p>
+    <p style="margin:6px 0 0;font-size:13px;color:rgba(255,255,255,0.7);">Клуб стройных и здоровых</p>
+  </td></tr>
+
+  <!-- Body -->
+  <tr><td style="background:#fff;border:1px solid #EDE8FF;border-top:none;padding:32px 28px;">
+
+    <p style="margin:0 0 18px;font-size:16px;font-weight:700;color:#3D2B8A;">Привет, ${firstName}! 🌿</p>
+
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#3D2B8A;">
+      Твой доступ в Клуб стройных и здоровых «Вкус Жизни» заканчивается <strong>${endsDate}</strong>.
+    </p>
+
+    <p style="margin:0 0 28px;font-size:15px;line-height:1.7;color:#3D2B8A;">
+      Чтобы продолжить — напиши Наталье напрямую, она поможет с продлением.
+    </p>
+
+    <!-- Button -->
+    <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding-bottom:32px;">
+      <a href="${siteUrl}/dashboard/channel"
+        style="display:inline-block;background:#4CAF78;color:#fff;text-decoration:none;
+               padding:15px 36px;border-radius:12px;font-size:16px;font-weight:700;
+               letter-spacing:0.2px;">
+        Написать Наталье →
+      </a>
+    </td></tr></table>
+
+    <!-- Signature -->
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr><td style="border-top:1px solid #EDE8FF;padding-top:24px;">
+        <p style="margin:0;font-size:14px;line-height:1.8;color:#3D2B8A;">
+          С заботой о вас,<br>
+          <strong>Наталья Томшина</strong><br>
+          Клуб стройных и здоровых «Вкус Жизни»<br>
+          <a href="https://club.nata-tomshina.ru" style="color:#4CAF78;text-decoration:none;">club.nata-tomshina.ru</a>
+        </p>
+      </td></tr>
+    </table>
+
+  </td></tr>
+
+  <!-- Footer -->
+  <tr><td style="background:#F0EEFF;border-radius:0 0 16px 16px;padding:20px 28px;border:1px solid #EDE8FF;border-top:none;">
+    <p style="margin:0 0 8px;font-size:12px;color:#7B6FAA;line-height:1.6;text-align:center;">
+      На это письмо отвечать не нужно.<br>
+      По вопросам доступа пишите:
+      <a href="mailto:nata.tomshina@gmail.com" style="color:#3D2B8A;font-weight:700;">nata.tomshina@gmail.com</a>
+    </p>
+    <p style="margin:0 0 8px;font-size:11px;color:#9B8FCC;line-height:1.6;text-align:center;">
+      Вы получили это письмо, так как зарегистрированы в Клубе стройных и здоровых «Вкус Жизни».
+    </p>
+    <p style="margin:0;font-size:11px;text-align:center;">
+      <a href="https://club.nata-tomshina.ru/legal/privacy" style="color:#9B8FCC;text-decoration:underline;">Политика конфиденциальности</a>
+    </p>
+  </td></tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>`,
     }).catch(e => console.error('[reminder email]', m.email, e))
 
-    // 2. Send private message from admin
-    if (adminMember) {
-      const pmText = `${firstName}, привет! 🌿 Твой доступ в клуб заканчивается ${endsDate}. Напиши мне здесь чтобы продолжить — разберёмся с продлением 💚`
-      await admin.from('private_messages').insert({
-        sender_id: adminMember.id,
-        receiver_id: m.id,
-        text: pmText,
-      }).then(({ error: e }) => { if (e) console.error('[reminder pm]', m.id, e) })
-    }
+    const pmPromise = adminMember
+      ? admin.from('private_messages').insert({
+          sender_id: adminMember.id,
+          receiver_id: m.id,
+          text: `${firstName}, привет! 🌿 Твой доступ в клуб заканчивается ${endsDate}. Напиши мне здесь чтобы продолжить — разберёмся с продлением 💚`,
+        }).then(({ error: e }) => { if (e) console.error('[reminder pm]', m.id, e) })
+      : Promise.resolve()
 
-    // 3. Mark reminded today
-    await admin
-      .from('members')
-      .update({ last_expiry_reminder_sent: todayStr })
-      .eq('id', m.id)
+    await Promise.all([emailPromise, pmPromise])
+  }))
 
-    reminded++
-  }
+  // Batch update last_expiry_reminder_sent for all targets
+  const ids = targets.map(m => m.id)
+  await admin
+    .from('members')
+    .update({ last_expiry_reminder_sent: todayStr })
+    .in('id', ids)
 
-  return NextResponse.json({ ok: true, reminded })
+  return NextResponse.json({ ok: true, reminded: targets.length })
 }

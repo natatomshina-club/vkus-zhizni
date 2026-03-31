@@ -127,7 +127,7 @@ export async function POST(req: Request) {
   const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
     type: 'magiclink',
     email,
-    options: { redirectTo: `${siteUrl}/auth/callback?next=/dashboard` },
+    options: { redirectTo: `${siteUrl}/auth/callback?next=/dashboard&openInBrowser=1` },
   })
 
   if (linkErr || !linkData?.properties?.action_link) {
@@ -145,44 +145,100 @@ export async function POST(req: Request) {
   // Send invite email via Resend SDK
   const resend = new Resend(process.env.RESEND_API_KEY)
   const { data: emailData, error: emailErr } = await resend.emails.send({
-    from: 'Наталья Томшина <onboarding@resend.dev>',
+    from: 'Вкус Жизни <noreply@nata-tomshina.ru>',
     to: email,
-    subject: 'Наталья Томшина приглашает тебя в Клуб «Вкус Жизни»',
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; color: #2D1F6E;">
-        <div style="background: linear-gradient(135deg, #7C5CFC 0%, #9B7CFF 100%); padding: 32px 24px; border-radius: 16px 16px 0 0; text-align: center;">
-          <p style="color: #fff; font-size: 22px; font-weight: 700; margin: 0;">Вкус Жизни</p>
-          <p style="color: rgba(255,255,255,0.8); font-size: 13px; margin: 4px 0 0;">Клуб стройных и здоровых</p>
-        </div>
-        <div style="background: #fff; padding: 32px 24px; border-radius: 0 0 16px 16px; border: 1px solid #EDE8FF; border-top: none;">
-          <p style="font-size: 16px; margin: 0 0 16px;">Привет, ${firstName}! 🌿</p>
-          <p style="font-size: 15px; line-height: 1.6; margin: 0 0 24px; color: #3D2B8A;">
-            Наталья открыла тебе доступ в закрытый <strong>Клуб стройных и здоровых «Вкус Жизни»</strong>.
-          </p>
-          <p style="font-size: 15px; line-height: 1.6; margin: 0 0 28px; color: #2D1F6E;">
-            Нажми кнопку ниже чтобы войти — ссылка действует 24 часа.
-          </p>
-          <div style="text-align: center; margin-bottom: 28px;">
-            <a href="${magicLink}" style="display: inline-block; background: linear-gradient(135deg, #7C5CFC 0%, #9B7CFF 100%); color: #fff; text-decoration: none; padding: 14px 32px; border-radius: 12px; font-size: 15px; font-weight: 700;">
-              Войти в клуб →
-            </a>
-          </div>
-          <p style="font-size: 13px; color: #9B8FCC; text-align: center;">
-            Если кнопка не работает, скопируй ссылку:<br>
-            <a href="${magicLink}" style="color: #7C5CFC; word-break: break-all;">${magicLink}</a>
-          </p>
-        </div>
-        <p style="text-align: center; font-size: 12px; color: #9B8FCC; margin-top: 16px;">
-          С заботой, Наталья Томшина 💚
+    subject: 'Добро пожаловать в Клуб «Вкус Жизни» — ссылка для входа',
+    html: `<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#FAF8FF;font-family:Arial,Helvetica,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#FAF8FF;padding:24px 16px;">
+<tr><td align="center">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+
+  <!-- Header -->
+  <tr><td style="background:#3D2B8A;border-radius:16px 16px 0 0;padding:24px;text-align:center;">
+    <p style="margin:0;font-size:20px;font-weight:700;color:#fff;letter-spacing:-0.3px;">🌿 Клуб Вкус Жизни</p>
+    <p style="margin:6px 0 0;font-size:13px;color:rgba(255,255,255,0.7);">Клуб стройных и здоровых</p>
+  </td></tr>
+
+  <!-- Body -->
+  <tr><td style="background:#fff;border:1px solid #EDE8FF;border-top:none;padding:32px 28px;">
+
+    <p style="margin:0 0 18px;font-size:16px;font-weight:700;color:#3D2B8A;">Привет, ${firstName}! 🌿</p>
+
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#3D2B8A;">
+      Наталья открыла тебе доступ в закрытый <strong>Клуб стройных и здоровых «Вкус Жизни»</strong>.
+    </p>
+
+    <p style="margin:0 0 28px;font-size:15px;line-height:1.7;color:#3D2B8A;">
+      Нажми кнопку ниже чтобы войти и начать свой путь к здоровью и стройности.
+    </p>
+
+    <!-- Button -->
+    <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding-bottom:24px;">
+      <a href="${magicLink}"
+        style="display:inline-block;background:#4CAF78;color:#fff;text-decoration:none;
+               padding:15px 36px;border-radius:12px;font-size:16px;font-weight:700;
+               letter-spacing:0.2px;">
+        Войти в клуб →
+      </a>
+    </td></tr></table>
+
+    <!-- Security note -->
+    <p style="margin:0 0 28px;font-size:13px;line-height:1.6;color:#7B6FAA;
+              background:#F8F5FF;border-radius:10px;padding:12px 16px;">
+      🔒 Ссылка для входа действительна в течение <strong>24 часов</strong>.<br>
+      Если вы не запрашивали вход — просто проигнорируйте это письмо.
+    </p>
+
+    <!-- Fallback link -->
+    <p style="margin:0 0 32px;font-size:12px;color:#9B8FCC;text-align:center;line-height:1.6;">
+      Если кнопка не работает, скопируйте ссылку в браузер:<br>
+      <a href="${magicLink}" style="color:#7C5CFC;word-break:break-all;font-size:11px;">${magicLink}</a>
+    </p>
+
+    <!-- Signature -->
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr><td style="border-top:1px solid #EDE8FF;padding-top:24px;">
+        <p style="margin:0;font-size:14px;line-height:1.8;color:#3D2B8A;">
+          С заботой о вас,<br>
+          <strong>Наталья Томшина</strong><br>
+          Клуб стройных и здоровых «Вкус Жизни»<br>
+          <a href="https://club.nata-tomshina.ru" style="color:#4CAF78;text-decoration:none;">club.nata-tomshina.ru</a>
         </p>
-      </div>
-    `,
+      </td></tr>
+    </table>
+
+  </td></tr>
+
+  <!-- Footer -->
+  <tr><td style="background:#F0EEFF;border-radius:0 0 16px 16px;padding:20px 28px;border:1px solid #EDE8FF;border-top:none;">
+    <p style="margin:0 0 8px;font-size:12px;color:#7B6FAA;line-height:1.6;text-align:center;">
+      На это письмо отвечать не нужно.<br>
+      По вопросам доступа пишите:
+      <a href="mailto:nata.tomshina@gmail.com" style="color:#3D2B8A;font-weight:700;">nata.tomshina@gmail.com</a>
+    </p>
+    <p style="margin:0 0 8px;font-size:11px;color:#9B8FCC;line-height:1.6;text-align:center;">
+      Вы получили это письмо, так как зарегистрированы в Клубе стройных и здоровых «Вкус Жизни».
+    </p>
+    <p style="margin:0;font-size:11px;text-align:center;">
+      <a href="https://club.nata-tomshina.ru/legal/privacy" style="color:#9B8FCC;text-decoration:underline;">Политика конфиденциальности</a>
+    </p>
+  </td></tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>`,
   })
 
   if (emailErr || !emailData?.id) {
     console.error('[add-member] resend error:', emailErr)
     return NextResponse.json({
       member: { id: uid, email, full_name },
+      magic_link: magicLink,
       warning: `Участница добавлена, но письмо не отправлено: ${emailErr?.message ?? 'нет id в ответе Resend'}`,
     }, { status: 201 })
   }

@@ -31,24 +31,27 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    const items = posts ?? []
-    let deleted = 0
-
-    for (const post of items) {
-      if (!post.media_url) continue
-      const path = extractStoragePath(post.media_url)
-      if (path) {
-        await supabase.storage.from(STORAGE_BUCKET).remove([path])
-      }
-      // Nullify media_url — post text stays
-      await supabase.from('channel_posts')
-        .update({ media_url: null })
-        .eq('id', post.id)
-      deleted++
+    const items = (posts ?? []).filter(p => p.media_url)
+    if (items.length === 0) {
+      return NextResponse.json({ deleted: 0 })
     }
 
-    console.log(`[cron/cleanup-media] deleted media for ${deleted} posts`)
-    return NextResponse.json({ deleted })
+    // Batch delete storage files
+    const storagePaths = items
+      .map(p => extractStoragePath(p.media_url!))
+      .filter((p): p is string => p !== null)
+    if (storagePaths.length > 0) {
+      await supabase.storage.from(STORAGE_BUCKET).remove(storagePaths)
+    }
+
+    // Batch nullify media_url — post text stays
+    const ids = items.map(p => p.id)
+    await supabase.from('channel_posts')
+      .update({ media_url: null })
+      .in('id', ids)
+
+    console.log(`[cron/cleanup-media] deleted media for ${items.length} posts`)
+    return NextResponse.json({ deleted: items.length })
   } catch (e) {
     console.error('[cron/cleanup-media]', e)
     return NextResponse.json({ error: String(e) }, { status: 500 })

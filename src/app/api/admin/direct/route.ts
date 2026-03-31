@@ -3,7 +3,8 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 
 interface MsgRow {
   member_id: string
-  text: string
+  text: string | null
+  media_url?: string | null
   from_admin: boolean
   is_read: boolean
   created_at: string
@@ -52,12 +53,12 @@ export async function GET() {
       dialogMap.set(msg.member_id, {
         member_id: msg.member_id,
         member: msg.member,
-        last_message: msg.text.slice(0, 60),
+        last_message: msg.text ? msg.text.slice(0, 60) : '📷 Фото',
         last_message_at: msg.created_at,
         unread_count: !msg.from_admin && !msg.is_read ? 1 : 0,
       })
     } else {
-      existing.last_message = msg.text.slice(0, 60)
+      existing.last_message = msg.text ? msg.text.slice(0, 60) : '📷 Фото'
       existing.last_message_at = msg.created_at
       if (!msg.from_admin && !msg.is_read) existing.unread_count++
     }

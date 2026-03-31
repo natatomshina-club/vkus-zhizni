@@ -79,15 +79,30 @@ export async function POST(
 
   const body = await req.json().catch(() => null)
   const text = typeof body?.text === 'string' ? body.text.trim() : ''
-  if (!text) return NextResponse.json({ error: 'text обязателен' }, { status: 400 })
+  const media_url: string | null = typeof body?.media_url === 'string' ? body.media_url.trim() || null : null
+
+  if (media_url) {
+    try {
+      const parsedMedia = new URL(media_url)
+      const parsedSupabase = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://invalid')
+      if (parsedMedia.hostname !== parsedSupabase.hostname) {
+        return NextResponse.json({ error: 'Invalid media domain' }, { status: 400 })
+      }
+    } catch {
+      return NextResponse.json({ error: 'Invalid media domain' }, { status: 400 })
+    }
+  }
+
+  if (!text && !media_url) return NextResponse.json({ error: 'text или фото обязательны' }, { status: 400 })
   if (text.length > 2000) return NextResponse.json({ error: 'max 2000 символов' }, { status: 400 })
 
   const { data, error: insErr } = await admin
     .from('private_messages')
     .insert({
       member_id: memberId,
-      text,
-      from_admin: true,  // only admin route can set this
+      text: text || null,
+      media_url,
+      from_admin: true,
       is_read: false,
     })
     .select()

@@ -49,3 +49,38 @@ export async function GET() {
 
   return NextResponse.json({ webinars: result })
 }
+
+export async function POST(req: Request) {
+  const { user, error, status } = await requireAdmin()
+  if (!user) return NextResponse.json({ error }, { status })
+
+  const body = await req.json().catch(() => null)
+  if (!body?.title) return NextResponse.json({ error: 'title обязателен' }, { status: 400 })
+
+  const admin = createServiceClient()
+
+  const slug = (body.slug as string | undefined)?.trim() ||
+    body.title.toLowerCase()
+      .replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()
+
+  const { data, error: insErr } = await admin
+    .from('webinars')
+    .insert({
+      slug,
+      title: body.title,
+      short_desc: body.short_desc ?? '',
+      full_desc: body.full_desc ?? '',
+      price: body.price ?? 0,
+      emoji: body.emoji ?? '📹',
+      color_from: body.color_from ?? '#7C5CFC',
+      color_to: body.color_to ?? '#5B3FA8',
+      is_published: body.is_published ?? false,
+      sort_order: body.sort_order ?? 0,
+      content_type: body.content_type ?? 'webinar',
+    })
+    .select()
+    .single()
+
+  if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 })
+  return NextResponse.json({ webinar: { ...data, lessons_count: 0, pending_count: 0 } }, { status: 201 })
+}

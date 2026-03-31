@@ -18,6 +18,7 @@ export async function GET(
       .select('id, member_id, text, media_url, is_ai_reply, likes_count, created_at, member:members(name, full_name, role, avatar_url)')
       .eq('parent_id', id)
       .order('created_at', { ascending: true })
+      .limit(100)
 
     if (error) {
       console.error('[channel/posts/comments GET]', error)
@@ -57,7 +58,21 @@ export async function POST(
 
     const body = await request.json().catch(() => null)
     const text = typeof body?.text === 'string' ? body.text.trim() : ''
-    if (!text) return NextResponse.json({ error: 'text обязателен' }, { status: 400 })
+    const media_url: string | null = typeof body?.media_url === 'string' ? body.media_url.trim() || null : null
+
+    if (media_url) {
+      try {
+        const parsedMedia = new URL(media_url)
+        const parsedSupabase = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://invalid')
+        if (parsedMedia.hostname !== parsedSupabase.hostname) {
+          return NextResponse.json({ error: 'Invalid media domain' }, { status: 400 })
+        }
+      } catch {
+        return NextResponse.json({ error: 'Invalid media domain' }, { status: 400 })
+      }
+    }
+
+    if (!text && !media_url) return NextResponse.json({ error: 'text или фото обязательны' }, { status: 400 })
     if (text.length > 1000) return NextResponse.json({ error: 'max 1000 символов' }, { status: 400 })
 
     const { data, error } = await supabase
@@ -65,7 +80,8 @@ export async function POST(
       .insert({
         member_id: user.id,
         channel: parent.channel,
-        text,
+        text: text || null,
+        media_url,
         parent_id,
         is_pinned: false,
         is_ai_reply: false,

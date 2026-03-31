@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 
 export interface CourseMaterial {
   id: string
@@ -156,24 +157,37 @@ export default function CoursePageClient({ course }: { course: CourseData }) {
 
   const lessonRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const rightPanelRef = useRef<HTMLDivElement | null>(null)
+  // Storage key scoped by user ID to prevent cross-user progress leaking
+  const scopedKeyRef = useRef<string>(storageKey)
 
   useEffect(() => {
-    let doneSet = new Set<string>()
-    try {
-      const stored = localStorage.getItem(storageKey)
-      if (stored) doneSet = new Set(JSON.parse(stored) as string[])
-    } catch { /* ignore */ }
+    async function init() {
+      // Scope the storage key by user ID
+      const supabase = createClient()
+      const { data } = await supabase.auth.getUser()
+      const userId = data.user?.id ?? 'anon'
+      scopedKeyRef.current = `${storageKey}-${userId}`
 
-    setDone(doneSet)
+      let doneSet = new Set<string>()
+      try {
+        // Also check legacy key (no user suffix) for backwards compat
+        const stored = localStorage.getItem(scopedKeyRef.current)
+          ?? localStorage.getItem(storageKey)
+        if (stored) doneSet = new Set(JSON.parse(stored) as string[])
+      } catch { /* ignore */ }
 
-    const firstCurrent = lessons.find((l, idx) => {
-      const unlocked = idx === 0 || doneSet.has(lessons[idx - 1].id)
-      return unlocked && !doneSet.has(l.id)
-    })
-    const target = firstCurrent ?? lessons[lessons.length - 1]
-    setOpenId(target.id)
-    setSelectedId(target.id)
-    setHydrated(true)
+      setDone(doneSet)
+
+      const firstCurrent = lessons.find((l, idx) => {
+        const unlocked = idx === 0 || doneSet.has(lessons[idx - 1].id)
+        return unlocked && !doneSet.has(l.id)
+      })
+      const target = firstCurrent ?? lessons[lessons.length - 1]
+      setOpenId(target.id)
+      setSelectedId(target.id)
+      setHydrated(true)
+    }
+    init()
   }, [storageKey, lessons])
 
   function isUnlocked(idx: number) {
@@ -186,7 +200,7 @@ export default function CoursePageClient({ course }: { course: CourseData }) {
     const newDone = new Set(done)
     newDone.add(lessonId)
     setDone(newDone)
-    try { localStorage.setItem(storageKey, JSON.stringify([...newDone])) } catch { /* ignore */ }
+    try { localStorage.setItem(scopedKeyRef.current, JSON.stringify([...newDone])) } catch { /* ignore */ }
 
     if (lessonIdx < lessons.length - 1) {
       const next = lessons[lessonIdx + 1]

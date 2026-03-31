@@ -134,8 +134,13 @@ export async function POST(request: NextRequest) {
     // Coerce empty string to null — empty string would fail DB constraints
     const media_url = body.media_url?.trim() || null
     if (media_url) {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
-      if (!media_url.startsWith(supabaseUrl)) {
+      try {
+        const parsedMedia = new URL(media_url)
+        const parsedSupabase = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://invalid')
+        if (parsedMedia.hostname !== parsedSupabase.hostname) {
+          return NextResponse.json({ error: 'Invalid media domain' }, { status: 400 })
+        }
+      } catch {
         return NextResponse.json({ error: 'Invalid media domain' }, { status: 400 })
       }
     }
@@ -186,12 +191,18 @@ export async function POST(request: NextRequest) {
       media_expires_at = exp.toISOString()
     }
 
-    const { data, error } = await supabase
+    // Resolve members.id by email (auth user id may differ from members.id)
+    const admin = createServiceClient()
+    const { data: memberRow } = await admin
+      .from('members').select('id').eq('email', user.email).single()
+    const memberId = memberRow?.id ?? user.id
+
+    const { data, error } = await admin
       .from('channel_posts')
       .insert({
-        member_id: user.id,   // never from body
+        member_id: memberId,  // members.id, not auth user id
         channel,
-        text: text || null,
+        text: text || '',
         media_url,
         media_expires_at,
         meal_tag: channel === 'plates' ? meal_tag : null,

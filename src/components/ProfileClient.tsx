@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useMember } from '@/contexts/MemberContext'
 import { calculateKBJU, type ActivityLevel } from '@/lib/kbju'
-import AvatarUpload from '@/app/dashboard/profile/AvatarUpload'
+import AvatarUpload from '@/app/(club)/dashboard/profile/AvatarUpload'
+import { usePushNotifications } from '@/hooks/usePushNotifications'
 
 // ── Types ──────────────────────────────────────────────
 type Member = {
@@ -101,7 +102,8 @@ function getKbju(member: Member) {
 }
 
 function getSubscriptionStatus(member: Member) {
-  return member?.status ?? 'trial'
+  const raw = member as Record<string, unknown> | null
+  return (raw?.subscription_status as string | undefined) ?? member?.status ?? 'trial'
 }
 
 // ── Sub-components ─────────────────────────────────────
@@ -128,6 +130,7 @@ export default function ProfileClient({ userId, userEmail, member }: Props) {
   const kbju = getKbju(member)
   const conditions = getConditions(member?.health_conditions)
   const subscriptionStatus = getSubscriptionStatus(member)
+  const { isSubscribed: pushSubscribed, isSupported: pushSupported, isLoading: pushLoading, sdkReady, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushNotifications()
   const displayName = member?.full_name ?? member?.name ?? ''
 
   // ── Avatar state ──
@@ -575,46 +578,54 @@ export default function ProfileClient({ userId, userEmail, member }: Props) {
       {/* ── 4. ПОДПИСКА ── */}
       <Card>
         <SectionLabel>Подписка</SectionLabel>
-        <div className="flex items-center gap-3">
-          <span
-            className="text-xs font-bold px-3 py-1.5 rounded-full"
-            style={{
-              fontFamily: 'var(--font-nunito)',
-              background: subscriptionStatus === 'active' ? 'var(--grn-light)' : subscriptionStatus === 'expired' ? '#FFE5E5' : 'var(--pur-light)',
-              color: subscriptionStatus === 'active' ? '#1A5C3A' : subscriptionStatus === 'expired' ? '#C0392B' : 'var(--pur)',
-            }}
-          >
-            {subscriptionStatus === 'active' ? '✓ Полный клуб' : subscriptionStatus === 'expired' ? 'Истёк' : '🌿 Пробный период'}
-          </span>
-          {member?.trial_ends_at && (
-            <p className="text-xs" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
-              до {formatDate(member.trial_ends_at)}
-            </p>
-          )}
-        </div>
+        {(() => {
+          const raw = member as Record<string, unknown> | null
+          const subscriptionEndsAt = raw?.subscription_ends_at as string | null | undefined
+          const subscriptionPlan = raw?.subscription_plan as string | null | undefined
+          const endsDate = subscriptionEndsAt ?? member?.trial_ends_at
+          const hasRecurrent = subscriptionPlan === 'trial' || subscriptionPlan === 'month'
+          return (
+            <>
+              <div className="flex items-center gap-3">
+                <span
+                  className="text-xs font-bold px-3 py-1.5 rounded-full"
+                  style={{
+                    fontFamily: 'var(--font-nunito)',
+                    background: subscriptionStatus === 'active' ? 'var(--grn-light)' : subscriptionStatus === 'expired' ? '#FFE5E5' : 'var(--pur-light)',
+                    color: subscriptionStatus === 'active' ? '#1A5C3A' : subscriptionStatus === 'expired' ? '#C0392B' : 'var(--pur)',
+                  }}
+                >
+                  {subscriptionStatus === 'active' ? '✓ Полный клуб' : subscriptionStatus === 'expired' ? 'Истёк' : '🌿 Пробный период'}
+                </span>
+                {endsDate && (
+                  <p className="text-xs" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
+                    до {formatDate(endsDate)}
+                  </p>
+                )}
+              </div>
 
-        {subscriptionStatus !== 'active' ? (
-          <a
-            href="/join"
-            className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white transition-all"
-            style={{ background: 'linear-gradient(135deg, #2A9D5C 0%, #52C98D 100%)', fontFamily: 'var(--font-nunito)' }}
-          >
-            🌿 Открыть полный доступ
-          </a>
-        ) : (
-          <button
-            className="w-full py-3 rounded-xl text-sm font-semibold border transition-all"
-            style={{ fontFamily: 'var(--font-nunito)', borderColor: 'var(--border)', color: 'var(--text)', background: 'var(--bg)' }}
-          >
-            Управление подпиской
-          </button>
-        )}
-
-        {subscriptionStatus === 'active' && (
-          <p className="text-[10px] text-center" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
-            Для отмены подписки — напиши в чат поддержки
-          </p>
-        )}
+              {subscriptionStatus !== 'active' ? (
+                <a
+                  href="/dashboard/upgrade"
+                  className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white transition-all"
+                  style={{ background: 'linear-gradient(135deg, #2A9D5C 0%, #52C98D 100%)', fontFamily: 'var(--font-nunito)' }}
+                >
+                  🌿 Открыть полный доступ
+                </a>
+              ) : (
+                <a
+                  href="https://secure.cloudpayments.ru/unsubscribe"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center py-3 rounded-xl text-sm font-semibold border transition-all"
+                  style={{ fontFamily: 'var(--font-nunito)', borderColor: 'var(--border)', color: 'var(--text)', background: 'var(--bg)' }}
+                >
+                  Управление подпиской
+                </a>
+              )}
+            </>
+          )
+        })()}
       </Card>
 
       {/* ── 5. ДОКУМЕНТЫ ── */}
@@ -649,6 +660,47 @@ export default function ProfileClient({ userId, userEmail, member }: Props) {
             </a>
           ))}
         </div>
+      </Card>
+
+      {/* ── 5b. УВЕДОМЛЕНИЯ ── */}
+      <Card>
+        <SectionLabel>Уведомления</SectionLabel>
+        {pushSupported ? (
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold" style={{ color: 'var(--text)', fontFamily: 'var(--font-nunito)', margin: '0 0 2px' }}>
+                Push-уведомления
+              </p>
+              <p className="text-xs" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)', margin: 0 }}>
+                {pushSubscribed ? 'Включены — новые уроки и анонсы' : 'Получай уведомления о новых уроках и марафонах'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={pushSubscribed ? pushUnsubscribe : pushSubscribe}
+              disabled={!sdkReady || pushLoading}
+              className="shrink-0 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+              style={{
+                background: pushSubscribed ? '#F0EEFF' : 'var(--pur)',
+                color: pushSubscribed ? 'var(--pur)' : '#fff',
+                border: 'none', padding: '10px 16px',
+                cursor: 'pointer', fontFamily: 'var(--font-nunito)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {pushLoading ? 'Подключаем...' : pushSubscribed ? 'Выключить' : 'Включить'}
+            </button>
+          </div>
+        ) : (
+          <div>
+            <p className="text-sm font-semibold" style={{ color: 'var(--text)', fontFamily: 'var(--font-nunito)', margin: '0 0 4px' }}>
+              Уведомления на телефон
+            </p>
+            <p className="text-xs" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)', margin: 0 }}>
+              📱 Установите клуб на главный экран — и получайте уведомления на телефон
+            </p>
+          </div>
+        )}
       </Card>
 
       {/* ── 6. ВЫХОД ── */}

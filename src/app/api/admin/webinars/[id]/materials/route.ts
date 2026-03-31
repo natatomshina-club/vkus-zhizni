@@ -19,6 +19,25 @@ export async function POST(
 
   const { id: webinarId } = await params
 
+  const admin = createServiceClient()
+  const contentType = req.headers.get('content-type') ?? ''
+
+  // ── JSON path: client-side direct upload already done, just save DB record ──
+  if (contentType.includes('application/json')) {
+    const body = await req.json().catch(() => null) as { title?: string; url?: string } | null
+    if (!body?.title || !body?.url) {
+      return NextResponse.json({ error: 'title и url обязательны' }, { status: 400 })
+    }
+    const { data: material, error: insErr } = await admin
+      .from('webinar_materials')
+      .insert({ webinar_id: webinarId, lesson_id: null, type: 'pdf', title: body.title.trim(), url: body.url, sort_order: 0 })
+      .select()
+      .single()
+    if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 })
+    return NextResponse.json({ material }, { status: 201 })
+  }
+
+  // ── Multipart path: upload file via API (for lesson-level PDFs) ──
   const formData = await req.formData()
   const file = formData.get('file') as File | null
   const title = (formData.get('title') as string | null)?.trim() ?? ''
@@ -26,7 +45,6 @@ export async function POST(
   if (!file) return NextResponse.json({ error: 'Файл обязателен' }, { status: 400 })
   if (!title) return NextResponse.json({ error: 'Название обязательно' }, { status: 400 })
 
-  const admin = createServiceClient()
   const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
   const storagePath = `${webinarId}/general/${fileName}`
 
@@ -41,14 +59,7 @@ export async function POST(
 
   const { data: material, error: insErr } = await admin
     .from('webinar_materials')
-    .insert({
-      webinar_id: webinarId,
-      lesson_id: null,
-      type: 'pdf',
-      title,
-      url: publicUrl,
-      sort_order: 0,
-    })
+    .insert({ webinar_id: webinarId, lesson_id: null, type: 'pdf', title, url: publicUrl, sort_order: 0 })
     .select()
     .single()
 

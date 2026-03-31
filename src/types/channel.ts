@@ -94,7 +94,8 @@ export interface FaqItem {
 export interface PrivateMessage {
   id: string
   member_id: string
-  text: string
+  text: string | null
+  media_url?: string | null
   from_admin: boolean
   is_read: boolean
   created_at: string

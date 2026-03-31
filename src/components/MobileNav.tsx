@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { useMember } from '@/contexts/MemberContext'
 
 function IconHome() {
   return (
@@ -79,8 +78,6 @@ const items = [
 
 export default function MobileNav() {
   const pathname = usePathname()
-  const { member } = useMember()
-  const isAdmin = member?.role === 'admin'
   const [unread, setUnread] = useState(0)
 
   useEffect(() => {
@@ -114,10 +111,11 @@ export default function MobileNav() {
           <Link
             key={href}
             href={href}
-            className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all"
+            className="no-press flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl"
             style={{
               color: isActive ? 'var(--pur)' : 'var(--text)',
               opacity: isActive ? 1 : 0.4,
+              transition: 'opacity 0.15s ease, color 0.15s ease',
             }}
           >
             <span className="relative">
@@ -138,21 +136,6 @@ export default function MobileNav() {
           </Link>
         )
       })}
-      {isAdmin && (
-        <Link
-          href="/admin"
-          className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all"
-          style={{
-            color: pathname.startsWith('/admin') ? 'var(--pur)' : 'var(--text)',
-            opacity: pathname.startsWith('/admin') ? 1 : 0.4,
-          }}
-        >
-          <IconAdmin />
-          <span className="text-[10px] font-semibold" style={{ fontFamily: 'var(--font-nunito)' }}>
-            Админка
-          </span>
-        </Link>
-      )}
     </nav>
   )
 }

@@ -617,7 +617,7 @@ export default function KitchenClient({
             ? `Осталось запросов сегодня: ${requestsLeft}/${maxRequests}`
             : 'Лимит исчерпан — возвращайся завтра'}
           {isTrial && canRequest && (
-            <> · <a href="/join" style={{ color: 'var(--pur)' }}>Расширить до 10/день</a></>
+            <> · <a href="/dashboard/upgrade" style={{ color: 'var(--pur)' }}>Расширить до 10/день</a></>
           )}
         </p>
       </div>

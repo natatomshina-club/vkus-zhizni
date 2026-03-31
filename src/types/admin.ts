@@ -6,7 +6,7 @@ export interface MemberRow {
   email: string
   full_name: string | null
   avatar_url: string | null
-  role: 'user' | 'admin'
+  role: 'user' | 'admin' | 'curator'
   subscription_status: SubscriptionStatus
   tariff: Tariff
   subscription_ends_at: string | null

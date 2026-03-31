@@ -51,8 +51,21 @@ export async function PATCH(
 
   const updates: Record<string, unknown> = {}
 
-  if (body.tariff !== undefined) updates.tariff = body.tariff
+  if (body.tariff !== undefined) {
+    updates.tariff = body.tariff
+    // When setting a real plan, activate the subscription
+    if (body.tariff !== 'trial') updates.subscription_status = 'active'
+  }
   if (body.subscription_ends_at !== undefined) updates.subscription_ends_at = body.subscription_ends_at
+
+  // Manual renewal: set specific end date
+  if (body.expires_at !== undefined) {
+    const d = new Date(String(body.expires_at) + 'T23:59:59Z')
+    if (!isNaN(d.getTime())) {
+      updates.subscription_ends_at = d.toISOString()
+      updates.subscription_status = 'active'
+    }
+  }
 
   // Manual renewal: extend from current end date or today
   if (body.extend_days !== undefined) {
@@ -68,6 +81,8 @@ export async function PATCH(
       if (body.tariff !== undefined) updates.tariff = body.tariff
     }
   }
+
+  if (body.onboarding_completed !== undefined) updates.onboarding_completed = body.onboarding_completed
 
   if (body.is_blocked === true) {
     updates.is_blocked = true
