@@ -20,6 +20,18 @@ type Recipe = {
   created_at: string
 }
 
+type SavedSauce = {
+  id: string
+  title: string
+  emoji: string
+  category: 'соус'
+  kbju: { kcal: number; protein: number; fat: number; carbs: number } | null
+  ingredients?: string[] | null
+  steps?: string[] | null
+  tip?: string | null
+  savedAt: string
+}
+
 type Props = {
   userId: string
   initialRecipes: Recipe[]
@@ -27,7 +39,7 @@ type Props = {
   maxCount: number
 }
 
-const MEAL_FILTERS = ['Все', 'Завтрак', 'Обед/Ужин', 'Салат', 'Суп', 'Десерт']
+const MEAL_FILTERS = ['Все', 'Завтрак', 'Обед/Ужин', 'Салат', 'Суп', 'Десерт', '🥣 Соусы']
 
 // Значения из БД → отображаемый лейбл на карточке
 const CATEGORY_LABEL: Record<string, string> = {
@@ -86,6 +98,54 @@ export default function FavoritesClient({ userId, initialRecipes, totalCount, ma
   const [diaryMeal, setDiaryMeal]       = useState('')
   const [diaryDateMode, setDiaryDateMode] = useState<'today' | 'yesterday' | 'custom'>('today')
   const [diaryCustomDate, setDiaryCustomDate] = useState('')
+
+  // ── Sauces from localStorage ───────────────────────────
+  const [savedSauces, setSavedSauces] = useState<SavedSauce[]>(() => {
+    if (typeof window === 'undefined') return []
+    try {
+      const raw = localStorage.getItem('saved_sauces')
+      if (!raw) return []
+      const parsed = JSON.parse(raw)
+      if (!Array.isArray(parsed)) return []
+      if (parsed.length > 0 && typeof parsed[0] === 'object') return parsed as SavedSauce[]
+      return []
+    } catch { return [] }
+  })
+
+  const showSauces    = filter === '🥣 Соусы'
+  const visibleSauces = savedSauces.filter(s =>
+    !search.trim() || s.title.toLowerCase().includes(search.toLowerCase())
+  )
+
+  function handleDeleteSauce(id: string) {
+    const next = savedSauces.filter(s => s.id !== id)
+    setSavedSauces(next)
+    try { localStorage.setItem('saved_sauces', JSON.stringify(next)) } catch {}
+    setConfirmId(null)
+  }
+
+  async function handleSauceDiary(sauce: SavedSauce) {
+    if (!diaryMeal || !sauce.kbju) return
+    setDiaryLoadingId(sauce.id)
+    const res = await fetch('/api/diary/entries', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        date:      getSelectedDate(),
+        meal_type: diaryMeal,
+        title:     sauce.title,
+        calories:  sauce.kbju.kcal,
+        protein:   sauce.kbju.protein,
+        fat:       sauce.kbju.fat,
+        carbs:     sauce.kbju.carbs,
+        source:    'saved_sauce',
+      }),
+    })
+    setDiaryLoadingId(null)
+    setDiaryOpenId(null)
+    setDiaryMsg(res.ok ? '📓 Добавлено в дневник!' : 'Ошибка записи')
+    setTimeout(() => setDiaryMsg(''), 3000)
+  }
 
   // ── Client-side filtering ──────────────────────────────
   const visible = recipes.filter(r => {
@@ -149,7 +209,8 @@ export default function FavoritesClient({ userId, initialRecipes, totalCount, ma
 
   const todayStr = new Date().toISOString().split('T')[0]
 
-  const pct = Math.min(100, Math.round((count / maxCount) * 100))
+  const totalDisplayCount = count + savedSauces.length
+  const pct = Math.min(100, Math.round((totalDisplayCount / maxCount) * 100))
 
   return (
     <div className="flex flex-col gap-5">
@@ -161,7 +222,7 @@ export default function FavoritesClient({ userId, initialRecipes, totalCount, ma
             Сохранено рецептов
           </p>
           <span className="text-sm font-bold" style={{ color: 'var(--pur)', fontFamily: 'var(--font-unbounded)' }}>
-            {count} / {maxCount}
+            {totalDisplayCount} / {maxCount}
           </span>
         </div>
         <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
@@ -216,7 +277,33 @@ export default function FavoritesClient({ userId, initialRecipes, totalCount, ma
       )}
 
       {/* ── Empty state ── */}
-      {visible.length === 0 && (
+      {showSauces && visibleSauces.length === 0 && (
+        <div className="flex flex-col items-center gap-4 py-16 text-center">
+          <span className="text-5xl">🥣</span>
+          {savedSauces.length === 0 ? (
+            <>
+              <p className="text-sm font-semibold" style={{ color: 'var(--text)', fontFamily: 'var(--font-nunito)' }}>
+                Нет сохранённых соусов.
+              </p>
+              <p className="text-xs" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
+                Сохрани соус на странице рецептов 🥒
+              </p>
+              <a
+                href="/dashboard/kitchen/sauces"
+                className="mt-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white"
+                style={{ background: 'linear-gradient(135deg, var(--pur) 0%, #9B7CFF 100%)', fontFamily: 'var(--font-nunito)' }}
+              >
+                К соусам →
+              </a>
+            </>
+          ) : (
+            <p className="text-sm" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
+              По запросу ничего не найдено
+            </p>
+          )}
+        </div>
+      )}
+      {!showSauces && visible.length === 0 && !(filter === 'Все' && visibleSauces.length > 0) && (
         <div className="flex flex-col items-center gap-4 py-16 text-center">
           <span className="text-5xl">⭐</span>
           {recipes.length === 0 ? (
@@ -244,7 +331,7 @@ export default function FavoritesClient({ userId, initialRecipes, totalCount, ma
       )}
 
       {/* ── Recipes grid ── */}
-      <div className="grid grid-cols-2 gap-3">
+      {!showSauces && <div className="grid grid-cols-2 gap-3">
         {visible.map(recipe => {
           const isDeleting = deletingId === recipe.id
           const isConfirm  = confirmId  === recipe.id
@@ -509,7 +596,239 @@ export default function FavoritesClient({ userId, initialRecipes, totalCount, ma
             </div>
           )
         })}
-      </div>
+      </div>}
+
+      {/* ── Sauces grid ── */}
+      {(showSauces || filter === 'Все') && visibleSauces.length > 0 && (
+        <div className="grid grid-cols-2 gap-3">
+          {visibleSauces.map(sauce => {
+            const isConfirmSauce  = confirmId  === sauce.id
+            const isDiaryOpenS    = diaryOpenId === sauce.id
+            const isExpandedSauce = expanded   === sauce.id
+
+            return (
+              <div
+                key={sauce.id}
+                className="rounded-2xl overflow-hidden flex flex-col"
+                style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
+              >
+                {/* Card header */}
+                <div className="px-4 pt-4 pb-3 flex flex-col gap-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <span
+                      className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0"
+                      style={{ background: '#F0EEFF', color: '#7C5CFC', fontFamily: 'var(--font-nunito)' }}
+                    >
+                      🥣 Соус
+                    </span>
+                  </div>
+
+                  <p
+                    className="text-sm font-bold leading-snug"
+                    style={{ color: 'var(--text)', fontFamily: 'var(--font-unbounded)' }}
+                  >
+                    {sauce.emoji} {sauce.title}
+                  </p>
+
+                  {sauce.kbju && (
+                    <div className="flex flex-wrap gap-1">
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: '#7C5CFC', color: '#fff', fontFamily: 'var(--font-nunito)' }}>
+                        {sauce.kbju.kcal} ккал
+                      </span>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: '#A8E6CF', color: '#2D6A4F', fontFamily: 'var(--font-nunito)' }}>
+                        Б: {sauce.kbju.protein}г
+                      </span>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: '#FFD93D', color: '#5C4200', fontFamily: 'var(--font-nunito)' }}>
+                        Ж: {sauce.kbju.fat}г
+                      </span>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: '#FF9F43', color: '#fff', fontFamily: 'var(--font-nunito)' }}>
+                        У: {sauce.kbju.carbs}г
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Expandable ingredients/steps */}
+                {(sauce.ingredients?.length || sauce.steps?.length) ? (
+                  <div className="px-4 pb-2">
+                    <button
+                      onClick={() => setExpanded(isExpandedSauce ? null : sauce.id)}
+                      className="text-xs font-semibold transition-all"
+                      style={{ color: 'var(--pur)', fontFamily: 'var(--font-nunito)' }}
+                    >
+                      {isExpandedSauce ? '▲ Скрыть рецепт' : '▼ Показать рецепт'}
+                    </button>
+
+                    {isExpandedSauce && (
+                      <div className="mt-3 flex flex-col gap-3">
+                        {sauce.ingredients && sauce.ingredients.length > 0 && (
+                          <div>
+                            <p className="text-[9px] font-bold uppercase tracking-wide mb-1.5" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
+                              Ингредиенты
+                            </p>
+                            <ul className="flex flex-col gap-1">
+                              {sauce.ingredients.map((ing, i) => (
+                                <li key={i} className="text-xs py-1 border-b last:border-0" style={{ borderColor: 'var(--border)', color: 'var(--text)', fontFamily: 'var(--font-nunito)' }}>
+                                  {ing}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {sauce.steps && sauce.steps.length > 0 && (
+                          <div>
+                            <p className="text-[9px] font-bold uppercase tracking-wide mb-1.5" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
+                              Приготовление
+                            </p>
+                            <ol className="flex flex-col gap-2">
+                              {sauce.steps.map((step, i) => (
+                                <li key={i} className="flex gap-2 text-xs leading-relaxed">
+                                  <span
+                                    className="shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
+                                    style={{ background: 'var(--pur)' }}
+                                  >
+                                    {i + 1}
+                                  </span>
+                                  <span style={{ color: 'var(--text)', fontFamily: 'var(--font-nunito)' }}>{step}</span>
+                                </li>
+                              ))}
+                            </ol>
+                          </div>
+                        )}
+                        {sauce.tip && (
+                          <p className="text-xs italic" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
+                            💡 {sauce.tip}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+
+                {/* Action buttons */}
+                <div className="mt-auto px-3 pb-3 pt-2 flex flex-col gap-2 border-t" style={{ borderColor: 'var(--border)' }}>
+                  <div className="flex gap-2">
+                    {sauce.kbju && (
+                      <button
+                        type="button"
+                        onClick={() => openDiary(sauce.id)}
+                        className="flex-1 py-2 rounded-xl text-xs font-semibold border transition-all"
+                        style={{
+                          fontFamily:  'var(--font-nunito)',
+                          borderColor: '#2A9D5C',
+                          color:       '#2A9D5C',
+                          background:  isDiaryOpenS ? '#2A9D5C18' : 'transparent',
+                        }}
+                      >
+                        📓 В дневник {isDiaryOpenS ? '▲' : '▼'}
+                      </button>
+                    )}
+
+                    {isConfirmSauce ? (
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => handleDeleteSauce(sauce.id)}
+                          className="px-3 py-2 rounded-xl text-xs font-bold text-white"
+                          style={{ background: '#E74C3C', fontFamily: 'var(--font-nunito)' }}
+                        >
+                          Удалить
+                        </button>
+                        <button
+                          onClick={() => setConfirmId(null)}
+                          className="px-3 py-2 rounded-xl text-xs border"
+                          style={{ borderColor: 'var(--border)', color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}
+                        >
+                          Нет
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmId(sauce.id)}
+                        className="px-3 py-2 rounded-xl text-xs border transition-all"
+                        style={{ fontFamily: 'var(--font-nunito)', borderColor: 'var(--border)', color: 'var(--muted)', background: 'transparent' }}
+                      >
+                        🗑
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Inline diary picker for sauce */}
+                  {isDiaryOpenS && sauce.kbju && (
+                    <div className="flex flex-col gap-2 pt-1">
+                      <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
+                        Приём пищи
+                      </p>
+                      <div className="flex gap-1.5 flex-wrap">
+                        {DIARY_MEAL_OPTIONS.map(opt => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setDiaryMeal(opt.value)}
+                            className="flex-1 py-1.5 rounded-xl text-xs font-semibold border transition-all"
+                            style={{
+                              fontFamily:  'var(--font-nunito)',
+                              borderColor: diaryMeal === opt.value ? 'var(--pur)' : 'var(--border)',
+                              color:       diaryMeal === opt.value ? '#fff' : 'var(--muted)',
+                              background:  diaryMeal === opt.value ? 'var(--pur)' : 'transparent',
+                            }}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
+                        Дата
+                      </p>
+                      <div className="flex gap-1.5">
+                        {(['today', 'yesterday', 'custom'] as const).map(mode => (
+                          <button
+                            key={mode}
+                            type="button"
+                            onClick={() => setDiaryDateMode(mode)}
+                            className="flex-1 py-1.5 rounded-xl text-xs font-semibold border transition-all"
+                            style={{
+                              fontFamily:  'var(--font-nunito)',
+                              borderColor: diaryDateMode === mode ? 'var(--pur)' : 'var(--border)',
+                              color:       diaryDateMode === mode ? '#fff' : 'var(--muted)',
+                              background:  diaryDateMode === mode ? 'var(--pur)' : 'transparent',
+                            }}
+                          >
+                            {mode === 'today' ? 'Сегодня' : mode === 'yesterday' ? 'Вчера' : 'Другая ▼'}
+                          </button>
+                        ))}
+                      </div>
+                      {diaryDateMode === 'custom' && (
+                        <input
+                          type="date"
+                          max={todayStr}
+                          value={diaryCustomDate}
+                          onChange={e => setDiaryCustomDate(e.target.value)}
+                          className="w-full rounded-xl border px-3 py-2 text-xs"
+                          style={{ fontFamily: 'var(--font-nunito)', borderColor: 'var(--border)', color: 'var(--text)', background: 'var(--bg)' }}
+                        />
+                      )}
+                      <button
+                        type="button"
+                        disabled={!diaryMeal || diaryLoadingId === sauce.id || (diaryDateMode === 'custom' && !diaryCustomDate)}
+                        onClick={() => handleSauceDiary(sauce)}
+                        className="w-full py-2 rounded-xl text-xs font-bold transition-all"
+                        style={{
+                          fontFamily: 'var(--font-nunito)',
+                          background: diaryMeal ? '#2A9D5C' : 'var(--border)',
+                          color:      diaryMeal ? '#fff' : 'var(--muted)',
+                          opacity:    diaryLoadingId === sauce.id ? 0.6 : 1,
+                        }}
+                      >
+                        {diaryLoadingId === sauce.id ? 'Сохраняем...' : 'Добавить в дневник'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

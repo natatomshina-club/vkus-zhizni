@@ -20,7 +20,7 @@ export default async function KitchenPage() {
     member?.kitchen_date === today ? (member?.kitchen_requests_today ?? 0) : 0
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
+    <div className="min-h-screen" style={{ background: '#F0EEFF' }}>
       {/* Mobile header */}
       <header
         className="lg:hidden flex items-center px-4 py-4 sticky top-0 z-40"
@@ -38,7 +38,7 @@ export default async function KitchenPage() {
             Умная кухня 🍳
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
-            Скажи что есть — система подберёт рецепты точно под твои КБЖУ
+            Укажи продукты — система подберёт рецепты точно под твои КБЖУ
           </p>
         </div>
 

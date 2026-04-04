@@ -102,6 +102,9 @@ export default function AnnouncementsPage() {
             onFocus={e => (e.target.style.borderColor = 'var(--pur)')}
             onBlur={e => (e.target.style.borderColor = 'var(--border)')}
           />
+          <p className="text-xs" style={{ color: 'var(--muted)' }}>
+            💡 Можно вставлять ссылки: <code style={{ background: 'var(--bg)', padding: '1px 4px', borderRadius: 4 }}>[текст ссылки](https://адрес)</code>
+          </p>
           <div className="flex items-center gap-2">
             <input
               type="checkbox"

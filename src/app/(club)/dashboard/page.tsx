@@ -58,6 +58,20 @@ export default async function DashboardPage() {
     ? Math.max(1, Math.floor((Date.now() - new Date(member.created_at).getTime()) / 86400000) + 1)
     : 1
 
+  function parseLinks(text: string): string {
+    // markdown [text](url)
+    let result = text.replace(
+      /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
+      '<a href="$2" target="_blank" rel="noopener noreferrer" style="color:#7C5CFC;text-decoration:underline;font-weight:600">$1</a>'
+    )
+    // bare https://... not already inside href="..."
+    result = result.replace(
+      /(?<!href=")(https?:\/\/[^\s<"]+)/g,
+      '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:#7C5CFC;text-decoration:underline;font-weight:600">$1</a>'
+    )
+    return result
+  }
+
   // Welcome text for first-day trial (if no active announcement)
   const announcementText = announcement?.text ?? (isTrial && daysInClub <= 1
     ? 'Добро пожаловать в клуб «Вкус Жизни»! 🌿\nЯ рада что ты здесь. У тебя есть 7 дней чтобы познакомиться с клубом, попробовать умную кухню, начать вести дневник питания и пообщаться в чатах.\nЕсли появятся вопросы — пиши мне лично в чате «Наташе», я отвечаю каждый день.\nС заботой, Наталья 💚'
@@ -299,9 +313,9 @@ export default async function DashboardPage() {
               <p className="text-xs font-bold mb-1.5" style={{ color: 'var(--pur)', fontFamily: 'var(--font-nunito)' }}>
                 📢 Важное от Наташи!
               </p>
-              <p className="text-sm leading-relaxed whitespace-pre-line" style={{ color: 'var(--text)', fontFamily: 'var(--font-nunito)' }}>
-                {announcementText}
-              </p>
+              <p className="text-sm leading-relaxed whitespace-pre-line" style={{ color: 'var(--text)', fontFamily: 'var(--font-nunito)' }}
+                dangerouslySetInnerHTML={{ __html: parseLinks(announcementText) }}
+              />
             </div>
           </div>
         )}

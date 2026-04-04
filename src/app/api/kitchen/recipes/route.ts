@@ -1,93 +1,32 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { calculatePortion, getMealTarget, selectRecipes } from '@/lib/recipeCalculator'
+import { expandProducts } from '@/lib/productUtils'
 
 const VALID_CATEGORIES = ['завтрак', 'обед_ужин', 'салат', 'десерт', 'суп'] as const
 type Category = (typeof VALID_CATEGORIES)[number]
 
-// ── Словарь синонимов продуктов ──────────────────────────────────────────────
-const PRODUCT_SYNONYMS: Record<string, string[]> = {
-  // Говядина
-  'говядина':         ['говядина', 'говяжий фарш', 'фарш говяжий', 'говяжье филе'],
-  'говяжий фарш':     ['говядина', 'говяжий фарш', 'фарш говяжий'],
-  'фарш говяжий':     ['говядина', 'говяжий фарш'],
-  'говяжья вырезка':  ['говядина'],
-  'стейк':            ['говядина'],
+const FIXED_CATEGORIES = ['салат', 'суп', 'десерт'] as const
 
-  // Курица
-  'курица':           ['курица', 'куриная грудка', 'куриное бедро', 'куриный фарш', 'фарш куриный'],
-  'куриная грудка':   ['курица', 'куриная грудка'],
-  'куриная грудка без кожи': ['курица', 'куриная грудка'],
-  'грудка куриная':   ['курица', 'куриная грудка'],
-  'куриное бедро':    ['курица', 'куриное бедро'],
-  'куриный фарш':     ['курица', 'куриный фарш', 'фарш куриный'],
-  'фарш куриный':     ['курица', 'куриный фарш'],
-  'курятина':         ['курица'],
-
-  // Индейка
-  'индейка':          ['индейка', 'фарш индейки'],
-  'грудка индейки':   ['индейка'],
-  'фарш индейки':     ['индейка'],
-
-  // Свинина
-  'свинина':          ['свинина', 'свиная шея', 'карбонат'],
-  'свиная шея':       ['свинина'],
-  'карбонат':         ['свинина'],
-  'свиной фарш':      ['свинина'],
-
-  // Рыба лососёвые
-  'лосось':       ['лосось', 'семга', 'сёмга', 'форель', 'кета', 'кижуч', 'нерка', 'горбуша'],
-  'семга':        ['лосось', 'семга', 'сёмга'],
-  'сёмга':        ['лосось', 'семга', 'сёмга'],
-  'форель':       ['форель', 'лосось'],
-  'кета':         ['кета', 'лосось'],
-  'кижуч':        ['кижуч', 'лосось'],
-  'нерка':        ['нерка', 'лосось'],
-  'горбуша':      ['горбуша'],
-  'красная рыба': ['лосось', 'семга', 'сёмга', 'форель', 'кета'],
-
-  // Белая рыба
-  'минтай':   ['минтай'],
-  'скумбрия': ['скумбрия'],
-  'палтус':   ['палтус'],
-  'треска':   ['минтай', 'треска'],
-  'рыба':     ['минтай', 'горбуша', 'скумбрия', 'лосось', 'семга'],
-
-  // Яйца
-  'яйца': ['яйца', 'яйцо'],
-  'яйцо': ['яйца', 'яйцо'],
-
-  // Творог
-  'творог':        ['творог'],
-  'творожный сыр': ['творог'],
-
-  // Субпродукты
-  'куриная печень':   ['куриная печень'],
-  'печень':           ['куриная печень', 'говяжья печень'],
-  'говяжья печень':   ['говяжья печень'],
-  'куриные сердца':   ['куриные сердца', 'сердечки'],
-  'сердечки':         ['куриные сердца'],
-  'куриные желудки':  ['куриные желудки'],
-  'желудки':          ['куриные желудки'],
-  'кролик':           ['кролик'],
-}
-
-function expandProducts(userProducts: string[]): string[] {
-  const expanded = new Set<string>()
-  for (const product of userProducts) {
-    const lower = product.toLowerCase().trim()
-    expanded.add(lower)
-    if (PRODUCT_SYNONYMS[lower]) {
-      PRODUCT_SYNONYMS[lower].forEach(s => expanded.add(s))
-    }
-    for (const [key, synonyms] of Object.entries(PRODUCT_SYNONYMS)) {
-      if (lower.includes(key) || key.includes(lower)) {
-        synonyms.forEach(s => expanded.add(s))
-      }
-    }
-    expanded.add(lower.split(' ')[0])
-  }
-  return Array.from(expanded)
+interface RecipeResult {
+  recipe_id: string | number
+  title: string
+  category: string
+  steps: string[]
+  tip_tags: string[]
+  ingredients: Array<{
+    name: string
+    grams: number
+    calories: number
+    protein: number
+    fat: number
+    carbs: number
+  }>
+  extra_products: string[]
+  total: { calories: number; protein: number; fat: number; carbs: number }
+  macros_ok: { protein: boolean; fat: boolean }
+  requires_macro_calculation: boolean
+  servings: number
 }
 
 export async function POST(request: NextRequest) {
@@ -99,14 +38,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { category, meals_per_day, user_products } = body as {
       category: Category
-      meals_per_day: 2 | 3
+      meals_per_day?: 2 | 3
       user_products: string[]
     }
 
     if (!VALID_CATEGORIES.includes(category)) {
       return NextResponse.json({ error: 'Неверная категория' }, { status: 400 })
     }
-    if (meals_per_day !== 2 && meals_per_day !== 3) {
+
+    const isFixed = (FIXED_CATEGORIES as readonly string[]).includes(category)
+
+    if (!isFixed && meals_per_day !== 2 && meals_per_day !== 3) {
       return NextResponse.json({ error: 'meals_per_day должен быть 2 или 3' }, { status: 400 })
     }
 
@@ -134,10 +76,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'limit_reached', limit }, { status: 429 })
     }
 
-    // 3. Цель на приём
-    const target = getMealTarget(
+    // 3. Цель на приём (только для завтрак/обед_ужин)
+    const target = isFixed ? null : getMealTarget(
       { protein: member.kbju_protein, fat: member.kbju_fat, carbs: member.kbju_carbs },
-      meals_per_day
+      meals_per_day!
     )
 
     // 4. Все рецепты категории
@@ -169,7 +111,7 @@ export async function POST(request: NextRequest) {
     const { data: fullRecipes, error: fullErr } = await supabase
       .from('recipes')
       .select(`
-        id, title, category, steps, tip_tags,
+        id, title, category, steps, tip_tags, servings,
         recipe_ingredients (
           nutrition_id, ingredient_name, role, base_grams, is_always_available,
           nutrition ( id, name, calories, protein, fat, carbs )
@@ -183,27 +125,86 @@ export async function POST(request: NextRequest) {
     }
 
     // 7. Пересчёт порций
-    const results = []
+    const results: RecipeResult[] = []
     for (const raw of fullRecipes) {
       try {
-            results.push(calculatePortion(
-          {
-            id:          raw.id,
-            title:       raw.title,
-            category:    raw.category,
-            steps:       raw.steps ?? [],
-            ingredients: (raw.recipe_ingredients ?? []) as unknown as Parameters<typeof calculatePortion>[0]['ingredients'],
-          },
-          target,
-          user_products ?? []
-        ))
+        const recipeServings = (raw.servings as number | null) ?? 1
+        const tipTags = (raw.tip_tags as string[] | null) ?? []
+
+        if (isFixed) {
+          // Считаем КБЖУ напрямую по base_grams / servings
+          const ings: RecipeResult['ingredients'] = []
+          let totCal = 0, totProt = 0, totFat = 0, totCarb = 0
+
+          type RawIng = {
+            ingredient_name: string
+            role: string
+            base_grams: number
+            nutrition: { calories: number; protein: number; fat: number; carbs: number } | { calories: number; protein: number; fat: number; carbs: number }[] | null
+          }
+          for (const ing of (raw.recipe_ingredients as unknown as RawIng[]) ?? []) {
+            if (ing.role === 'spice') continue
+            const n = Array.isArray(ing.nutrition) ? (ing.nutrition[0] ?? null) : ing.nutrition
+            if (!n) continue
+            const ratio = ing.base_grams / 100
+            totCal  += ratio * n.calories
+            totProt += ratio * n.protein
+            totFat  += ratio * n.fat
+            totCarb += ratio * n.carbs
+            ings.push({
+              name:     ing.ingredient_name,
+              grams:    ing.base_grams,
+              calories: Math.round(ratio * n.calories),
+              protein:  Math.round(ratio * n.protein * 10) / 10,
+              fat:      Math.round(ratio * n.fat * 10) / 10,
+              carbs:    Math.round(ratio * n.carbs * 10) / 10,
+            })
+          }
+
+          results.push({
+            recipe_id:                raw.id as string | number,
+            title:                    raw.title as string,
+            category:                 raw.category as string,
+            steps:                    (raw.steps as string[] | null) ?? [],
+            tip_tags:                 tipTags,
+            ingredients:              ings,
+            extra_products:           [],
+            total: {
+              calories: Math.round(totCal  / recipeServings),
+              protein:  Math.round((totProt / recipeServings) * 10) / 10,
+              fat:      Math.round((totFat  / recipeServings) * 10) / 10,
+              carbs:    Math.round((totCarb / recipeServings) * 10) / 10,
+            },
+            macros_ok:                { protein: false, fat: false },
+            requires_macro_calculation: false,
+            servings:                 recipeServings,
+          })
+        } else {
+          const portion = calculatePortion(
+            {
+              id:          raw.id,
+              title:       raw.title,
+              category:    raw.category,
+              steps:       raw.steps ?? [],
+              ingredients: (raw.recipe_ingredients ?? []) as unknown as Parameters<typeof calculatePortion>[0]['ingredients'],
+            },
+            target!,
+            user_products ?? []
+          )
+          results.push({
+            ...portion,
+            tip_tags:                 tipTags,
+            requires_macro_calculation: true,
+            servings:                 recipeServings,
+          } as RecipeResult)
+        }
       } catch (e) {
         console.error(`Ошибка расчёта рецепта ${raw.id}:`, e)
       }
     }
 
     // 8. Совет по приготовлению
-    const allTipTags = fullRecipes.flatMap(r => r.tip_tags ?? [])
+    const allTipTags = fullRecipes.flatMap(r => (r.tip_tags as string[] | null) ?? [])
     let tip: string | null = null
     if (allTipTags.length > 0) {
       const { data: tipData } = await supabase

@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Кеторацион • Анна Снежурова • Неделя 7</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Playfair+Display:wght@700&display=swap');
+
+  :root {
+    --sage: #7a9e7e;
+    --sage-light: #c8ddc9;
+    --sage-pale: #eef5ef;
+    --warm: #e8a87c;
+    --warm-light: #fde8d5;
+    --cream: #fdf8f0;
+    --dark: #2d3a2e;
+    --mid: #4a5e4b;
+    --text: #3a4a3b;
+    --border: #d4e6d5;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* HERO */
+  .hero {
+    background: linear-gradient(135deg, var(--dark) 0%, var(--mid) 60%, var(--sage) 100%);
+    color: white;
+    padding: 60px 40px 50px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+  .hero-tag {
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 20px;
+    padding: 5px 18px;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(28px, 5vw, 48px);
+    margin-bottom: 8px;
+    line-height: 1.2;
+  }
+  .hero-sub {
+    font-size: 16px;
+    opacity: 0.8;
+    margin-bottom: 32px;
+  }
+  .macros-row {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .macro-pill {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 50px;
+    padding: 10px 24px;
+    text-align: center;
+  }
+  .macro-pill .val { font-size: 22px; font-weight: 900; }
+  .macro-pill .lbl { font-size: 11px; opacity: 0.75; letter-spacing: 1px; text-transform: uppercase; }
+
+  /* LAYOUT */
+  .container { max-width: 900px; margin: 0 auto; padding: 40px 20px 60px; }
+
+  /* INFO BAR */
+  .info-bar {
+    display: flex; gap: 12px; flex-wrap: wrap;
+    background: white;
+    border-radius: 16px;
+    padding: 18px 24px;
+    margin-bottom: 36px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    border: 1px solid var(--border);
+  }
+  .info-item { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+  .info-item .icon { font-size: 18px; }
+  .info-item strong { color: var(--dark); }
+
+  /* DAY CARDS */
+  .day-section { margin-bottom: 32px; }
+  .day-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 16px;
+  }
+  .day-badge {
+    background: var(--dark);
+    color: white;
+    border-radius: 12px;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+  .day-line { flex: 1; height: 1px; background: var(--border); }
+
+  .meals-grid { display: grid; gap: 16px; }
+  @media(min-width: 620px) { .meals-grid { grid-template-columns: 1fr 1fr; } }
+
+  .meal-card {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+    border: 1px solid var(--border);
+    transition: transform .2s, box-shadow .2s;
+  }
+  .meal-card:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(0,0,0,0.1); }
+
+  .meal-header {
+    padding: 14px 20px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .meal-header.p1 { background: var(--sage-pale); border-bottom: 2px solid var(--sage-light); }
+  .meal-header.p2 { background: var(--warm-light); border-bottom: 2px solid #f5c8a0; }
+  .meal-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 900; flex-shrink: 0;
+  }
+  .p1 .meal-num { background: var(--sage); color: white; }
+  .p2 .meal-num { background: var(--warm); color: white; }
+  .meal-title { font-size: 14px; font-weight: 800; color: var(--dark); line-height: 1.3; }
+
+  .meal-body { padding: 16px 20px; }
+
+  .ingr-title {
+    font-size: 11px; font-weight: 700; color: var(--sage);
+    letter-spacing: 1.5px; text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .ingr-list { list-style: none; margin-bottom: 16px; }
+  .ingr-list li {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 5px 0;
+    border-bottom: 1px dashed #eee;
+    font-size: 13.5px;
+  }
+  .ingr-list li:last-child { border-bottom: none; }
+  .ingr-name { color: var(--text); }
+  .ingr-qty { font-weight: 700; color: var(--mid); font-size: 12.5px; white-space: nowrap; margin-left: 8px; }
+
+  .steps-title {
+    font-size: 11px; font-weight: 700; color: var(--warm);
+    letter-spacing: 1.5px; text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .steps-list { list-style: none; counter-reset: steps; }
+  .steps-list li {
+    counter-increment: steps;
+    display: flex; gap: 10px;
+    padding: 6px 0;
+    font-size: 13px; line-height: 1.55;
+    color: #555;
+    border-bottom: 1px solid #f5f5f5;
+  }
+  .steps-list li:last-child { border-bottom: none; }
+  .steps-list li::before {
+    content: counter(steps);
+    min-width: 22px; height: 22px;
+    background: var(--sage-pale);
+    color: var(--sage);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800;
+    flex-shrink: 0; margin-top: 1px;
+  }
+
+  .ref-badge {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--sage-pale);
+    border: 1px solid var(--sage-light);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--mid);
+    font-weight: 600;
+    margin: 10px 0;
+  }
+  .ref-badge .icon { font-size: 16px; }
+
+  /* SHOPPING LIST */
+  .shopping-section { margin-top: 48px; }
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px; color: var(--dark);
+    margin-bottom: 24px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .section-title::after { content: ''; flex: 1; height: 2px; background: var(--border); }
+
+  .shopping-grid { display: grid; gap: 16px; }
+  @media(min-width: 600px) { .shopping-grid { grid-template-columns: repeat(3, 1fr); } }
+
+  .shop-card {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    border: 1px solid var(--border);
+  }
+  .shop-card-title {
+    font-size: 12px; font-weight: 800; letter-spacing: 1.5px;
+    text-transform: uppercase; margin-bottom: 14px;
+    padding-bottom: 10px; border-bottom: 2px solid;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .shop-card:nth-child(1) .shop-card-title { color: var(--mid); border-color: var(--sage-light); }
+  .shop-card:nth-child(2) .shop-card-title { color: #6a8f5a; border-color: #b8d4a8; }
+  .shop-card:nth-child(3) .shop-card-title { color: #b07040; border-color: #f0c898; }
+
+  .shop-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 0;
+    font-size: 13px;
+    border-bottom: 1px dashed #f0f0f0;
+  }
+  .shop-item:last-child { border-bottom: none; }
+  .shop-name { color: var(--text); }
+  .shop-qty { font-weight: 700; color: var(--mid); font-size: 12px; }
+
+  /* FOOTER */
+  footer {
+    text-align: center; padding: 30px;
+    font-size: 13px; color: #999;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-tag">🥑 Кеторацион · Неделя 7</div>
+  <h1>Анна Снежурова</h1>
+  <p class="hero-sub">2-разовое питание · 7 дней · Каждый приём пищи</p>
+  <div class="macros-row">
+    <div class="macro-pill">
+      <div class="val">37–40 г</div>
+      <div class="lbl">Белки</div>
+    </div>
+    <div class="macro-pill">
+      <div class="val">55–60 г</div>
+      <div class="lbl">Жиры</div>
+    </div>
+    <div class="macro-pill">
+      <div class="val">8–10 г</div>
+      <div class="lbl">Углеводы</div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="info-bar">
+    <div class="info-item"><span class="icon">🗓️</span><span><strong>7 дней</strong> рациона</span></div>
+    <div class="info-item"><span class="icon">🍽️</span><span><strong>2 приёма</strong> пищи в день</span></div>
+    <div class="info-item"><span class="icon">🔥</span><span><strong>Кетогенное</strong> питание</span></div>
+    <div class="info-item"><span class="icon">👩‍🍳</span><span>Простые <strong>рецепты</strong></span></div>
+  </div>
+
+  <!-- ДЕНЬ 1–2 -->
+  <div class="day-section">
+    <div class="day-header">
+      <div class="day-badge">ДЕНЬ 1 и 2</div>
+      <div class="day-line"></div>
+    </div>
+    <div class="meals-grid">
+      <div class="meal-card">
+        <div class="meal-header p1">
+          <div class="meal-num">1</div>
+          <div class="meal-title">Фриттата с курицей и томатами</div>
+        </div>
+        <div class="meal-body">
+          <div class="ingr-title">🛒 Ингредиенты · 2 порции</div>
+          <ul class="ingr-list">
+            <li><span class="ingr-name">Куриное бедро (филе)</span><span class="ingr-qty">200 г</span></li>
+            <li><span class="ingr-name">Яйца</span><span class="ingr-qty">4 шт.</span></li>
+            <li><span class="ingr-name">Помидоры</span><span class="ingr-qty">100 г</span></li>
+            <li><span class="ingr-name">Масло гхи</span><span class="ingr-qty">15 г</span></li>
+          </ul>
+          <div class="steps-title">👨‍🍳 Приготовление</div>
+          <ol class="steps-list">
+            <li>Нарежьте курицу кубиками, обжарьте с маслом гхи до готовности.</li>
+            <li>Добавьте нарезанные помидоры к курице.</li>
+            <li>Залейте взбитыми яйцами, готовьте на медленном огне 5–7 минут.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="meal-card">
+        <div class="meal-header p2">
+          <div class="meal-num">2</div>
+          <div class="meal-title">Тушёная говядина с капустой и морковью</div>
+        </div>
+        <div class="meal-body">
+          <div class="ingr-title">🛒 Ингредиенты · 3 порции</div>
+          <ul class="ingr-list">
+            <li><span class="ingr-name">Говядина (бедро)</span><span class="ingr-qty">500 г</span></li>
+            <li><span class="ingr-name">Лук</span><span class="ingr-qty">120 г</span></li>
+            <li><span class="ingr-name">Чеснок</span><span class="ingr-qty">2 зубчика</span></li>
+            <li><span class="ingr-name">Помидоры</span><span class="ingr-qty">200 г</span></li>
+            <li><span class="ingr-name">Белокочанная капуста</span><span class="ingr-qty">300 г</span></li>
+            <li><span class="ingr-name">Морковь</span><span class="ingr-qty">120 г</span></li>
+            <li><span class="ingr-name">Масло гхи</span><span class="ingr-qty">35 г</span></li>
+          </ul>
+          <div class="steps-title">👨‍🍳 Приготовление</div>
+          <ol class="steps-list">
+            <li>Нарежьте говядину, посолите, оставьте мариноваться 20–30 мин.</li>
+            <li>Обжарьте лук и чеснок, добавьте мясо, обжарьте до румяности.</li>
+            <li>Добавьте помидоры, влейте воду (700–750 мл), тушите 30–40 мин.</li>
+            <li>Обжарьте капусту с морковью, подавайте с говядиной.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ДЕНЬ 3 -->
+  <div class="day-section">
+    <div class="day-header">
+      <div class="day-badge">ДЕНЬ 3</div>
+      <div class="day-line"></div>
+    </div>
+    <div class="meals-grid">
+      <div class="meal-card">
+        <div class="meal-header p1">
+          <div class="meal-num">1</div>
+          <div class="meal-title">Салат с тунцом</div>
+        </div>
+        <div class="meal-body">
+          <div class="ingr-title">🛒 Ингредиенты · 1 порция</div>
+          <ul class="ingr-list">
+            <li><span class="ingr-name">Тунец консервированный</span><span class="ingr-qty">80 г</span></li>
+            <li><span class="ingr-name">Салат айсберг</span><span class="ingr-qty">50 г</span></li>
+            <li><span class="ingr-name">Огурец свежий</span><span class="ingr-qty">80 г</span></li>
+            <li><span class="ingr-name">Помидоры черри</span><span class="ingr-qty">40 г</span></li>
+            <li><span class="ingr-name">Масло оливковое</span><span class="ingr-qty">15 г</span></li>
+            <li><span class="ingr-name">Яйцо варёное</span><span class="ingr-qty">1,5 шт.</span></li>
+            <li><span class="ingr-name">Сок лимона</span><span class="ingr-qty">по вкусу</span></li>
+          </ul>
+          <div class="steps-title">👨‍🍳 Приготовление</div>
+          <ol class="steps-list">
+            <li>Слейте жидкость из тунца.</li>
+            <li>Нарежьте айсберг, огурцы, черри и яйца.</li>
+            <li>Соедините всё, заправьте маслом и лимонным соком.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="meal-card">
+        <div class="meal-header p2">
+          <div class="meal-num">2</div>
+          <div class="meal-title">Тушёная говядина с капустой и морковью</div>
+        </div>
+        <div class="meal-body">
+          <div class="ref-badge"><span class="icon">♻️</span><span>Рецепт из Дня 1–2 · Приём 2</span></div>
+          <p style="font-size:13px;color:#888;margin-top:8px;">Используйте готовое блюдо, приготовленное на 3 порции.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ДЕНЬ 4 -->
+  <div class="day-section">
+    <div class="day-header">
+      <div class="day-badge">ДЕНЬ 4</div>
+      <div class="day-line"></div>
+    </div>
+    <div class="meals-grid">
+      <div class="meal-card" style="grid-column: 1 / -1;">
+        <div class="meal-header p1">
+          <div class="meal-num">1+2</div>
+          <div class="meal-title">Запечённая курица с овощами (оба приёма)</div>
+        </div>
+        <div class="meal-body">
+          <div class="ingr-title">🛒 Ингредиенты · 3 порции</div>
+          <ul class="ingr-list" style="columns:2; column-gap:24px;">
+            <li><span class="ingr-name">Куриное бедро (филе)</span><span class="ingr-qty">450 г</span></li>
+            <li><span class="ingr-name">Стручковая фасоль</span><span class="ingr-qty">200 г</span></li>
+            <li><span class="ingr-name">Цветная капуста</span><span class="ingr-qty">300 г</span></li>
+            <li><span class="ingr-name">Морковь</span><span class="ingr-qty">120 г</span></li>
+            <li><span class="ingr-name">Чеснок</span><span class="ingr-qty">2 зубчика</span></li>
+            <li><span class="ingr-name">Масло гхи</span><span class="ingr-qty">15 г</span></li>
+          </ul>
+          <div class="steps-title">👨‍🍳 Приготовление</div>
+          <ol class="steps-list">
+            <li>Отбейте филе, приправьте и отправьте в духовку на 20 мин.</li>
+            <li>Смешайте цветную капусту, морковь, чеснок и масло.</li>
+            <li>Переверните курицу, выложите рядом овощи.</li>
+            <li>Запекайте ещё 20–25 мин. до румяности.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ДЕНЬ 5 -->
+  <div class="day-section">
+    <div class="day-header">
+      <div class="day-badge">ДЕНЬ 5</div>
+      <div class="day-line"></div>
+    </div>
+    <div class="meals-grid">
+      <div class="meal-card">
+        <div class="meal-header p1">
+          <div class="meal-num">1</div>
+          <div class="meal-title">Запечённая курица с овощами</div>
+        </div>
+        <div class="meal-body">
+          <div class="ref-badge"><span class="icon">♻️</span><span>Рецепт из Дня 4</span></div>
+        </div>
+      </div>
+
+      <div class="meal-card">
+        <div class="meal-header p2">
+          <div class="meal-num">2</div>
+          <div class="meal-title">Сёмга с салатом из помидоров и огурцов</div>
+        </div>
+        <div class="meal-body">
+          <div class="ingr-title">🛒 Ингредиенты · 2 порции</div>
+          <ul class="ingr-list">
+            <li><span class="ingr-name">Сёмга</span><span class="ingr-qty">300 г</span></li>
+            <li><span class="ingr-name">Сливочное масло</span><span class="ingr-qty">10 г</span></li>
+            <li><span class="ingr-name">Помидоры</span><span class="ingr-qty">150 г</span></li>
+            <li><span class="ingr-name">Огурцы</span><span class="ingr-qty">200 г</span></li>
+            <li><span class="ingr-name">Салат айсберг</span><span class="ingr-qty">60 г</span></li>
+            <li><span class="ingr-name">Майонез</span><span class="ingr-qty">40 г</span></li>
+          </ul>
+          <div class="steps-title">👨‍🍳 Приготовление</div>
+          <ol class="steps-list">
+            <li>Запекайте сёмгу при 180°C 15–20 минут.</li>
+            <li>Нарежьте помидоры, огурцы, измельчите айсберг.</li>
+            <li>Смешайте овощи с майонезом, подавайте с рыбой.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ДЕНЬ 6 -->
+  <div class="day-section">
+    <div class="day-header">
+      <div class="day-badge">ДЕНЬ 6</div>
+      <div class="day-line"></div>
+    </div>
+    <div class="meals-grid">
+      <div class="meal-card">
+        <div class="meal-header p1">
+          <div class="meal-num">1</div>
+          <div class="meal-title">Сёмга с салатом из помидоров и огурцов</div>
+        </div>
+        <div class="meal-body">
+          <div class="ref-badge"><span class="icon">♻️</span><span>Рецепт из Дня 5 · Приём 2</span></div>
+        </div>
+      </div>
+
+      <div class="meal-card">
+        <div class="meal-header p2">
+          <div class="meal-num">2</div>
+          <div class="meal-title">Отбивная из свинины под овощной шубой</div>
+        </div>
+        <div class="meal-body">
+          <div class="ingr-title">🛒 Ингредиенты · 3 порции</div>
+          <ul class="ingr-list">
+            <li><span class="ingr-name">Свинина (карбонат)</span><span class="ingr-qty">500 г</span></li>
+            <li><span class="ingr-name">Морковь</span><span class="ingr-qty">120 г</span></li>
+            <li><span class="ingr-name">Лук</span><span class="ingr-qty">100 г</span></li>
+            <li><span class="ingr-name">Чеснок</span><span class="ingr-qty">2 зубчика</span></li>
+            <li><span class="ingr-name">Стручковая фасоль</span><span class="ingr-qty">80 г</span></li>
+            <li><span class="ingr-name">Огурец маринованный</span><span class="ingr-qty">80 г</span></li>
+            <li><span class="ingr-name">Масло гхи</span><span class="ingr-qty">30 г</span></li>
+            <li><span class="ingr-name">Майонез</span><span class="ingr-qty">40 г</span></li>
+          </ul>
+          <div class="steps-title">👨‍🍳 Приготовление</div>
+          <ol class="steps-list">
+            <li>Нарежьте свинину, отбейте, приправьте, обжарьте с 10 г гхи.</li>
+            <li>На той же сковороде обжарьте лук, морковь, фасоль 5–7 мин.</li>
+            <li>Смешайте овощи с маринованным огурцом, чесноком и майонезом.</li>
+            <li>Выложите свинину в форму, накройте овощами, запекайте 180°C 20–25 мин.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ДЕНЬ 7 -->
+  <div class="day-section">
+    <div class="day-header">
+      <div class="day-badge">ДЕНЬ 7</div>
+      <div class="day-line"></div>
+    </div>
+    <div class="meals-grid">
+      <div class="meal-card" style="grid-column: 1 / -1;">
+        <div class="meal-header p1">
+          <div class="meal-num">1+2</div>
+          <div class="meal-title">Отбивная из свинины под овощной шубой (оба приёма)</div>
+        </div>
+        <div class="meal-body">
+          <div class="ref-badge"><span class="icon">♻️</span><span>Рецепт из Дня 6 · Приём 2</span></div>
+          <p style="font-size:13px;color:#888;margin-top:8px;">Блюдо рассчитано на 3 порции — используйте для обоих приёмов.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- СПИСОК ПРОДУКТОВ -->
+  <div class="shopping-section">
+    <div class="section-title">🛒 Список продуктов на неделю</div>
+    <div class="shopping-grid">
+      <div class="shop-card">
+        <div class="shop-card-title">🥩 Мясо и белки</div>
+        <div class="shop-item"><span class="shop-name">Куриное бедро (филе)</span><span class="shop-qty">850 г</span></div>
+        <div class="shop-item"><span class="shop-name">Говядина (бедро)</span><span class="shop-qty">500 г</span></div>
+        <div class="shop-item"><span class="shop-name">Свинина (карбонат)</span><span class="shop-qty">500 г</span></div>
+        <div class="shop-item"><span class="shop-name">Сёмга свежая</span><span class="shop-qty">600 г</span></div>
+        <div class="shop-item"><span class="shop-name">Тунец консервированный</span><span class="shop-qty">80 г</span></div>
+        <div class="shop-item"><span class="shop-name">Яйца</span><span class="shop-qty">10 шт.</span></div>
+      </div>
+      <div class="shop-card">
+        <div class="shop-card-title">🥦 Овощи и зелень</div>
+        <div class="shop-item"><span class="shop-name">Помидоры</span><span class="shop-qty">500 г</span></div>
+        <div class="shop-item"><span class="shop-name">Белокочанная капуста</span><span class="shop-qty">300 г</span></div>
+        <div class="shop-item"><span class="shop-name">Морковь</span><span class="shop-qty">480 г</span></div>
+        <div class="shop-item"><span class="shop-name">Салат айсберг</span><span class="shop-qty">180 г</span></div>
+        <div class="shop-item"><span class="shop-name">Огурцы свежие</span><span class="shop-qty">180 г</span></div>
+        <div class="shop-item"><span class="shop-name">Черри</span><span class="shop-qty">40 г</span></div>
+        <div class="shop-item"><span class="shop-name">Стручковая фасоль</span><span class="shop-qty">280 г</span></div>
+        <div class="shop-item"><span class="shop-name">Цветная капуста</span><span class="shop-qty">300 г</span></div>
+        <div class="shop-item"><span class="shop-name">Огурцы маринованные</span><span class="shop-qty">80 г</span></div>
+        <div class="shop-item"><span class="shop-name">Чеснок</span><span class="shop-qty">1 головка</span></div>
+        <div class="shop-item"><span class="shop-name">Лук</span><span class="shop-qty">320 г</span></div>
+        <div class="shop-item"><span class="shop-name">Лимон</span><span class="shop-qty">1 шт.</span></div>
+      </div>
+      <div class="shop-card">
+        <div class="shop-card-title">🫙 Масла и соусы</div>
+        <div class="shop-item"><span class="shop-name">Масло топлёное (гхи)</span><span class="shop-qty">✓</span></div>
+        <div class="shop-item"><span class="shop-name">Масло оливковое</span><span class="shop-qty">✓</span></div>
+        <div class="shop-item"><span class="shop-name">Масло сливочное</span><span class="shop-qty">✓</span></div>
+        <div class="shop-item"><span class="shop-name">Кетомайонез</span><span class="shop-qty">✓</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Кеторацион для Анны Снежуровой · Неделя 7 · Составлен индивидуально
+</footer>
+
+</body>
+</html>

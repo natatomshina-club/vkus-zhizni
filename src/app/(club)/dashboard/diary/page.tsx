@@ -27,7 +27,7 @@ export default async function DiaryPage() {
       .eq('id', user.id)
       .single(),
     supabase.from('diary_entries')
-      .select('id, meal_type, title, calories, protein, fat, carbs, source')
+      .select('id, meal_type, title, calories, protein, fat, carbs, source, servings')
       .eq('member_id', user.id)
       .eq('date', today)
       .order('created_at', { ascending: true }),

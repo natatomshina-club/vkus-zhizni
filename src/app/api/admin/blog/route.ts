@@ -22,7 +22,7 @@ export async function GET(request: Request) {
   const supabase = createServiceClient()
   const { data, error, count } = await supabase
     .from('blog_posts')
-    .select('id, slug, title, excerpt, content, cover_image_url, is_published, published_at, meta_title, meta_description, created_at', { count: 'exact' })
+    .select('id, slug, title, excerpt, content, cover_image_url, is_published, published_at, meta_title, meta_description, category, widget_type, created_at', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range(from, to)
 
@@ -50,6 +50,8 @@ export async function POST(request: Request) {
       meta_description: body.meta_description || null,
       is_published: body.is_published ?? false,
       published_at: body.is_published ? now : null,
+      category: body.category || null,
+      widget_type: body.widget_type || null,
       updated_at: now,
     })
     .select()

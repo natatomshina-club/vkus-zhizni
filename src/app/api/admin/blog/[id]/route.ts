@@ -32,6 +32,8 @@ export async function PATCH(
   if ('cover_image_url' in body) updates.cover_image_url = body.cover_image_url || null
   if ('meta_title' in body) updates.meta_title = body.meta_title || null
   if ('meta_description' in body) updates.meta_description = body.meta_description || null
+  if ('category' in body) updates.category = body.category || null
+  if ('widget_type' in body) updates.widget_type = body.widget_type || null
   if ('is_published' in body) {
     updates.is_published = body.is_published
     if (body.is_published && !body.keep_published_at) {

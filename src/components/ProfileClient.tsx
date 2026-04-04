@@ -614,7 +614,7 @@ export default function ProfileClient({ userId, userEmail, member }: Props) {
                 </a>
               ) : (
                 <a
-                  href="https://secure.cloudpayments.ru/unsubscribe"
+                  href="https://my.cloudpayments.ru/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full flex items-center justify-center py-3 rounded-xl text-sm font-semibold border transition-all"

@@ -28,6 +28,7 @@ interface DiaryEntry {
   fat: number
   carbs: number
   source: string
+  servings: number
 }
 
 interface SavedRecipe {
@@ -117,6 +118,19 @@ function getFirstWeekday(year: number, month: number): number {
   return day === 0 ? 6 : day - 1 // Mon=0 … Sun=6
 }
 
+function servingsLabel(s: number): string {
+  if (s === 0.5) return '½ порции'
+  if (s === 1)   return 'порция'
+  if (s % 1 !== 0) return 'порции' // 1.5, 2.5, etc.
+  const n = Math.floor(s)
+  if (n % 10 >= 2 && n % 10 <= 4 && !(n % 100 >= 12 && n % 100 <= 14)) return 'порции'
+  return 'порций'
+}
+
+function formatServingsValue(s: number): string {
+  return s % 1 === 0 ? String(s) : s.toFixed(1)
+}
+
 // ── Main Component ─────────────────────────────────────────────────────────────
 export default function DiaryClient({
   userId, today, kbju,
@@ -142,6 +156,8 @@ export default function DiaryClient({
   const [noteSaved, setNoteSaved] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const selectedDateRef = useRef(today)
+  const servingsDebounceRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+  const [servingsLoading, setServingsLoading] = useState<Set<string>>(new Set())
 
   // Accordion state
   const [expandedSection, setExpandedSection] = useState<ModalSection | null>(null)
@@ -230,6 +246,27 @@ export default function DiaryClient({
       setMarkedDays(prev => { const n = new Set(prev); n.delete(day); return n })
     }
     await apiFetch(`/api/diary/entries/${id}`, { method: 'DELETE' })
+  }
+
+  function changeServings(entry: DiaryEntry, delta: number) {
+    const current = entry.servings ?? 1
+    const next = Math.min(10, Math.max(0.5, Math.round((current + delta) * 2) / 2))
+    if (next === current) return
+    // Optimistic update
+    setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, servings: next } : e))
+    // Debounced PATCH
+    const existing = servingsDebounceRef.current.get(entry.id)
+    if (existing) clearTimeout(existing)
+    const timer = setTimeout(async () => {
+      setServingsLoading(prev => new Set(prev).add(entry.id))
+      await apiFetch(`/api/diary/entries/${entry.id}/servings`, {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ servings: next }),
+      })
+      setServingsLoading(prev => { const n = new Set(prev); n.delete(entry.id); return n })
+    }, 500)
+    servingsDebounceRef.current.set(entry.id, timer)
   }
 
   async function addEntry(
@@ -338,10 +375,10 @@ export default function DiaryClient({
 
   // ── Computed ─────────────────────────────────────────────────────────────────
   const totals = {
-    calories: entries.reduce((s, e) => s + (e.calories || 0), 0),
-    protein:  entries.reduce((s, e) => s + (e.protein  || 0), 0),
-    fat:      entries.reduce((s, e) => s + (e.fat      || 0), 0),
-    carbs:    entries.reduce((s, e) => s + (e.carbs    || 0), 0),
+    calories: entries.reduce((s, e) => s + (e.calories || 0) * (e.servings ?? 1), 0),
+    protein:  entries.reduce((s, e) => s + (e.protein  || 0) * (e.servings ?? 1), 0),
+    fat:      entries.reduce((s, e) => s + (e.fat      || 0) * (e.servings ?? 1), 0),
+    carbs:    entries.reduce((s, e) => s + (e.carbs    || 0) * (e.servings ?? 1), 0),
   }
 
   const isToday   = selectedDate === today
@@ -480,7 +517,7 @@ export default function DiaryClient({
       {/* ── Блок 4: Приёмы пищи ── */}
       {MEAL_SECTIONS.map(section => {
         const sectionEntries = entries.filter(e => section.types.includes(e.meal_type))
-        const sectionCal = sectionEntries.reduce((s, e) => s + (e.calories || 0), 0)
+        const sectionCal = sectionEntries.reduce((s, e) => s + (e.calories || 0) * (e.servings ?? 1), 0)
         const isOpen = expandedSection === section.key
         return (
           <div key={section.key} className="rounded-2xl overflow-hidden"
@@ -520,8 +557,36 @@ export default function DiaryClient({
                       </p>
                       <p className="text-xs mt-0.5"
                         style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
-                        {entry.calories} ккал · Б:{Math.round(entry.protein)} · Ж:{Math.round(entry.fat)} · У:{Math.round(entry.carbs)}
+                        {Math.round(entry.calories * (entry.servings ?? 1))} ккал · Б:{Math.round(entry.protein * (entry.servings ?? 1))} · Ж:{Math.round(entry.fat * (entry.servings ?? 1))} · У:{Math.round(entry.carbs * (entry.servings ?? 1))}
                       </p>
+                      {/* Servings counter */}
+                      <div className="flex items-center gap-1.5 mt-1.5">
+                        <button
+                          type="button"
+                          onClick={() => changeServings(entry, -0.5)}
+                          disabled={servingsLoading.has(entry.id) || (entry.servings ?? 1) <= 0.5}
+                          className="flex items-center justify-center rounded-lg text-sm font-bold transition-all disabled:opacity-40"
+                          style={{ minHeight: 36, minWidth: 36, border: '1px solid #E8845A', color: '#E8845A', background: '#fff', fontFamily: 'var(--font-nunito)' }}
+                        >
+                          −
+                        </button>
+                        <span className="text-xs font-bold w-7 text-center"
+                          style={{ color: 'var(--text)', fontFamily: 'var(--font-nunito)' }}>
+                          {formatServingsValue(entry.servings ?? 1)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => changeServings(entry, +0.5)}
+                          disabled={servingsLoading.has(entry.id) || (entry.servings ?? 1) >= 10}
+                          className="flex items-center justify-center rounded-lg text-sm font-bold transition-all disabled:opacity-40"
+                          style={{ minHeight: 36, minWidth: 36, border: '1px solid #E8845A', color: '#E8845A', background: '#fff', fontFamily: 'var(--font-nunito)' }}
+                        >
+                          +
+                        </button>
+                        <span className="text-xs" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
+                          {servingsLabel(entry.servings ?? 1)}
+                        </span>
+                      </div>
                     </div>
                     <button
                       type="button"

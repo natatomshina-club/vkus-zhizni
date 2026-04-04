@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from('diary_entries')
-      .select('id, meal_type, title, calories, protein, fat, carbs, source, date')
+      .select('id, meal_type, title, calories, protein, fat, carbs, source, date, servings')
       .eq('member_id', user.id)
       .order('created_at', { ascending: true })
       .limit(90)
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
         carbs:     carbs     ?? 0,
         source:    source    ?? 'manual',
       })
-      .select('id, meal_type, title, calories, protein, fat, carbs, source')
+      .select('id, meal_type, title, calories, protein, fat, carbs, source, servings')
       .single()
 
     if (error) {

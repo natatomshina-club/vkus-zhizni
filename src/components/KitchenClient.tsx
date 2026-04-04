@@ -1,16 +1,24 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { RecipePortionResult } from '@/lib/recipeCalculator'
+import KitchenCalculator from '@/components/KitchenCalculator'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type Category = 'завтрак' | 'обед_ужин' | 'салат' | 'десерт' | 'суп'
 type MealsPerDay = 2 | 3
 type MealType = 'breakfast' | 'lunch' | 'snack'
 
+interface ExtendedRecipe extends RecipePortionResult {
+  requires_macro_calculation?: boolean
+  servings?: number
+  tip_tags?: string[]
+}
+
 interface KitchenResult {
-  recipes: RecipePortionResult[]
+  recipes: ExtendedRecipe[]
   tip: string | null
   requests_left: number
   empty?: boolean
@@ -28,6 +36,8 @@ interface Props {
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────────
+const FIXED_CATEGORIES: Category[] = ['салат', 'суп', 'десерт']
+
 const CATEGORIES: { value: Category; label: string; icon: string }[] = [
   { value: 'завтрак',   label: 'Завтрак',   icon: '🌅' },
   { value: 'обед_ужин', label: 'Обед/Ужин', icon: '🍽' },
@@ -68,6 +78,8 @@ export default function KitchenClient({
   kbjuFat,
   kbjuCarbs,
 }: Props) {
+  const router = useRouter()
+  const [tab, setTab] = useState<'kitchen' | 'calculator'>('kitchen')
   const [helpOpen, setHelpOpen] = useState(false)
 
   type HistoryIngredient = { name: string; grams: number; calories: number; protein: number; fat: number; carbs: number }
@@ -82,17 +94,20 @@ export default function KitchenClient({
     total?: { calories: number; protein: number; fat: number; carbs: number }
     extra_products?: string[]
   }
-  const LS_KEY = 'kitchen_history'
-  const TTL    = 86_400_000 // 24h
+  const LS_KEY   = 'kitchen_history'
+  const TTL      = 72 * 60 * 60 * 1000 // 72h
+  const MAX_HIST = 20
 
   const [history, setHistory] = useState<HistoryEntry[]>(() => {
     if (typeof window === 'undefined') return []
     try {
       const raw = localStorage.getItem(LS_KEY)
       const parsed: HistoryEntry[] = raw ? JSON.parse(raw) : []
-      return parsed.filter(e => Date.now() - e.timestamp <= TTL)
+      return parsed.filter(e => Date.now() - e.timestamp < TTL)
     } catch { return [] }
   })
+
+  const [histShowAll, setHistShowAll] = useState(false)
 
   const [mealsPerDay, setMealsPerDay] = useState<MealsPerDay>(3)
   const [category, setCategory]       = useState<Category>('завтрак')
@@ -121,6 +136,7 @@ export default function KitchenClient({
   const [histDiaryOpen, setHistDiaryOpen]         = useState(false)
   const [histDiaryLoading, setHistDiaryLoading]   = useState(false)
 
+  const isFixed    = FIXED_CATEGORIES.includes(category)
   const hasKbju    = !!(kbjuProtein && kbjuFat && kbjuCarbs)
   const requestsLeft = maxRequests - requestsUsed
   const canRequest   = requestsLeft > 0
@@ -208,7 +224,7 @@ export default function KitchenClient({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         category,
-        meals_per_day: mealsPerDay,
+        ...(isFixed ? {} : { meals_per_day: mealsPerDay }),
         user_products: [...selected],
       }),
     })
@@ -233,10 +249,9 @@ export default function KitchenClient({
     if (data.recipes?.length) {
       const now = Date.now()
       setHistory(prev => {
-        const existing = new Set(prev.map(e => e.title))
-        const newEntries = data.recipes
-          .filter(r => !existing.has(r.title))
-          .map(r => ({
+        let updated = [...prev]
+        for (const r of data.recipes) {
+          const entry: HistoryEntry = {
             title:          r.title,
             timestamp:      now,
             recipe_id:      r.recipe_id,
@@ -245,8 +260,15 @@ export default function KitchenClient({
             ingredients:    r.ingredients,
             total:          r.total,
             extra_products: r.extra_products,
-          }))
-        return [...newEntries, ...prev].slice(0, 50)
+          }
+          // Remove existing entry with same recipe_id (or title as fallback)
+          updated = updated.filter(e =>
+            r.recipe_id ? e.recipe_id !== r.recipe_id : e.title !== r.title
+          )
+          // Add to beginning
+          updated = [entry, ...updated]
+        }
+        return updated.slice(0, MAX_HIST)
       })
     }
   }
@@ -357,20 +379,64 @@ export default function KitchenClient({
   return (
     <div className="flex flex-col gap-5">
 
+      {/* ── Переключатель вкладок ── */}
+      <div className="flex flex-col sm:flex-row gap-2 rounded-2xl p-1.5"
+        style={{ background: '#fff', border: '2px solid #DDD5FF' }}>
+        {([
+          { id: 'kitchen'    as const, label: '🍳 Рецепты',    activeColor: '#7C5CFC', activeText: '#fff' },
+          { id: 'calculator' as const, label: '🧮 Калькулятор', activeColor: '#FF9F43', activeText: '#fff' },
+        ]).map(t => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all"
+            style={{
+              minHeight:  44,
+              fontFamily: 'var(--font-nunito)',
+              background: tab === t.id ? t.activeColor : '#fff',
+              color:      tab === t.id ? t.activeText  : '#9B8FCC',
+              border:     tab === t.id ? '2px solid transparent' : '2px solid #DDD5FF',
+              boxShadow:  tab === t.id ? '0 4px 14px rgba(0,0,0,0.15)' : 'none',
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
+        <button
+          onClick={() => router.push('/dashboard/kitchen/weekly')}
+          className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all"
+          style={{
+            minHeight:  44,
+            fontFamily: 'var(--font-nunito)',
+            background: '#fff',
+            color:      '#9B8FCC',
+            border:     '2px solid #DDD5FF',
+          }}
+        >
+          📅 Рацион на неделю
+        </button>
+      </div>
+
+      {/* ── Калькулятор ── */}
+      {tab === 'calculator' && <KitchenCalculator />}
+
+      {/* ── Умная Кухня ── */}
+      {tab === 'kitchen' && <>
+
       {/* ── 0. Аккордеон-помощник ── */}
       <div
         className="rounded-2xl overflow-hidden"
-        style={{ border: '1.5px solid #E8845A' }}
+        style={{ border: '2px solid #DDD5FF' }}
       >
         <button
           onClick={() => setHelpOpen(p => !p)}
           className="w-full flex items-center justify-between px-4 py-3.5 text-left"
-          style={{ background: '#F5E6D3', fontFamily: 'var(--font-nunito)' }}
+          style={{ background: '#F0EEFF', fontFamily: 'var(--font-nunito)' }}
         >
-          <span className="text-sm font-bold" style={{ color: '#2A2420' }}>
+          <span className="text-sm font-bold" style={{ color: 'var(--text)' }}>
             Как пользоваться Умной Кухней?
           </span>
-          <span className="text-base shrink-0 ml-2" style={{ color: '#E8845A' }}>
+          <span className="text-base shrink-0 ml-2" style={{ color: '#7C5CFC' }}>
             {helpOpen ? '▼' : '▶'}
           </span>
         </button>
@@ -378,9 +444,9 @@ export default function KitchenClient({
         {helpOpen && (
           <div
             className="px-4 pb-4 pt-1"
-            style={{ background: '#F5E6D3', borderTop: '1px solid #E8C9A8' }}
+            style={{ background: '#F0EEFF', borderTop: '1px solid #DDD5FF' }}
           >
-            <div className="prose text-sm text-[#2A2420]" style={{ fontFamily: 'var(--font-nunito)' }}>
+            <div className="prose text-sm" style={{ color: 'var(--text)', fontFamily: 'var(--font-nunito)' }}>
               <p>🎬 Здесь скоро появится видео-инструкция или пошаговое руководство.</p>
               <p>А пока: выбери категорию блюда → укажи продукты из холодильника → нажми «Подобрать 3 рецепта»!</p>
             </div>
@@ -398,14 +464,14 @@ export default function KitchenClient({
           </p>
           <div className="flex flex-wrap gap-2">
             {[
-              { label: '🔥', value: kbjuCalories!, unit: ' ккал', color: '#E8845A' },
-              { label: 'Б',  value: kbjuProtein!, unit: 'г',      color: '#7BAF82' },
-              { label: 'Ж',  value: kbjuFat!,     unit: 'г',      color: '#E8845A' },
-              { label: 'У до', value: kbjuCarbs!, unit: 'г',      color: 'var(--pur)' },
-            ].map(({ label, value, unit, color }) => (
+              { label: '🔥', value: kbjuCalories!, unit: ' ккал', bg: '#7C5CFC', text: '#fff'     },
+              { label: 'Б',  value: kbjuProtein!,  unit: 'г',     bg: '#A8E6CF', text: '#2D6A4F'  },
+              { label: 'Ж',  value: kbjuFat!,      unit: 'г',     bg: '#FFD93D', text: '#5C4200'  },
+              { label: 'У до', value: kbjuCarbs!,  unit: 'г',     bg: '#FF9F43', text: '#fff'     },
+            ].map(({ label, value, unit, bg, text }) => (
               <span key={label}
                 className="inline-flex items-baseline gap-0.5 px-2.5 py-1 rounded-full text-xs font-semibold"
-                style={{ background: `${color}22`, color }}>
+                style={{ background: bg, color: text }}>
                 {label} <strong>{value}</strong>{unit}
               </span>
             ))}
@@ -413,51 +479,53 @@ export default function KitchenClient({
         </div>
       ) : (
         <div className="rounded-2xl px-4 py-3.5"
-          style={{ background: '#FFF4F0', border: '1px solid #F5C5B0' }}>
-          <p className="text-sm font-semibold" style={{ color: '#C05020', fontFamily: 'var(--font-nunito)' }}>
+          style={{ background: '#F0EEFF', border: '2px solid #DDD5FF' }}>
+          <p className="text-sm font-semibold" style={{ color: '#7C5CFC', fontFamily: 'var(--font-nunito)' }}>
             ⚠️ Заполни профиль — нужно рассчитать твои КБЖУ
           </p>
           <a href="/dashboard/profile"
             className="inline-block mt-2 text-xs font-bold px-3 py-1.5 rounded-xl"
-            style={{ background: '#E8845A', color: '#fff', fontFamily: 'var(--font-nunito)' }}>
+            style={{ background: '#7C5CFC', color: '#fff', fontFamily: 'var(--font-nunito)' }}>
             Заполнить профиль →
           </a>
         </div>
       )}
 
       {/* ── 2. Приёмы пищи ── */}
-      <div className="rounded-2xl px-4 py-4"
-        style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-        <p className="text-xs font-bold mb-3 uppercase tracking-widest"
-          style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
-          Сколько раз в день ешь?
-        </p>
-        <div className="flex gap-2">
-          {([2, 3] as MealsPerDay[]).map(n => (
-            <button key={n} onClick={() => setMealsPerDay(n)}
-              className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all"
-              style={{
-                minHeight: 48,
-                fontFamily:  'var(--font-nunito)',
-                background:  mealsPerDay === n ? '#E8845A' : 'var(--bg)',
-                color:       mealsPerDay === n ? '#fff'    : 'var(--text)',
-                border:      `1.5px solid ${mealsPerDay === n ? '#E8845A' : 'var(--border)'}`,
-              }}>
-              {n} раза
-            </button>
-          ))}
-        </div>
-        {mealTarget && (
-          <p className="text-xs mt-2.5" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
-            На один приём:{' '}
-            <strong style={{ color: '#7BAF82' }}>Б {mealTarget.protein}г</strong>
-            {' / '}
-            <strong style={{ color: '#E8845A' }}>Ж {mealTarget.fat}г</strong>
-            {' / '}
-            <strong style={{ color: 'var(--pur)' }}>У до {mealTarget.carbs}г</strong>
+      {!isFixed && (
+        <div className="rounded-2xl px-4 py-4"
+          style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+          <p className="text-xs font-bold mb-3 uppercase tracking-widest"
+            style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
+            Сколько раз в день ешь?
           </p>
-        )}
-      </div>
+          <div className="flex gap-2">
+            {([2, 3] as MealsPerDay[]).map(n => (
+              <button key={n} onClick={() => setMealsPerDay(n)}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all"
+                style={{
+                  minHeight: 48,
+                  fontFamily:  'var(--font-nunito)',
+                  background:  mealsPerDay === n ? '#7C5CFC' : '#fff',
+                  color:       mealsPerDay === n ? '#fff'    : 'var(--text)',
+                  border:      `2px solid ${mealsPerDay === n ? '#7C5CFC' : '#DDD5FF'}`,
+                }}>
+                {n} раза
+              </button>
+            ))}
+          </div>
+          {mealTarget && (
+            <p className="text-xs mt-2.5" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
+              На один приём:{' '}
+              <strong style={{ color: '#2D6A4F' }}>Б {mealTarget.protein}г</strong>
+              {' / '}
+              <strong style={{ color: '#5C4200' }}>Ж {mealTarget.fat}г</strong>
+              {' / '}
+              <strong style={{ color: '#FF9F43' }}>У до {mealTarget.carbs}г</strong>
+            </p>
+          )}
+        </div>
+      )}
 
       {/* ── 3. Категория ── */}
       <div className="rounded-2xl px-4 py-4"
@@ -473,15 +541,47 @@ export default function KitchenClient({
               style={{
                 minHeight:  44,
                 fontFamily: 'var(--font-nunito)',
-                background: category === cat.value ? '#E8845A' : 'var(--bg)',
+                background: category === cat.value ? '#7C5CFC' : '#fff',
                 color:      category === cat.value ? '#fff'    : 'var(--text)',
-                border:     `1.5px solid ${category === cat.value ? '#E8845A' : 'var(--border)'}`,
+                border:     `2px solid ${category === cat.value ? '#7C5CFC' : '#DDD5FF'}`,
               }}>
               {cat.icon} {cat.label}
             </button>
           ))}
+          <button
+            onClick={() => router.push('/dashboard/kitchen/sauces')}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all"
+            style={{
+              minHeight:  44,
+              fontFamily: 'var(--font-nunito)',
+              background: '#fff',
+              color:      'var(--text)',
+              border:     '2px solid #DDD5FF',
+            }}>
+            🥣 Соусы
+          </button>
         </div>
       </div>
+
+      {/* ── Подсказки для фиксированных категорий ── */}
+      {category === 'салат' && (
+        <div className="rounded-xl px-4 py-3"
+          style={{ background: '#F0FFF4', border: '1px solid #A8E6CF', fontFamily: 'var(--font-nunito)' }}>
+          <p className="text-sm leading-relaxed" style={{ color: '#2D6A4F' }}>
+            🥗 <strong>Салат — это закуска для возбуждения аппетита.</strong><br />
+            Обязательно добавьте к салату основное блюдо, чтобы закрыть свою норму белка!
+          </p>
+        </div>
+      )}
+      {category === 'десерт' && (
+        <div className="rounded-xl px-4 py-3"
+          style={{ background: '#FFF8E0', border: '1px solid #FFD93D', fontFamily: 'var(--font-nunito)' }}>
+          <p className="text-sm leading-relaxed" style={{ color: '#5C4200' }}>
+            🍰 <strong>Десерт — приятное, но необязательное дополнение.</strong><br />
+            Не заменяйте десертами основной приём пищи!
+          </p>
+        </div>
+      )}
 
       {/* ── 4. Продукты ── */}
       <div className="rounded-2xl px-4 py-4"
@@ -491,23 +591,9 @@ export default function KitchenClient({
           Что есть в холодильнике?
         </p>
 
-        <div className="flex flex-wrap gap-2 mb-3">
-          {QUICK_PRODUCTS.map(p => {
-            const active = selected.has(p.tag)
-            return (
-              <button key={p.tag} onClick={() => toggleProduct(p.tag)}
-                className="px-3 py-1.5 rounded-full text-sm transition-all"
-                style={{
-                  fontFamily: 'var(--font-nunito)',
-                  background: active ? '#7BAF82' : 'var(--bg)',
-                  color:      active ? '#fff'    : 'var(--text)',
-                  border:     `1.5px solid ${active ? '#7BAF82' : 'var(--border)'}`,
-                }}>
-                {p.label}
-              </button>
-            )
-          })}
-        </div>
+        <p className="text-xs mb-3 leading-relaxed" style={{ color: '#9B8FCC', fontFamily: 'var(--font-nunito)', fontSize: 13 }}>
+          Напиши список продуктов, из которых хочешь приготовить, и мы предложим варианты рецептов. Если не укажешь продукты — рецепты подберутся случайным образом.
+        </p>
 
         <div className="relative flex gap-2">
           <div className="relative flex-1">
@@ -517,21 +603,23 @@ export default function KitchenClient({
               value={customInput}
               onChange={e => handleCustomChange(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && addCustomProduct()}
-              onBlur={handleInputBlur}
-              className="w-full px-3 py-2.5 rounded-xl border text-sm outline-none"
+              className="w-full px-3 py-2.5 rounded-xl border text-sm outline-none transition-colors"
               style={{
                 fontFamily:  'var(--font-nunito)',
-                borderColor: 'var(--border)',
-                background:  'var(--bg)',
+                borderColor: '#DDD5FF',
+                borderWidth:  2,
+                background:  '#fff',
                 color:       'var(--text)',
               }}
+              onFocus={e => (e.currentTarget.style.borderColor = '#7C5CFC')}
+              onBlur={e => { e.currentTarget.style.borderColor = '#DDD5FF'; handleInputBlur() }}
             />
 
             {/* Выпадающий список */}
             {showDropdown && (
               <div
                 className="absolute left-0 right-0 top-full mt-1 rounded-xl overflow-hidden shadow-lg"
-                style={{ background: '#FBF7F2', border: '1px solid var(--border)', zIndex: 50 }}
+                style={{ background: '#fff', border: '2px solid #DDD5FF', zIndex: 50 }}
               >
                 {noResults ? (
                   <div
@@ -553,7 +641,7 @@ export default function KitchenClient({
                         background:  'transparent',
                         borderBottom: '1px solid var(--border)',
                       }}
-                      onMouseEnter={e => (e.currentTarget.style.background = '#E8845A18')}
+                      onMouseEnter={e => (e.currentTarget.style.background = '#7C5CFC12')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                     >
                       {name}
@@ -582,9 +670,9 @@ export default function KitchenClient({
               <button key={tag} onClick={() => removeProduct(tag)}
                 className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
                 style={{
-                  background:  '#7BAF8233',
+                  background:  '#A8E6CF44',
                   color:       '#2D6A4F',
-                  border:      '1px solid #7BAF82',
+                  border:      '1px solid #A8E6CF',
                   fontFamily:  'var(--font-nunito)',
                 }}>
                 {tag} ✕
@@ -603,9 +691,8 @@ export default function KitchenClient({
           style={{
             minHeight:  56,
             fontFamily: 'var(--font-nunito)',
-            background: canRequest && hasKbju
-              ? 'linear-gradient(135deg, #E8845A 0%, #F5A882 100%)'
-              : 'var(--border)',
+            background: canRequest && hasKbju ? '#FF9F43' : 'var(--border)',
+            boxShadow:  canRequest && hasKbju ? '0 4px 14px rgba(255,159,67,0.4)' : 'none',
           }}>
           {loading
             ? '⏳ Подбираем рецепты...'
@@ -635,40 +722,49 @@ export default function KitchenClient({
         <div className="flex flex-col gap-4">
           {result.empty || result.recipes.length === 0 ? (
             <div className="rounded-2xl px-5 py-8 text-center"
-              style={{ background: '#F5E6D3', border: '1px solid #E8C9A8' }}>
+              style={{ background: '#F0EEFF', border: '2px solid #DDD5FF' }}>
               <p className="text-3xl mb-3">🥘</p>
-              <p className="text-sm font-semibold" style={{ color: '#2A2420', fontFamily: 'var(--font-nunito)' }}>
+              <p className="text-sm font-semibold" style={{ color: 'var(--text)', fontFamily: 'var(--font-nunito)' }}>
                 Рецепты скоро появятся! Наташа уже готовит базу
               </p>
             </div>
           ) : (
             <>
               {result.recipes.map((recipe, idx) => (
-                <RecipeCard
-                  key={recipe.recipe_id}
-                  recipe={recipe}
-                  saved={savedSet.has(idx)}
-                  saving={savingIdx === idx}
-                  diaryOpen={diaryOpenIdx === idx}
-                  diaryLoading={diaryLoading}
-                  onSave={() => handleSave(recipe, idx)}
-                  onDiaryToggle={() => setDiaryOpenIdx(prev => prev === idx ? null : idx)}
-                  onDiaryAdd={mealType => handleAddDiary(recipe, mealType)}
-                />
+                <div key={recipe.recipe_id} className="flex flex-col gap-2">
+                  <RecipeCard
+                    recipe={recipe}
+                    saved={savedSet.has(idx)}
+                    saving={savingIdx === idx}
+                    diaryOpen={diaryOpenIdx === idx}
+                    diaryLoading={diaryLoading}
+                    onSave={() => handleSave(recipe, idx)}
+                    onDiaryToggle={() => setDiaryOpenIdx(prev => prev === idx ? null : idx)}
+                    onDiaryAdd={mealType => handleAddDiary(recipe, mealType)}
+                  />
+                  {recipe.tip_tags?.includes('root_vegetable_warning') && (
+                    <div className="rounded-xl px-4 py-3"
+                      style={{ background: '#FFF8E0', border: '1px solid #FFD93D', fontFamily: 'var(--font-nunito)' }}>
+                      <p className="text-sm leading-relaxed" style={{ color: '#5C4200' }}>
+                        ⚠️ В рецепте есть варёные корнеплоды. В фазе снижения веса рекомендуем заменить картофель/свёклу на цветную капусту или сыр.
+                      </p>
+                    </div>
+                  )}
+                </div>
               ))}
 
               {/* ── 7. Совет ── */}
               {result.tip && (
                 <div className="rounded-2xl px-4 py-4 flex gap-3"
-                  style={{ background: '#F5E6D3', border: '1px solid #E8C9A8' }}>
+                  style={{ background: '#FFF9E6', borderLeft: '4px solid #FFD93D', borderTop: '1px solid #FFD93D66', borderRight: '1px solid #FFD93D66', borderBottom: '1px solid #FFD93D66' }}>
                   <span className="text-2xl shrink-0">💡</span>
                   <div>
                     <p className="text-[10px] font-bold mb-1 uppercase tracking-widest"
-                      style={{ color: '#A05A2A', fontFamily: 'var(--font-nunito)' }}>
-                      Совет по приготовлению
+                      style={{ color: '#8B6914', fontFamily: 'var(--font-nunito)' }}>
+                      Лайфхак от Наташи
                     </p>
                     <p className="text-sm leading-relaxed"
-                      style={{ color: '#2A2420', fontFamily: 'var(--font-nunito)' }}>
+                      style={{ color: 'var(--text)', fontFamily: 'var(--font-nunito)' }}>
                       «{result.tip}»
                     </p>
                   </div>
@@ -698,7 +794,7 @@ export default function KitchenClient({
             </button>
           </div>
           <div className="flex flex-col gap-2">
-            {history.map(entry => {
+            {(histShowAll ? history : history.slice(0, 10)).map(entry => {
               const hasData   = !!entry.recipe_id
               const isExpanded = expandedHistTitle === entry.title
               return (
@@ -711,7 +807,7 @@ export default function KitchenClient({
                   <div className="flex items-start gap-2 px-3 py-2.5">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold leading-snug"
-                        style={{ color: hasData ? '#E8845A' : 'var(--text)', fontFamily: 'var(--font-nunito)' }}>
+                        style={{ color: hasData ? '#7C5CFC' : 'var(--text)', fontFamily: 'var(--font-nunito)' }}>
                         {entry.title}
                       </p>
                       {entry.total && (
@@ -726,7 +822,7 @@ export default function KitchenClient({
                           type="button"
                           onClick={() => toggleHistEntry(entry.title)}
                           className="text-xs px-2 py-1 rounded-lg font-semibold"
-                          style={{ color: '#E8845A', border: '1px solid #E8845A40', background: '#E8845A12', fontFamily: 'var(--font-nunito)' }}
+                          style={{ color: '#7C5CFC', border: '1px solid #7C5CFC40', background: '#7C5CFC12', fontFamily: 'var(--font-nunito)' }}
                         >
                           {isExpanded ? '▲' : '▼'}
                         </button>
@@ -748,25 +844,25 @@ export default function KitchenClient({
                       {/* Ingredients */}
                       <div className="pt-3 pb-2">
                         <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5"
-                          style={{ color: '#A08060', fontFamily: 'var(--font-nunito)' }}>
+                          style={{ color: '#9B8FCC', fontFamily: 'var(--font-nunito)' }}>
                           Ингредиенты
                         </p>
                         <ul className="flex flex-col gap-1">
                           {entry.ingredients!.map((ing, i) => (
                             <li key={i} className="flex items-baseline justify-between gap-2">
-                              <span className="text-xs" style={{ color: '#2A2420', fontFamily: 'var(--font-nunito)' }}>
+                              <span className="text-xs" style={{ color: 'var(--text)', fontFamily: 'var(--font-nunito)' }}>
                                 • {ing.name}
                               </span>
                               <span className="text-xs font-semibold shrink-0"
-                                style={{ color: '#6A4A2A', fontFamily: 'var(--font-nunito)' }}>
+                                style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
                                 {formatIngredientGrams(ing.name, ing.grams)}
                               </span>
                             </li>
                           ))}
                         </ul>
                         {(entry.extra_products?.length ?? 0) > 0 && (
-                          <div className="mt-2 px-2.5 py-1.5 rounded-lg" style={{ background: '#FFF4F0' }}>
-                            <p className="text-xs font-semibold" style={{ color: '#C05020', fontFamily: 'var(--font-nunito)' }}>
+                          <div className="mt-2 px-2.5 py-1.5 rounded-lg" style={{ background: '#F0EEFF' }}>
+                            <p className="text-xs font-semibold" style={{ color: '#7C5CFC', fontFamily: 'var(--font-nunito)' }}>
                               🛒 Докупить: {entry.extra_products!.join(', ')}
                             </p>
                           </div>
@@ -776,18 +872,18 @@ export default function KitchenClient({
                       {/* Steps */}
                       <div className="pb-2">
                         <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5"
-                          style={{ color: '#A08060', fontFamily: 'var(--font-nunito)' }}>
+                          style={{ color: '#9B8FCC', fontFamily: 'var(--font-nunito)' }}>
                           Приготовление
                         </p>
                         <ol className="flex flex-col gap-1.5">
                           {entry.steps!.map((step, i) => (
                             <li key={i} className="flex gap-2">
                               <span className="shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold mt-0.5"
-                                style={{ background: '#E8845A', color: '#fff' }}>
+                                style={{ background: '#7C5CFC', color: '#fff' }}>
                                 {i + 1}
                               </span>
                               <span className="text-xs leading-snug"
-                                style={{ color: '#2A2420', fontFamily: 'var(--font-nunito)' }}>
+                                style={{ color: 'var(--text)', fontFamily: 'var(--font-nunito)' }}>
                                 {step}
                               </span>
                             </li>
@@ -806,9 +902,9 @@ export default function KitchenClient({
                             style={{
                               minHeight:  40,
                               fontFamily: 'var(--font-nunito)',
-                              background: histSaved ? '#7BAF8222' : 'var(--card)',
+                              background: histSaved ? '#A8E6CF33' : 'var(--card)',
                               color:      histSaved ? '#2D6A4F'   : 'var(--text)',
-                              border:     `1.5px solid ${histSaved ? '#7BAF82' : 'var(--border)'}`,
+                              border:     `1.5px solid ${histSaved ? '#A8E6CF' : 'var(--border)'}`,
                             }}>
                             {histSaving ? '...' : histSaved ? '✓ Сохранено' : '⭐ Сохранить'}
                           </button>
@@ -847,9 +943,21 @@ export default function KitchenClient({
                 </div>
               )
             })}
+            {history.length > 10 && (
+              <button
+                type="button"
+                onClick={() => setHistShowAll(p => !p)}
+                className="text-xs font-semibold py-2 rounded-xl w-full mt-1"
+                style={{ color: 'var(--pur)', background: 'var(--pur-lt)', border: '1px solid var(--pur-br)', fontFamily: 'var(--font-nunito)' }}
+              >
+                {histShowAll ? '▲ Скрыть' : `▼ Показать ещё (${history.length - 10})`}
+              </button>
+            )}
           </div>
         </div>
       )}
+
+      </> /* end tab === 'kitchen' */}
 
     </div>
   )
@@ -859,8 +967,8 @@ export default function KitchenClient({
 function formatIngredientGrams(name: string, grams: number): string {
   const lower = name.toLowerCase()
   if (lower.includes('яйцо') || lower.includes('яйца')) {
-    const count = Math.round(grams / 55)
-    return `${grams}г (≈${count} шт.)`
+    const count = Math.round(grams / 60)
+    return count >= 1 ? `${grams}г (≈${count} шт.)` : `${grams}г`
   }
   return `${grams}г`
 }
@@ -870,7 +978,7 @@ function RecipeCard({
   recipe, saved, saving, diaryOpen, diaryLoading,
   onSave, onDiaryToggle, onDiaryAdd,
 }: {
-  recipe: RecipePortionResult
+  recipe: ExtendedRecipe
   saved: boolean
   saving: boolean
   diaryOpen: boolean
@@ -879,58 +987,94 @@ function RecipeCard({
   onDiaryToggle: () => void
   onDiaryAdd: (mealType: MealType) => void
 }) {
+  const showMacroMarkers = recipe.requires_macro_calculation !== false
+  const servings = recipe.servings ?? 1
+
+  function getPorcionWord(n: number): string {
+    if (n % 10 === 1 && n % 100 !== 11) return 'порция'
+    if ([2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100)) return 'порции'
+    return 'порций'
+  }
+
+  function ingredientsLabel(): string {
+    if (recipe.category === 'суп') {
+      return servings <= 1
+        ? 'Ингредиенты на 1 порцию'
+        : `Ингредиенты на кастрюлю (${servings} порц.)`
+    }
+    if (recipe.category === 'десерт') return `Ингредиенты на ${servings} шт./порц.`
+    return 'Ингредиенты'
+  }
+
+  function kbjuLabel(): string | null {
+    if (recipe.category === 'суп') return 'КБЖУ 1 порции:'
+    if (recipe.category === 'десерт') return 'КБЖУ 1 шт./порции:'
+    return null
+  }
+
   return (
     <div className="rounded-2xl overflow-hidden"
-      style={{ background: '#F5E6D3', border: '1px solid #E8C9A8' }}>
+      style={{ background: '#fff', border: '2px solid #DDD5FF' }}>
 
       {/* Заголовок + КБЖУ */}
-      <div className="px-4 pt-4 pb-3" style={{ borderBottom: '1px solid #E8C9A8' }}>
+      <div className="px-4 pt-4 pb-3" style={{ background: '#7C5CFC' }}>
         <h3 className="text-base font-bold leading-snug"
-          style={{ color: '#2A2420', fontFamily: 'var(--font-unbounded)' }}>
+          style={{ color: '#fff', fontFamily: 'var(--font-unbounded)' }}>
           {recipe.title}
         </h3>
+        {kbjuLabel() && (
+          <p className="text-[10px] font-bold uppercase tracking-widest mt-2 mb-1"
+            style={{ color: '#DDD5FF', fontFamily: 'var(--font-nunito)' }}>
+            {kbjuLabel()}
+          </p>
+        )}
         <div className="flex flex-wrap gap-1.5 mt-2">
           <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
-            style={{ background: '#E8845A22', color: '#A04020' }}>
+            style={{ background: '#fff', color: '#7C5CFC' }}>
             🔥 {recipe.total.calories} ккал
           </span>
           <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
-            style={{ background: '#7BAF8222', color: '#2D6A4F' }}>
-            Б {recipe.total.protein}г{recipe.macros_ok.protein ? ' ✓' : ''}
+            style={{ background: '#A8E6CF', color: '#2D6A4F' }}>
+            Б {recipe.total.protein}г{showMacroMarkers && recipe.macros_ok.protein ? ' ✓' : ''}
           </span>
           <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
-            style={{ background: '#E8845A22', color: '#A04020' }}>
-            Ж {recipe.total.fat}г{recipe.macros_ok.fat ? ' ✓' : ''}
+            style={{ background: '#FFD93D', color: '#5C4200' }}>
+            Ж {recipe.total.fat}г{showMacroMarkers && recipe.macros_ok.fat ? ' ✓' : ''}
           </span>
           <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
-            style={{ background: '#EDE8FF', color: 'var(--pur)' }}>
+            style={{ background: '#FF9F43', color: '#fff' }}>
             У {recipe.total.carbs}г
           </span>
         </div>
+        {recipe.category === 'суп' && servings > 1 && (
+          <p className="text-xs mt-2" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
+            Порция ~300–350 г | Кастрюля на {servings} {getPorcionWord(servings)}
+          </p>
+        )}
       </div>
 
       {/* Ингредиенты */}
-      <div className="px-4 py-3" style={{ borderBottom: '1px solid #E8C9A8' }}>
+      <div className="px-4 py-3" style={{ borderBottom: '2px solid #DDD5FF' }}>
         <p className="text-[10px] font-bold uppercase tracking-widest mb-2"
-          style={{ color: '#A08060', fontFamily: 'var(--font-nunito)' }}>
-          Ингредиенты
+          style={{ color: '#9B8FCC', fontFamily: 'var(--font-nunito)' }}>
+          {ingredientsLabel()}
         </p>
         <ul className="flex flex-col gap-1">
           {recipe.ingredients.map((ing, i) => (
             <li key={i} className="flex items-baseline justify-between gap-2">
-              <span className="text-sm" style={{ color: '#2A2420', fontFamily: 'var(--font-nunito)' }}>
+              <span className="text-sm" style={{ color: 'var(--text)', fontFamily: 'var(--font-nunito)' }}>
                 • {ing.name}
               </span>
               <span className="text-sm font-semibold shrink-0"
-                style={{ color: '#6A4A2A', fontFamily: 'var(--font-nunito)' }}>
+                style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
                 {formatIngredientGrams(ing.name, ing.grams)}
               </span>
             </li>
           ))}
         </ul>
         {recipe.extra_products.length > 0 && (
-          <div className="mt-2.5 px-3 py-2 rounded-xl" style={{ background: '#FFF4F0' }}>
-            <p className="text-xs font-semibold" style={{ color: '#C05020', fontFamily: 'var(--font-nunito)' }}>
+          <div className="mt-2.5 px-3 py-2 rounded-xl" style={{ background: '#F0EEFF' }}>
+            <p className="text-xs font-semibold" style={{ color: '#7C5CFC', fontFamily: 'var(--font-nunito)' }}>
               🛒 Докупить: {recipe.extra_products.join(', ')}
             </p>
           </div>
@@ -938,20 +1082,20 @@ function RecipeCard({
       </div>
 
       {/* Приготовление */}
-      <div className="px-4 py-3" style={{ borderBottom: '1px solid #E8C9A8' }}>
+      <div className="px-4 py-3" style={{ borderBottom: '2px solid #DDD5FF' }}>
         <p className="text-[10px] font-bold uppercase tracking-widest mb-2"
-          style={{ color: '#A08060', fontFamily: 'var(--font-nunito)' }}>
+          style={{ color: '#9B8FCC', fontFamily: 'var(--font-nunito)' }}>
           Приготовление
         </p>
         <ol className="flex flex-col gap-2">
           {recipe.steps.map((step, i) => (
             <li key={i} className="flex gap-2.5">
               <span className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold mt-0.5"
-                style={{ background: '#E8845A', color: '#fff' }}>
+                style={{ background: '#7C5CFC', color: '#fff' }}>
                 {i + 1}
               </span>
               <span className="text-sm leading-snug"
-                style={{ color: '#2A2420', fontFamily: 'var(--font-nunito)' }}>
+                style={{ color: 'var(--text)', fontFamily: 'var(--font-nunito)' }}>
                 {step}
               </span>
             </li>
@@ -969,9 +1113,9 @@ function RecipeCard({
             style={{
               minHeight:  44,
               fontFamily: 'var(--font-nunito)',
-              background: saved ? '#7BAF8222' : 'var(--card)',
+              background: saved ? '#A8E6CF33' : 'var(--card)',
               color:      saved ? '#2D6A4F'   : 'var(--text)',
-              border:     `1.5px solid ${saved ? '#7BAF82' : 'var(--border)'}`,
+              border:     `1.5px solid ${saved ? '#A8E6CF' : 'var(--border)'}`,
             }}>
             {saving ? '...' : saved ? '✓ Сохранено' : '⭐ Сохранить'}
           </button>
