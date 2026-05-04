@@ -16,9 +16,7 @@ export default function WeeklyPlanForm({ kbjuCalories, kbjuProtein, kbjuFat, kbj
   const hasKbju = !!(kbjuCalories && kbjuProtein && kbjuFat && kbjuCarbs)
 
   const [mealsPerDay,   setMealsPerDay]   = useState<2 | 3>(2)
-  const [includeSoups,  setIncludeSoups]  = useState(false)
   const [includeSalads, setIncludeSalads] = useState(false)
-  const [cookMode,      setCookMode]      = useState<'daily' | 'every2days'>('daily')
   const [products,     setProducts]     = useState<string[]>([])
   const [inputVal,     setInputVal]     = useState('')
   const [suggestions,  setSuggestions]  = useState<string[]>([])
@@ -84,11 +82,9 @@ export default function WeeklyPlanForm({ kbjuCalories, kbjuProtein, kbjuFat, kbj
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        meals_per_day: mealsPerDay,
-        include_soups: includeSoups,
+        meals_per_day:  mealsPerDay,
         include_salads: includeSalads,
-        cook_mode: cookMode,
-        user_products: products,
+        user_products:  products,
       }),
     })
 
@@ -176,25 +172,7 @@ export default function WeeklyPlanForm({ kbjuCalories, kbjuProtein, kbjuFat, kbj
         </div>
       </div>
 
-      {/* Блок 3: Супы */}
-      <div className="rounded-2xl px-4 py-4"
-        style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-        <p className="text-xs font-bold uppercase tracking-widest mb-3"
-          style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
-          Супы
-        </p>
-        <div className="flex gap-2 mb-2">
-          <button type="button" onClick={() => setIncludeSoups(true)}  style={btnStyle(includeSoups)}>🍲 Добавить супы</button>
-          <button type="button" onClick={() => setIncludeSoups(false)} style={btnStyle(!includeSoups)}>Без супов</button>
-        </div>
-        {includeSoups && (
-          <p className="text-xs mt-1" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
-            💡 Кастрюля супа — на 2 дня, 1 порция в день как дополнение к основному блюду
-          </p>
-        )}
-      </div>
-
-      {/* Блок 3б: Салаты */}
+      {/* Блок 3: Салаты */}
       <div className="rounded-2xl px-4 py-4"
         style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
         <p className="text-xs font-bold uppercase tracking-widest mb-3"
@@ -207,30 +185,12 @@ export default function WeeklyPlanForm({ kbjuCalories, kbjuProtein, kbjuFat, kbj
         </div>
         {includeSalads && (
           <p className="text-xs mt-1" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
-            💡 Лёгкий овощной салат каждый день — вписывается в норму КБЖУ
+            💡 3 дня — лёгкий овощной салат к обеду, 2 дня — белковый салат вместо обеда
           </p>
         )}
       </div>
 
-      {/* Блок 4: Режим готовки */}
-      <div className="rounded-2xl px-4 py-4"
-        style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-        <p className="text-xs font-bold uppercase tracking-widest mb-3"
-          style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
-          Режим готовки
-        </p>
-        <div className="flex gap-2 mb-2">
-          <button type="button" onClick={() => setCookMode('daily')}      style={btnStyle(cookMode === 'daily')}>🍳 Каждый день</button>
-          <button type="button" onClick={() => setCookMode('every2days')} style={btnStyle(cookMode === 'every2days')}>📦 На 2 дня сразу</button>
-        </div>
-        {cookMode === 'every2days' && (
-          <p className="text-xs mt-1" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
-            💡 Пн+Вт, Ср+Чт, Пт+Сб готовятся одинаково. Воскресенье — отдельный день
-          </p>
-        )}
-      </div>
-
-      {/* Блок 5: Продукты */}
+      {/* Блок 4: Продукты */}
       <div className="rounded-2xl px-4 py-4"
         style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
         <p className="text-xs font-bold uppercase tracking-widest mb-1"

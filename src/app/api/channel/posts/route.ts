@@ -29,18 +29,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid channel' }, { status: 400 })
     }
 
-    // Marathon channel: trial users get 403
+    // Marathon channel: trial users get 403; finished marathons are closed
     if (MARATHON_RE.test(channel)) {
-      const { data: member } = await supabase
-        .from('members').select('status').eq('id', user.id).single()
-      if (member?.status === 'trial') {
+      const marathonId = channel.replace('marathon-', '')
+      const [{ data: member }, { data: marathon }] = await Promise.all([
+        admin.from('members').select('subscription_status').eq('email', user.email).single(),
+        admin.from('marathons').select('status').eq('id', marathonId).maybeSingle(),
+      ])
+      if (!member || member.subscription_status !== 'active') {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+      if (marathon?.status === 'finished') {
+        return NextResponse.json({ error: 'Marathon is finished' }, { status: 403 })
       }
     }
 
     let query = admin
       .from('channel_posts')
-      .select('id, member_id, channel, text, media_url, media_expires_at, meal_tag, is_ai_reply, is_pinned, parent_id, likes_count, expires_at, created_at, member:members(name, full_name, role, avatar_url)')
+      .select('id, member_id, channel, text, media_url, media_urls, media_expires_at, meal_tag, is_ai_reply, is_pinned, parent_id, likes_count, expires_at, created_at, member:members(name, full_name, role, avatar_url)')
       .eq('channel', channel)
       .is('parent_id', null)
       .or('expires_at.is.null,expires_at.gt.' + new Date().toISOString())
@@ -101,10 +107,13 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    const admin = createServiceClient()
+
     const body = await request.json() as {
       channel?: string
       text?: string
       media_url?: string
+      media_urls?: string[]
       meal_tag?: string
       parent_id?: string
     }
@@ -115,12 +124,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid channel' }, { status: 400 })
     }
 
-    // Marathon channel: trial users forbidden
+    // Marathon channel: trial users forbidden; finished marathons closed for posting
     if (MARATHON_RE.test(channel)) {
-      const { data: member } = await supabase
-        .from('members').select('status').eq('id', user.id).single()
-      if (member?.status === 'trial') {
+      const marathonId = channel.replace('marathon-', '')
+      const [{ data: member }, { data: marathon }] = await Promise.all([
+        admin.from('members').select('subscription_status, role').eq('email', user.email).single(),
+        admin.from('marathons').select('status').eq('id', marathonId).maybeSingle(),
+      ])
+      if (!member || member.subscription_status !== 'active') {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+      if (marathon?.status === 'finished' && member.role === 'member') {
+        return NextResponse.json({ error: 'Marathon is finished' }, { status: 403 })
       }
     }
 
@@ -130,22 +145,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Text too long (max 1000)' }, { status: 400 })
     }
 
-    // ── Validate media_url domain ──
-    // Coerce empty string to null — empty string would fail DB constraints
-    const media_url = body.media_url?.trim() || null
-    if (media_url) {
+    // ── Validate media_urls ──
+    const rawUrls: string[] = Array.isArray(body.media_urls) ? body.media_urls.slice(0, 3) : (body.media_url?.trim() ? [body.media_url.trim()] : [])
+    const supabaseHost = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://invalid').hostname
+    const media_urls: string[] = []
+    for (const url of rawUrls) {
+      if (typeof url !== 'string') continue
       try {
-        const parsedMedia = new URL(media_url)
-        const parsedSupabase = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://invalid')
-        if (parsedMedia.hostname !== parsedSupabase.hostname) {
-          return NextResponse.json({ error: 'Invalid media domain' }, { status: 400 })
-        }
+        if (new URL(url).hostname !== supabaseHost) return NextResponse.json({ error: 'Invalid media domain' }, { status: 400 })
+        media_urls.push(url)
       } catch {
         return NextResponse.json({ error: 'Invalid media domain' }, { status: 400 })
       }
     }
+    const media_url = media_urls[0] ?? null
 
-    if (!text && !media_url) {
+    if (!text && media_urls.length === 0) {
       return NextResponse.json({ error: 'Text or media required' }, { status: 400 })
     }
 
@@ -166,14 +181,15 @@ export async function POST(request: NextRequest) {
     // ── Compute server-side expiry ──
     const now = new Date()
     let expires_at: string | null = null
-    let media_expires_at: string | null = null
+    const media_expires_at: string | null = null  // no longer used for new posts
 
-    if (['boltalka', 'plates'].includes(channel)) {
+    if (media_urls.length > 0) {
+      // Posts WITH media: deleted in full after 7 days
       const exp = new Date(now)
-      exp.setDate(exp.getDate() + 30)
+      exp.setDate(exp.getDate() + 7)
       expires_at = exp.toISOString()
     } else if (MARATHON_RE.test(channel)) {
-      // Extract marathon id and get ends_at from DB
+      // Marathon text-only posts: expire with the marathon + 5 days
       const marathonId = channel.replace('marathon-', '')
       const { data: marathon } = await supabase
         .from('marathons').select('ends_at').eq('id', marathonId).maybeSingle()
@@ -183,16 +199,9 @@ export async function POST(request: NextRequest) {
         expires_at = exp.toISOString()
       }
     }
-
-    // Any channel: media expires after 72h (cron cleans up storage, post text survives)
-    if (media_url) {
-      const exp = new Date(now)
-      exp.setHours(exp.getHours() + 72)
-      media_expires_at = exp.toISOString()
-    }
+    // boltalka / plates text-only posts: expires_at = null (keep forever)
 
     // Resolve members.id by email (auth user id may differ from members.id)
-    const admin = createServiceClient()
     const { data: memberRow } = await admin
       .from('members').select('id').eq('email', user.email).single()
     const memberId = memberRow?.id ?? user.id
@@ -204,6 +213,7 @@ export async function POST(request: NextRequest) {
         channel,
         text: text || '',
         media_url,
+        media_urls: media_urls.length > 0 ? media_urls : null,
         media_expires_at,
         meal_tag: channel === 'plates' ? meal_tag : null,
         parent_id,
@@ -211,7 +221,7 @@ export async function POST(request: NextRequest) {
         is_pinned: false,
         is_ai_reply: false,
       })
-      .select('id, member_id, channel, text, media_url, media_expires_at, meal_tag, is_ai_reply, is_pinned, parent_id, likes_count, expires_at, created_at')
+      .select('id, member_id, channel, text, media_url, media_urls, media_expires_at, meal_tag, is_ai_reply, is_pinned, parent_id, likes_count, expires_at, created_at')
       .single()
 
     if (error) {

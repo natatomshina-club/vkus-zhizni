@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { calculatePortion, getMealTarget, selectRecipes } from '@/lib/recipeCalculator'
-import { expandProducts } from '@/lib/productUtils'
+import { expandProducts, getInputProteins } from '@/lib/productUtils'
 
 const VALID_CATEGORIES = ['завтрак', 'обед_ужин', 'салат', 'десерт', 'суп'] as const
 type Category = (typeof VALID_CATEGORIES)[number]
@@ -17,6 +17,7 @@ interface RecipeResult {
   ingredients: Array<{
     name: string
     grams: number
+    nutrition_id?: number
     calories: number
     protein: number
     fat: number
@@ -27,6 +28,9 @@ interface RecipeResult {
   macros_ok: { protein: boolean; fat: boolean }
   requires_macro_calculation: boolean
   servings: number
+  time_minutes?: number | null
+  cooking_method?: string | null
+  cuisine?: string | null
 }
 
 export async function POST(request: NextRequest) {
@@ -55,7 +59,7 @@ export async function POST(request: NextRequest) {
     // 1. Профиль + счётчик запросов
     const { data: member } = await supabase
       .from('members')
-      .select('kbju_protein, kbju_fat, kbju_carbs, kbju_calories, kitchen_requests_today, kitchen_date, status')
+      .select('kbju_protein, kbju_fat, kbju_carbs, kbju_calories, kitchen_requests_today, kitchen_date, subscription_status')
       .eq('id', user.id)
       .single()
 
@@ -68,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     // 2. Лимит с дневным сбросом
     const today = new Date().toISOString().split('T')[0]
-    const isTrial = member.status === 'trial' || !member.status
+    const isTrial = member.subscription_status === 'trial' || !member.subscription_status
     const limit = isTrial ? 3 : 10
     const requestsToday = member.kitchen_date === today ? (member.kitchen_requests_today ?? 0) : 0
 
@@ -85,7 +89,7 @@ export async function POST(request: NextRequest) {
     // 4. Все рецепты категории
     const { data: allRecipes } = await supabase
       .from('recipes')
-      .select('id, title, category, tags, tip_tags')
+      .select('id, title, category, tags, tip_tags, protein_tag')
       .eq('category', category)
       .eq('is_active', true)
 
@@ -97,8 +101,71 @@ export async function POST(request: NextRequest) {
     }
 
     // 5. Выбираем 3 рецепта по тегам (с расширением синонимов)
-    const expandedProducts = expandProducts(user_products ?? [])
-    const recipeIds = selectRecipes(allRecipes, expandedProducts, category, [], 3)
+    const userProductsRaw = user_products ?? []
+    const expandedProducts = expandProducts(userProductsRaw)
+
+    // Загружаем ингредиенты всех кандидатов для определения exact match
+    const candidateIds = allRecipes.map((r: { id: number }) => r.id)
+    const { data: candidateIngredients } = await supabase
+      .from('recipe_ingredients')
+      .select('recipe_id, ingredient_name, role, is_always_available')
+      .in('recipe_id', candidateIds)
+
+    // Разделяем ввод на белки и овощи/остальное
+    const rawProteinInputs = userProductsRaw.filter(p => getInputProteins([p]).length > 0)
+    const rawVegetables    = userProductsRaw.filter(p => getInputProteins([p]).length === 0)
+
+    let recipeIds: number[]
+
+    if (rawProteinInputs.length <= 1) {
+      // Один белок или нет белков — стандартная логика
+      recipeIds = selectRecipes(
+        allRecipes,
+        expandedProducts,
+        category,
+        [],
+        3,
+        candidateIngredients ?? undefined,
+        userProductsRaw
+      )
+    } else {
+      // Несколько белков: по 1 рецепту на каждый (берём первые 3)
+      const proteinsToUse = rawProteinInputs.slice(0, 3)
+      const excludeIds: number[] = []
+      const collected: number[] = []
+
+      for (const protein of proteinsToUse) {
+        const ids = selectRecipes(
+          allRecipes,
+          expandProducts([protein, ...rawVegetables]),
+          category,
+          excludeIds,
+          1,
+          candidateIngredients ?? undefined,
+          [protein]
+        )
+        if (ids.length > 0) {
+          collected.push(ids[0])
+          excludeIds.push(ids[0])
+        }
+      }
+
+      // При ровно 2 белках — добавить 3-й рецепт с любым из них
+      if (rawProteinInputs.length === 2 && collected.length < 3) {
+        const ids = selectRecipes(
+          allRecipes,
+          expandProducts([...rawProteinInputs, ...rawVegetables]),
+          category,
+          excludeIds,
+          1,
+          candidateIngredients ?? undefined,
+          rawProteinInputs
+        )
+        if (ids.length > 0) collected.push(ids[0])
+      }
+
+      recipeIds = collected
+    }
 
     if (recipeIds.length === 0) {
       await supabase.from('members')
@@ -111,7 +178,7 @@ export async function POST(request: NextRequest) {
     const { data: fullRecipes, error: fullErr } = await supabase
       .from('recipes')
       .select(`
-        id, title, category, steps, tip_tags, servings,
+        id, title, category, steps, tip_tags, servings, time_minutes, cooking_method, cuisine,
         recipe_ingredients (
           nutrition_id, ingredient_name, role, base_grams, is_always_available,
           nutrition ( id, name, calories, protein, fat, carbs )
@@ -137,6 +204,7 @@ export async function POST(request: NextRequest) {
           let totCal = 0, totProt = 0, totFat = 0, totCarb = 0
 
           type RawIng = {
+            nutrition_id: number
             ingredient_name: string
             role: string
             base_grams: number
@@ -152,12 +220,13 @@ export async function POST(request: NextRequest) {
             totFat  += ratio * n.fat
             totCarb += ratio * n.carbs
             ings.push({
-              name:     ing.ingredient_name,
-              grams:    ing.base_grams,
-              calories: Math.round(ratio * n.calories),
-              protein:  Math.round(ratio * n.protein * 10) / 10,
-              fat:      Math.round(ratio * n.fat * 10) / 10,
-              carbs:    Math.round(ratio * n.carbs * 10) / 10,
+              name:         ing.ingredient_name,
+              grams:        ing.base_grams,
+              nutrition_id: ing.nutrition_id,
+              calories:     Math.round(ratio * n.calories),
+              protein:      Math.round(ratio * n.protein * 10) / 10,
+              fat:          Math.round(ratio * n.fat * 10) / 10,
+              carbs:        Math.round(ratio * n.carbs * 10) / 10,
             })
           }
 
@@ -178,6 +247,9 @@ export async function POST(request: NextRequest) {
             macros_ok:                { protein: false, fat: false },
             requires_macro_calculation: false,
             servings:                 recipeServings,
+            time_minutes:             raw.time_minutes as number | null ?? null,
+            cooking_method:           raw.cooking_method as string | null ?? null,
+            cuisine:                  raw.cuisine as string | null ?? null,
           })
         } else {
           const portion = calculatePortion(
@@ -196,6 +268,9 @@ export async function POST(request: NextRequest) {
             tip_tags:                 tipTags,
             requires_macro_calculation: true,
             servings:                 recipeServings,
+            time_minutes:             raw.time_minutes as number | null ?? null,
+            cooking_method:           raw.cooking_method as string | null ?? null,
+            cuisine:                  raw.cuisine as string | null ?? null,
           } as RecipeResult)
         }
       } catch (e) {
