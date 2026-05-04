@@ -281,10 +281,23 @@ export function selectRecipes(
         userLower.some(u => tag.toLowerCase().includes(u) || u.includes(tag.toLowerCase()))
       ).length
 
-      // Бонус +10 если совпал белковый продукт рецепта
+      // Бонус +10 если совпал белковый продукт рецепта.
+      // Строгое сравнение через getInputProteins(userRaw) + startsWith-с-пробелом,
+      // чтобы исключить ложные совпадения через общие токены ("куриная" в "куриная печень").
       if (r.protein_tag) {
         const proteinL = r.protein_tag.toLowerCase()
-        const proteinMatches = userLower.some(u => proteinL.includes(u) || u.includes(proteinL))
+        let proteinMatches: boolean
+        if (userRaw && userRaw.length > 0) {
+          const slotProteins = getInputProteins(userRaw)
+          proteinMatches = slotProteins.some(p => {
+            const pLower = p.toLowerCase()
+            return proteinL === pLower
+              || proteinL.startsWith(pLower + ' ')
+              || pLower.startsWith(proteinL + ' ')
+          })
+        } else {
+          proteinMatches = userLower.some(u => proteinL.includes(u) || u.includes(proteinL))
+        }
         if (proteinMatches) score += 10
       }
 
