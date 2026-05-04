@@ -69,7 +69,7 @@ async function fetchFullRecipe(supabase: ReturnType<typeof createServiceClient>,
     .select(`
       id, title, category, steps, servings,
       recipe_ingredients (
-        nutrition_id, ingredient_name, role, base_grams, is_always_available,
+        nutrition_id, ingredient_name, role, base_grams, is_always_available, is_scalable_veggie,
         nutrition ( id, name, calories, protein, fat, carbs )
       )
     `)

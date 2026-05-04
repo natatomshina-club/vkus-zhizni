@@ -27,6 +27,7 @@ export interface RecipeIngredientRow {
   role: 'protein' | 'fat' | 'veggie' | 'oil' | 'spice'
   base_grams: number
   is_always_available: boolean
+  is_scalable_veggie: boolean
   nutrition: NutritionRow
 }
 
@@ -114,9 +115,50 @@ export function calculatePortion(
     finalList.push({ name: oil.ingredient_name, n: oil.nutrition, grams: oil.base_grams, nutrition_id: oil.nutrition_id })
   }
 
-  const totals = sumMacros(finalList.map(i => ({ n: i.n, grams: i.grams })))
+  let totals = sumMacros(finalList.map(i => ({ n: i.n, grams: i.grams })))
 
-  // Шаг 6: что нужно докупить
+  // Шаг 6: уменьшаем масштабируемые овощи если углеводы превышают цель
+  if (totals.carbs > target.carbs + TOLERANCE) {
+    const originalCarbs = totals.carbs
+    const scalableVeggies = recipe.ingredients
+      .filter(i => i.role === 'veggie' && i.is_scalable_veggie)
+      .sort((a, b) => b.nutrition.carbs - a.nutrition.carbs)
+
+    const reductions: string[] = []
+
+    for (const sv of scalableVeggies) {
+      const excess = totals.carbs - (target.carbs + TOLERANCE)
+      if (excess <= 0) break
+
+      const carbs_per_gram = sv.nutrition.carbs / 100
+      if (carbs_per_gram <= 0) continue
+
+      const item = finalList.find(f => f.name === sv.ingredient_name)
+      if (!item) continue
+
+      const currentGrams = item.grams
+      const minGrams = sv.base_grams * 0.3
+      const gramsToReduce = excess / carbs_per_gram
+      const newGrams = Math.max(currentGrams - gramsToReduce, minGrams)
+
+      if (newGrams < currentGrams) {
+        reductions.push(`${sv.ingredient_name} ${Math.round(currentGrams)}→${Math.round(newGrams)}г`)
+        item.grams = Math.round(newGrams)
+        totals = sumMacros(finalList.map(i => ({ n: i.n, grams: i.grams })))
+      }
+
+      if (totals.carbs <= target.carbs + TOLERANCE) break
+    }
+
+    if (reductions.length > 0) {
+      console.log(
+        `[calculatePortion] recipe=${recipe.id} carbs reduced: ${reductions.join(', ')},` +
+        ` totals.carbs ${Math.round(originalCarbs * 10) / 10}→${Math.round(totals.carbs * 10) / 10}`
+      )
+    }
+  }
+
+  // Шаг 7: что нужно докупить
   const userLower = userProducts.map(p => p.toLowerCase())
   const extra_products: string[] = []
   for (const ing of recipe.ingredients.filter(i => i.role !== 'spice' && !i.is_always_available)) {
