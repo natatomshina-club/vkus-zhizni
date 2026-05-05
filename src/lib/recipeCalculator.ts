@@ -1,10 +1,9 @@
 // ============================================================
-// lib/recipeCalculator.ts  v3
+// lib/recipeCalculator.ts  v4
 // Динамический подбор граммовок под КБЖУ участницы
-// Алгоритм проверен на 6 тестах — все ✅
 // ============================================================
 
-import { getInputProteins } from './productUtils'
+import { getInputProteins, normalizeRu, OFFAL_KEYWORDS } from './productUtils'
 
 export interface NutritionRow {
   id: number
@@ -18,12 +17,6 @@ export interface NutritionRow {
 export interface RecipeIngredientRow {
   nutrition_id: number
   ingredient_name: string
-  // Роль в алгоритме:
-  // 'protein' — главный белковый продукт (граммы считаются динамически по цели)
-  // 'fat'     — дополнительный жир с фиксированными граммами (авокадо, сливки, сыр)
-  // 'veggie'  — овощи с фиксированными граммами
-  // 'oil'     — масло для тонкой подстройки жиров (граммы считаются динамически)
-  // 'spice'   — специи (фиксированные, пренебрежимо малые КБЖУ)
   role: 'protein' | 'fat' | 'veggie' | 'oil' | 'spice'
   base_grams: number
   is_always_available: boolean
@@ -55,6 +48,16 @@ export interface RecipePortionResult {
 
 const TOLERANCE = 2.0
 
+// Лимиты жирных ингредиентов для категории салат_белковый (nutrition_id → max граммы)
+const FAT_CAPS_PROTEIN_SALAD: Record<number, number> = {
+  125: 30,   // масло оливковое
+  506: 30,   // масло гхи (вариант 1)
+  591: 30,   // масло гхи (вариант 2)
+  124: 40,   // кетомайонез
+  101: 60,   // сметана 20%
+  100: 60,   // сметана 15%
+}
+
 export function calculatePortion(
   recipe: { id: number; title: string; category: string; steps: string[]; ingredients: RecipeIngredientRow[] },
   target: MealTargetMacros,
@@ -63,8 +66,8 @@ export function calculatePortion(
 
   const proteinSource = recipe.ingredients.find(i => i.role === 'protein')
   const oilSources    = recipe.ingredients.filter(i => i.role === 'oil')
-  const oilSource     = oilSources[0] ?? null   // primary oil — dynamic fat adjustment
-  const extraOils     = oilSources.slice(1)      // additional oils — shown with base_grams
+  const oilSource     = oilSources[0] ?? null
+  const extraOils     = oilSources.slice(1)
   const fixed         = recipe.ingredients.filter(i => i.role === 'fat' || i.role === 'veggie')
 
   if (!proteinSource) throw new Error(`Рецепт ${recipe.id}: нет ингредиента с role='protein'`)
@@ -74,7 +77,7 @@ export function calculatePortion(
 
   // Шаг 2: граммы белкового продукта под оставшийся белок
   const proteinNeeded = Math.max(target.protein - fixedMacros.protein, 5)
-  const EGG_IDS = [86, 87] // 86 = яйцо куриное, 87 = яйцо перепелиное
+  const EGG_IDS = [86, 87]
   const EGG_WEIGHT: Record<number, number> = { 86: 60, 87: 12 }
 
   let proteinGrams = Math.round(proteinNeeded / proteinSource.nutrition.protein * 100)
@@ -85,7 +88,7 @@ export function calculatePortion(
     proteinGrams = eggCount * eggWeight
   }
 
-  // Шаг 3: жир без основного масла (экстра-масла учитываем как фиксированные)
+  // Шаг 3: жир без основного масла
   const withoutOil = [
     { n: proteinSource.nutrition, grams: proteinGrams },
     ...fixed.map(i => ({ n: i.nutrition, grams: i.base_grams })),
@@ -98,6 +101,11 @@ export function calculatePortion(
   if (oilSource) {
     const fatNeeded = target.fat - macrosWithoutOil.fat
     if (fatNeeded > 0) oilGrams = Math.round(fatNeeded / (oilSource.nutrition.fat / 100))
+    // Пункт 5: лимит масла в белковых салатах
+    if (recipe.category === 'салат_белковый') {
+      const cap = FAT_CAPS_PROTEIN_SALAD[oilSource.nutrition_id]
+      if (cap !== undefined && oilGrams > cap) oilGrams = cap
+    }
   }
 
   // Шаг 5: финальный состав
@@ -106,13 +114,20 @@ export function calculatePortion(
     ...fixed.map(i => ({ name: i.ingredient_name, n: i.nutrition, grams: i.base_grams, nutrition_id: i.nutrition_id })),
   ]
   if (oilSource) {
-    // Всегда добавляем основное масло. Если жир уже покрыт белком — показываем 0г
-    // (масло упомянуто в шагах рецепта, участница должна его видеть).
     finalList.push({ name: oilSource.ingredient_name, n: oilSource.nutrition, grams: Math.max(0, oilGrams), nutrition_id: oilSource.nutrition_id })
   }
-  // Дополнительные масла — всегда с base_grams из рецепта
   for (const oil of extraOils) {
     finalList.push({ name: oil.ingredient_name, n: oil.nutrition, grams: oil.base_grams, nutrition_id: oil.nutrition_id })
+  }
+
+  // Пункт 5: лимиты жирных ингредиентов роль='fat' в белковых салатах
+  if (recipe.category === 'салат_белковый') {
+    for (const item of finalList) {
+      const cap = FAT_CAPS_PROTEIN_SALAD[item.nutrition_id]
+      if (cap !== undefined && item.grams > cap) {
+        item.grams = cap
+      }
+    }
   }
 
   let totals = sumMacros(finalList.map(i => ({ n: i.n, grams: i.grams })))
@@ -249,70 +264,73 @@ export function selectRecipes(
   userRaw?: string[],
   recipeVeggieMap?: Map<number, string>,
   veggieUsage?: Map<string, number>,
+  proteinUsage?: Map<string, number>,
+  offalUsage?: Map<string, number>,
 ): number[] {
   const userLower = userTags.map(t => t.toLowerCase())
 
-  // Строгая фильтрация по белку: если пользователь ввёл белковый продукт,
-  // показываем только рецепты с этим белком (проверяем protein_tag И tags[]).
-  // Fallback: если ни одного рецепта не найдено — снимаем фильтр.
+  // Пункт 1: жёсткий фильтр по белку — строгое равенство через normalizeRu
   let candidateRecipes = recipes.filter(r => r.category === category && !excludeIds.includes(r.id))
 
   if (userRaw && userRaw.length > 0) {
     const inputProteins = getInputProteins(userRaw)
     if (inputProteins.length > 0) {
-      const ipLower = inputProteins.map(p => p.toLowerCase())
+      const ipNorm = inputProteins.map(p => normalizeRu(p))
       const proteinFiltered = candidateRecipes.filter(r => {
-        if (r.protein_tag) {
-          const ptLower = r.protein_tag.toLowerCase()
-          if (ipLower.some(p => ptLower.includes(p) || p.includes(ptLower))) return true
+        const ptNorm = r.protein_tag ? normalizeRu(r.protein_tag) : null
+
+        // Пункт 3: лимит субпродуктов
+        if (ptNorm && offalUsage && OFFAL_KEYWORDS.has(ptNorm)) {
+          if ((offalUsage.get(ptNorm) ?? 0) >= 2) return false
         }
-        return r.tags.some(tag => {
-          const tagLower = tag.toLowerCase()
-          return ipLower.some(p => tagLower.includes(p) || p.includes(tagLower))
-        })
+
+        // Точное совпадение protein_tag
+        if (ptNorm && ipNorm.some(p => ptNorm === p)) return true
+
+        // Фалбек: точное совпадение тегов
+        return r.tags.some(tag => ipNorm.some(p => normalizeRu(tag) === p))
       })
       if (proteinFiltered.length > 0) candidateRecipes = proteinFiltered
     }
   }
 
-  const scored = candidateRecipes
-    .map(r => {
-      let score = r.tags.filter(tag =>
-        userLower.some(u => tag.toLowerCase().includes(u) || u.includes(tag.toLowerCase()))
-      ).length
+  const scored = candidateRecipes.map(r => {
+    // Общий скоринг по тегам (fuzzy — только для приоритизации)
+    let score = r.tags.filter(tag =>
+      userLower.some(u => tag.toLowerCase().includes(u) || u.includes(tag.toLowerCase()))
+    ).length
 
-      // Бонус +10 если совпал белковый продукт рецепта.
-      // Строгое сравнение через getInputProteins(userRaw) + startsWith-с-пробелом,
-      // чтобы исключить ложные совпадения через общие токены ("куриная" в "куриная печень").
-      if (r.protein_tag) {
-        const proteinL = r.protein_tag.toLowerCase()
-        let proteinMatches: boolean
-        if (userRaw && userRaw.length > 0) {
-          const slotProteins = getInputProteins(userRaw)
-          proteinMatches = slotProteins.some(p => {
-            const pLower = p.toLowerCase()
-            return proteinL === pLower
-              || proteinL.startsWith(pLower + ' ')
-              || pLower.startsWith(proteinL + ' ')
-          })
-        } else {
-          proteinMatches = userLower.some(u => proteinL.includes(u) || u.includes(proteinL))
-        }
-        if (proteinMatches) score += 10
+    // Пункт 1: бонус за совпадение белка (строгое)
+    if (r.protein_tag) {
+      const ptNorm = normalizeRu(r.protein_tag)
+      let proteinMatches = false
+      if (userRaw && userRaw.length > 0) {
+        const slotProteins = getInputProteins(userRaw)
+        proteinMatches = slotProteins.some(p => normalizeRu(p) === ptNorm)
+      } else {
+        proteinMatches = userLower.some(u => normalizeRu(u) === ptNorm)
       }
+      if (proteinMatches) score += 10
 
-      // Разнообразие овощей: +50 за ни разу не использованный, -10 за 2+ раз
-      if (recipeVeggieMap && veggieUsage) {
-        const veggie = recipeVeggieMap.get(r.id)
-        if (veggie) {
-          const usage = veggieUsage.get(veggie) ?? 0
-          if (usage === 0) score += 50
-          else if (usage >= 2) score -= 10
-        }
+      // Пункт 2: бонус +50 за ещё не использованный белок
+      if (proteinUsage) {
+        const usage = proteinUsage.get(ptNorm) ?? 0
+        if (usage === 0) score += 50
       }
+    }
 
-      return { id: r.id, score }
-    })
+    // Разнообразие овощей: +50 за ни разу не использованный, -10 за 2+ раз
+    if (recipeVeggieMap && veggieUsage) {
+      const veggie = recipeVeggieMap.get(r.id)
+      if (veggie) {
+        const usage = veggieUsage.get(veggie) ?? 0
+        if (usage === 0) score += 50
+        else if (usage >= 2) score -= 10
+      }
+    }
+
+    return { id: r.id, score }
+  })
 
   const withScore = scored.filter(r => r.score > 0).map(r => ({
     ...r,
@@ -321,7 +339,6 @@ export function selectRecipes(
       : false,
   }))
 
-  // Exact match first, then by score desc, shuffle within equal score
   withScore.sort((a, b) => {
     if (a.exact && !b.exact) return -1
     if (!a.exact && b.exact) return 1

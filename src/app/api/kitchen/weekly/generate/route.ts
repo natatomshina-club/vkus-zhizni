@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { calculatePortion, getMealTarget, selectRecipes, type MealTargetMacros } from '@/lib/recipeCalculator'
-import { expandProducts, filterVeggies } from '@/lib/productUtils'
+import { expandProducts, filterVeggies, normalizeRu, OFFAL_KEYWORDS, LEGUMES_KEYWORDS } from '@/lib/productUtils'
 import { classifyProteins, buildProteinSchedule } from '@/lib/weeklyPlanHelper'
 
 const DAY_NAMES = ['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье']
@@ -316,13 +316,16 @@ export async function POST(request: NextRequest) {
 
     console.log(`[weekly/generate] recipes: завтрак=${bfRecipes?.length ?? 0} обед=${mainRecipes?.length ?? 0} салат=${saladCandidates.length} салат_бел=${proteinSaladCandidates.length} десерт=${dessertRecipes?.length ?? 0}`)
 
-    // ── 4b. Карта главных овощей (первый veggie с is_always_available=false) ──
+    // ── 4b. Карта овощей рецептов ────────────────────────────────────────────
     const allCandidateIds = [
       ...(bfRecipes?.map(r => r.id as number) ?? []),
       ...(mainRecipes?.map(r => r.id as number) ?? []),
       ...proteinSaladCandidates.map(r => r.id),
     ]
+    // Первый овощ (для veggieUsage / diversification)
     const recipeVeggieMap = new Map<number, string>()
+    // Все не-always-available овощи (для строгого фильтра пункт 4)
+    const recipeAllVeggiesMap = new Map<number, string[]>()
     if (allCandidateIds.length > 0) {
       const { data: veggieIngData } = await svc
         .from('recipe_ingredients')
@@ -332,17 +335,58 @@ export async function POST(request: NextRequest) {
         .eq('is_always_available', false)
         .order('id', { ascending: true })
       for (const ing of veggieIngData ?? []) {
-        if (!recipeVeggieMap.has(ing.recipe_id as number)) {
-          recipeVeggieMap.set(ing.recipe_id as number, (ing.ingredient_name as string).toLowerCase())
-        }
+        const rid = ing.recipe_id as number
+        const name = (ing.ingredient_name as string).toLowerCase()
+        if (!recipeVeggieMap.has(rid)) recipeVeggieMap.set(rid, name)
+        const all = recipeAllVeggiesMap.get(rid) ?? []
+        all.push(name)
+        recipeAllVeggiesMap.set(rid, all)
       }
     }
 
-    // Трекер разнообразия овощей по всей неделе (Баг 4)
+    // Трекер разнообразия овощей по всей неделе
     const veggieUsage = new Map<string, number>()
     const userVeggies = filterVeggies(user_products ?? [])
     if (userVeggies.length > 0) {
       console.log(`[weekly/generate] userVeggies: ${userVeggies.join(', ')}`)
+    }
+
+    // Пункт 4: строгий фильтр по овощам при 3+ введённых овощах
+    const userVeggieCount = userVeggies.length
+    const expandedVeggiesSet = userVeggieCount >= 3
+      ? new Set(expandProducts(userVeggies).map(v => v.toLowerCase()))
+      : null
+    function strictVeggieFilter<T extends { id: number }>(list: T[]): T[] {
+      if (!expandedVeggiesSet) return list
+      return list.filter(r => {
+        const veggies = recipeAllVeggiesMap.get(r.id) ?? []
+        return veggies.every(v => expandedVeggiesSet.has(v))
+      })
+    }
+    if (expandedVeggiesSet) {
+      console.log(`[weekly/generate] strict veggie filter (${userVeggieCount} veggies): ${[...expandedVeggiesSet].slice(0, 6).join(', ')}`)
+    }
+
+    // ── Трекеры белков (пункты 2, 3) ─────────────────────────────────────────
+    const proteinUsage = new Map<string, number>()   // normalizeRu(protein_tag) → кол-во использований
+    const offalUsage   = new Map<string, number>()   // для лимита субпродуктов
+
+    // Карта recipe_id → normalizeRu(protein_tag) для обновления трекеров после построения блюда
+    const recipeProteinTagMap = new Map<number, string>()
+    for (const r of [
+      ...(bfRecipes ?? []),
+      ...(mainRecipes ?? []),
+      ...proteinSaladCandidates,
+    ]) {
+      if (r.protein_tag) recipeProteinTagMap.set(r.id as number, normalizeRu(r.protein_tag as string))
+    }
+
+    function trackMealProtein(meal: PlanMeal | null) {
+      if (!meal) return
+      const pt = recipeProteinTagMap.get(meal.recipe_id as number)
+      if (!pt) return
+      proteinUsage.set(pt, (proteinUsage.get(pt) ?? 0) + 1)
+      if (OFFAL_KEYWORDS.has(pt)) offalUsage.set(pt, (offalUsage.get(pt) ?? 0) + 1)
     }
 
     // ── 5. Типы дней по салатам ──────────────────────────────────────────────
@@ -370,6 +414,19 @@ export async function POST(request: NextRequest) {
       for (const id of candidateIds) {
         const raw = await fetchFullRecipe(svc, id)
         if (!raw) continue
+
+        // Пункт 6: исключить бобовые когда целевые углеводы < 25г
+        if (target.carbs < 25) {
+          const ings = (raw.recipe_ingredients as unknown as RawIng[]) ?? []
+          const hasLegume = ings.some(ing =>
+            LEGUMES_KEYWORDS.has(ing.ingredient_name.toLowerCase())
+          )
+          if (hasLegume) {
+            console.log(`[weekly/generate] skip legume recipe id=${id} (carbs target=${target.carbs})`)
+            continue
+          }
+        }
+
         try {
           const portion = calculatePortion(
             {
@@ -423,13 +480,16 @@ export async function POST(request: NextRequest) {
       const meal2Raw = dayProtein?.meal2Protein ? [dayProtein.meal2Protein] : (user_products ?? [])
 
       // ── Завтрак ──
-      const bfCands = selectRecipes(bfRecipes ?? [], expandedProds, 'завтрак', usedBfIds, 5, undefined, meal1Raw, recipeVeggieMap, veggieUsage)
+      // Пункт 4: строгий фильтр по овощам (если userVeggieCount >= 3)
+      const bfFiltered = strictVeggieFilter(bfRecipes ?? [])
+      const bfCands = selectRecipes(bfFiltered, expandedProds, 'завтрак', usedBfIds, 5, undefined, meal1Raw, recipeVeggieMap, veggieUsage, proteinUsage, offalUsage)
       if (bfCands[0]) usedBfIds.push(bfCands[0])
       const bfPool = bfCands.length > 0 ? bfCands : usedBfIds.slice(0, 3)
       const bfMeal = await tryBuildMeal(bfPool, 'завтрак', groupTarget)
 
       const bfVeggie = bfMeal ? (recipeVeggieMap.get(bfMeal.recipe_id as number) ?? null) : null
       if (bfVeggie) veggieUsage.set(bfVeggie, (veggieUsage.get(bfVeggie) ?? 0) + 1)
+      trackMealProtein(bfMeal)  // пункт 2, 3
 
       // ── Обед / Белковый салат ──
       let lunch:  PlanMeal | null = null
@@ -437,15 +497,18 @@ export async function POST(request: NextRequest) {
 
       if (isProteinSaladDay) {
         // Белковый салат (calculatePortion) заменяет обед
-        const psCands = selectRecipes(proteinSaladCandidates, expandedProds, 'салат_белковый', usedProteinSaladIds, 5, undefined, meal2Raw, recipeVeggieMap, veggieUsage)
+        const psFiltered = strictVeggieFilter(proteinSaladCandidates)
+        const psCands = selectRecipes(psFiltered, expandedProds, 'салат_белковый', usedProteinSaladIds, 5, undefined, meal2Raw, recipeVeggieMap, veggieUsage, proteinUsage, offalUsage)
         if (psCands[0]) usedProteinSaladIds.push(psCands[0])
         const psPool = psCands.length > 0 ? psCands : usedProteinSaladIds.slice(0, 3)
         lunch = await tryBuildMeal(psPool, 'салат_белковый', fullTarget)
+        trackMealProtein(lunch)
 
         if (meals_per_day === 3) {
           // При 3-разовом: ужин — отдельный обед_ужин рецепт с другим овощем
           const lunchVeggiePs = lunch ? (recipeVeggieMap.get(lunch.recipe_id as number) ?? null) : null
-          const dinnerCands = selectRecipes(mainRecipes ?? [], expandedProds, 'обед_ужин', usedMainIds, 5, undefined, meal2Raw, recipeVeggieMap, veggieUsage)
+          const mainFiltered = strictVeggieFilter(mainRecipes ?? [])
+          const dinnerCands = selectRecipes(mainFiltered, expandedProds, 'обед_ужин', usedMainIds, 5, undefined, meal2Raw, recipeVeggieMap, veggieUsage, proteinUsage, offalUsage)
           if (dinnerCands[0]) usedMainIds.push(dinnerCands[0])
           const dinnerPool = dinnerCands.filter(id => {
             const v = recipeVeggieMap.get(id) ?? null
@@ -454,10 +517,12 @@ export async function POST(request: NextRequest) {
           dinner = await tryBuildMeal(dinnerPool.length > 0 ? dinnerPool : dinnerCands, 'ужин', fullTarget)
           const dv = dinner ? (recipeVeggieMap.get(dinner.recipe_id as number) ?? null) : null
           if (dv) veggieUsage.set(dv, (veggieUsage.get(dv) ?? 0) + 1)
+          trackMealProtein(dinner)
         }
       } else {
         // Обычный обед (обед_ужин)
-        const mainCands = selectRecipes(mainRecipes ?? [], expandedProds, 'обед_ужин', usedMainIds, meals_per_day === 3 ? 6 : 5, undefined, meal2Raw, recipeVeggieMap, veggieUsage)
+        const mainFiltered = strictVeggieFilter(mainRecipes ?? [])
+        const mainCands = selectRecipes(mainFiltered, expandedProds, 'обед_ужин', usedMainIds, meals_per_day === 3 ? 6 : 5, undefined, meal2Raw, recipeVeggieMap, veggieUsage, proteinUsage, offalUsage)
         if (mainCands[0]) usedMainIds.push(mainCands[0])
         if (meals_per_day === 3 && mainCands[1]) usedMainIds.push(mainCands[1])
         const mainPool = mainCands.length > 0 ? mainCands : usedMainIds.slice(0, 5)
@@ -472,6 +537,7 @@ export async function POST(request: NextRequest) {
         } else {
           lunch = await tryBuildMeal(finalMainPool, 'обед', groupTarget)
         }
+        trackMealProtein(lunch)
       }
 
       // Track lunch veggie
