@@ -122,14 +122,17 @@ Reverse proxy с SSL. Конфиги: `/etc/nginx/sites-available/`.
 
 ## CRON задачи
 
-| Расписание | Задача | Способ |
+| Расписание | Задача | Лог |
 |---|---|---|
-| `0 3 * * *` | pg_dump бэкап БД | bash-скрипт на сервере |
-| `0 3 * * *` | cleanup-expired-posts — удаление фото чата | pg_cron (внутри Postgres) |
-| `0 10 * * *` | `/api/cron/level-up` — уведомления об уровне | curl с сервера |
-| ? | `/api/cron/cleanup-media` | роут есть в коде, статус cron-задачи неизвестен |
+| `0 2 * * *` | pg_dump бэкап БД (`/home/deploy/backups/backup.sh`) | `backup.log` |
+| `0 3 * * *` | `/api/cron/check-subscriptions` — пометка expired | `cron.log` |
+| `0 8 * * *` | `/api/cron/subscription-reminders` — напоминания VIP за 1/5 дней до конца | `cron.log` |
+| `0 9 * * *` | `/api/cron/email-sequences` | `cron-sequences.log` |
+| `0 10 * * *` | `/api/cron/level-up` — уведомления об уровне | `cron-level-up.log` |
 
-Авторизация curl-запросов: заголовок `x-cron-secret: $CRON_SECRET` (из `.env.production.local`).
+Все логи: `/home/deploy/backups/cron*.log`
+
+> `/api/cron/cleanup-media` — роут существует (чистит медиа чата старше 7 дней), cron не настроен: нечего чистить, медиафайлы в чате не используются.
 
 ## Безопасность
 
