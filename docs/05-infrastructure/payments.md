@@ -19,7 +19,7 @@
 ## Уровни участниц
 
 > Уровень определяется функцией `getEffectiveMonths` в `src/lib/webinars.ts`.
-> Подробнее — будущий файл `03-club/modules/subscriptions.md`.
+> Подробнее — [[03-club/modules/subscriptions]].
 
 `getEffectiveMonths(createdAt, plan)`:
 - Считает полные месяцы с даты регистрации
