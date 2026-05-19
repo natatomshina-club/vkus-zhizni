@@ -18,7 +18,7 @@ export async function GET() {
     .from('body_sections')
     .select(`
       id, title, emoji, sort_order, is_active,
-      body_materials(id, title, description, format, content_url, duration_label, sort_order, is_published, views_count, created_at, attachments)
+      body_materials(id, title, description, format, content_url, video_urls, duration_label, sort_order, is_published, views_count, created_at, attachments)
     `)
     .order('sort_order')
 

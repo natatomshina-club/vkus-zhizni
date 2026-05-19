@@ -2,6 +2,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import BackButton from '@/components/BackButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,7 +29,7 @@ export default async function BodyMaterialPage({ params }: { params: Promise<{ i
 
   const { data: material, error } = await admin
     .from('body_materials')
-    .select('id, title, description, format, content_url, duration_label, sort_order, section_id, attachments')
+    .select('id, title, description, format, content_url, video_urls, duration_label, sort_order, section_id, attachments')
     .eq('id', id)
     .eq('is_published', true)
     .single()
@@ -47,9 +48,7 @@ export default async function BodyMaterialPage({ params }: { params: Promise<{ i
     if (!freeIds.has(id)) {
       return (
         <div style={{ maxWidth: 700, margin: '0 auto', padding: '40px 16px 96px', fontFamily: 'var(--font-nunito)' }}>
-          <Link href="/dashboard/courses" style={{ fontSize: 13, color: '#7B6FAA', textDecoration: 'none', padding: '6px 12px', borderRadius: 10, background: '#F0EEFF', display: 'inline-block', marginBottom: 24 }}>
-            ← Назад
-          </Link>
+          <BackButton />
           <div style={{ background: 'linear-gradient(135deg, #3D2B8A 0%, #7C5CFC 100%)', borderRadius: 20, padding: '40px 32px', textAlign: 'center' }}>
             <p style={{ fontSize: 48, marginBottom: 16 }}>🔒</p>
             <h2 style={{ fontFamily: 'var(--font-unbounded)', fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 12 }}>
@@ -97,27 +96,37 @@ export default async function BodyMaterialPage({ params }: { params: Promise<{ i
 
       {/* Content */}
       <div style={{ marginTop: 8 }}>
-        {material.format === 'video' && material.content_url && (
-          <div style={{ borderRadius: 16, overflow: 'hidden', background: '#000' }}>
-            {material.content_url.startsWith('<iframe') ? (
-              <div
-                style={{ width: '100%', aspectRatio: '16/9' }}
-                dangerouslySetInnerHTML={{ __html: material.content_url.replace('<iframe', '<iframe style="width:100%;height:100%;border:none;"') }}
-              />
-            ) : (
-              <div style={{ width: '100%', aspectRatio: '16/9' }}>
-                <iframe
-                  src={material.content_url}
-                  style={{ width: '100%', height: '100%', border: 'none' }}
-                  allowFullScreen
-                />
-              </div>
-            )}
-          </div>
-        )}
+        {material.format === 'video' && (() => {
+          const mat = material as typeof material & { video_urls?: string[] | null }
+          const videos = mat.video_urls?.length
+            ? mat.video_urls
+            : mat.content_url ? [mat.content_url] : []
+          return videos.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {videos.map((url: string, i: number) => (
+                <div key={i} style={{ borderRadius: 16, overflow: 'hidden', background: '#000' }}>
+                  {url.startsWith('<iframe') ? (
+                    <div
+                      style={{ width: '100%', aspectRatio: '16/9' }}
+                      dangerouslySetInnerHTML={{ __html: url.replace('<iframe', '<iframe style="width:100%;height:100%;border:none;"') }}
+                    />
+                  ) : (
+                    <div style={{ width: '100%', aspectRatio: '16/9' }}>
+                      <iframe
+                        src={url}
+                        style={{ width: '100%', height: '100%', border: 'none' }}
+                        allowFullScreen
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : null
+        })()}
 
         {material.format === 'article' && material.content_url && (
-          <div style={{ background: '#fff', border: '1.5px solid var(--border)', borderRadius: 16, padding: '28px 32px' }}>
+          <div style={{ background: '#fff', border: '1.5px solid var(--border)', borderRadius: 16, padding: '28px 20px', overflowX: 'auto', maxWidth: '100%' }}>
             {material.content_url.startsWith('http') ? (
               /* External URL */
               <div style={{ textAlign: 'center', padding: '40px 0' }}>
@@ -135,6 +144,7 @@ export default async function BodyMaterialPage({ params }: { params: Promise<{ i
               <>
                 <div
                   className="article-content"
+                  style={{ overflowX: 'auto', maxWidth: '100%' }}
                   dangerouslySetInnerHTML={{ __html: material.content_url }}
                 />
                 <style>{`
@@ -146,6 +156,10 @@ export default async function BodyMaterialPage({ params }: { params: Promise<{ i
                   .article-content strong { color: #2D1F6E; }
                   .article-content blockquote { border-left: 3px solid #7C5CFC; padding-left: 16px; color: #7B6FAA; font-style: italic; margin: 16px 0; }
                   .article-content a { color: #7C5CFC; text-decoration: underline; }
+                  .article-content table { width: 100%; table-layout: fixed; word-wrap: break-word; border-collapse: collapse; margin-bottom: 16px; }
+                  .article-content td, .article-content th { padding: 8px 10px; border: 1px solid #EDE8FF; font-size: 13px; vertical-align: top; }
+                  .article-content th { background: #F0EEFF; font-weight: 700; color: #2D1F6E; }
+                  .article-content img { max-width: 100%; height: auto; border-radius: 8px; }
                 `}</style>
               </>
             ) : (
@@ -161,22 +175,24 @@ export default async function BodyMaterialPage({ params }: { params: Promise<{ i
 
         {material.format === 'pdf' && material.content_url && (
           <div style={{ background: '#fff', border: '1.5px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>📎 PDF-документ</span>
-              <a
-                href={material.content_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                download
-                style={{ background: '#FFF5E8', color: '#C26A00', fontWeight: 700, fontSize: 13, padding: '8px 16px', borderRadius: 10, textDecoration: 'none' }}
-              >
-                Скачать ↓
-              </a>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <Link
+                  href={`/dashboard/body/pdf?url=${encodeURIComponent(material.content_url)}`}
+                  style={{ background: '#FFF5E8', color: '#C26A00', fontWeight: 700, fontSize: 13, padding: '8px 16px', borderRadius: 10, textDecoration: 'none' }}
+                >
+                  Открыть PDF →
+                </Link>
+                <a
+                  href={material.content_url}
+                  download
+                  style={{ background: '#F0EEFF', color: '#7C5CFC', fontWeight: 700, fontSize: 13, padding: '8px 16px', borderRadius: 10, textDecoration: 'none' }}
+                >
+                  Скачать ↓
+                </a>
+              </div>
             </div>
-            <iframe
-              src={material.content_url}
-              style={{ width: '100%', height: 600, border: 'none' }}
-            />
           </div>
         )}
 
@@ -204,7 +220,8 @@ export default async function BodyMaterialPage({ params }: { params: Promise<{ i
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {((material as { attachments: { name: string; url: string }[] }).attachments).map((att, i) => {
               const ext = att.name.split('.').pop()?.toLowerCase() ?? ''
-              const icon = ext === 'pdf' ? '📄' : ['doc','docx'].includes(ext) ? '📝' : ['xls','xlsx'].includes(ext) ? '📊' : ['png','jpg','jpeg'].includes(ext) ? '🖼️' : '📎'
+              const isPdf = ext === 'pdf'
+              const icon = isPdf ? '📄' : ['doc','docx'].includes(ext) ? '📝' : ['xls','xlsx'].includes(ext) ? '📊' : ['png','jpg','jpeg'].includes(ext) ? '🖼️' : '📎'
               return (
                 <div
                   key={i}
@@ -214,14 +231,23 @@ export default async function BodyMaterialPage({ params }: { params: Promise<{ i
                   <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {att.name}
                   </span>
-                  <a
-                    href={att.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ flexShrink: 0, background: '#F0EEFF', color: '#7C5CFC', fontWeight: 700, fontSize: 12, padding: '6px 14px', borderRadius: 8, textDecoration: 'none' }}
-                  >
-                    Скачать →
-                  </a>
+                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                    {isPdf && (
+                      <Link
+                        href={`/dashboard/body/pdf?url=${encodeURIComponent(att.url)}`}
+                        style={{ background: '#F0EEFF', color: '#7C5CFC', fontWeight: 700, fontSize: 12, padding: '6px 14px', borderRadius: 8, textDecoration: 'none' }}
+                      >
+                        Открыть →
+                      </Link>
+                    )}
+                    <a
+                      href={att.url}
+                      download
+                      style={{ background: '#FFF5E8', color: '#C26A00', fontWeight: 700, fontSize: 12, padding: '6px 14px', borderRadius: 8, textDecoration: 'none' }}
+                    >
+                      Скачать ↓
+                    </a>
+                  </div>
                 </div>
               )
             })}

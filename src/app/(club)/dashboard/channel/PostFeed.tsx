@@ -13,19 +13,40 @@ interface Props {
   isCurator: boolean
   memberName: string
   memberFullName: string | null
+  memberAvatarUrl: string | null
+  targetPostId?: string
 }
 
-export default function PostFeed({ channel, memberId, isAdmin, isCurator, memberName, memberFullName }: Props) {
+export default function PostFeed({ channel, memberId, isAdmin, isCurator, memberName, memberFullName, memberAvatarUrl, targetPostId }: Props) {
   const [posts, setPosts] = useState<PostWithMeta[]>([])
   const [loading, setLoading] = useState(true)
   const [hasMore, setHasMore] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState('')
   const [infoTooltip, setInfoTooltip] = useState(false)
+  const [highlightedPostId, setHighlightedPostId] = useState<string | null>(null)
   const afterRef = useRef<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const postsRef = useRef<PostWithMeta[]>([])
+
+  // Keep ref in sync so scroll effect can read latest posts without re-triggering
+  postsRef.current = posts
 
   const isPlates = channel === 'plates'
+
+  // Scroll to targetPostId after posts load
+  useEffect(() => {
+    if (!targetPostId || loading || posts.length === 0) return
+
+    const timer = setTimeout(() => {
+      const el = document.getElementById(`post-${targetPostId}`)
+      if (!el) return
+      el.scrollIntoView()
+      setHighlightedPostId(targetPostId)
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [targetPostId, loading, posts.length])
 
   // Initial load
   useEffect(() => {
@@ -147,9 +168,11 @@ export default function PostFeed({ channel, memberId, isAdmin, isCurator, member
     return () => ro.disconnect()
   }, [])
 
-  function scrollToBottom() {
+  function preserveScroll() {
     const el = scrollRef.current
-    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+    if (!el) return
+    const saved = el.scrollTop
+    requestAnimationFrame(() => { el.scrollTop = saved })
   }
 
   async function loadMore() {
@@ -251,7 +274,7 @@ export default function PostFeed({ channel, memberId, isAdmin, isCurator, member
       )}
 
       {/* Feed scroll area */}
-      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 flex flex-col gap-3">
+      <div ref={scrollRef} data-scroll-container className="flex-1 min-h-0 overflow-y-auto px-4 py-4 flex flex-col gap-3">
         {error && (
           <p className="text-sm text-center" style={{ color: '#C0392B', fontFamily: 'var(--font-nunito)' }}>
             {error}
@@ -277,6 +300,8 @@ export default function PostFeed({ channel, memberId, isAdmin, isCurator, member
             memberName={memberName}
             memberFullName={memberFullName}
             onDelete={handleDelete}
+            isHighlighted={highlightedPostId === post.id}
+            onHighlightDismiss={() => setHighlightedPostId(null)}
           />
         ))}
 
@@ -306,8 +331,9 @@ export default function PostFeed({ channel, memberId, isAdmin, isCurator, member
           isAdmin={isAdmin}
           memberName={memberName}
           memberFullName={memberFullName}
+          memberAvatarUrl={memberAvatarUrl}
           onPostCreated={handlePostCreated}
-          onFocusInput={scrollToBottom}
+          onFocusInput={preserveScroll}
         />
       </div>
     </div>

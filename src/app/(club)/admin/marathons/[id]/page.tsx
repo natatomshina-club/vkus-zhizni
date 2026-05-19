@@ -16,8 +16,7 @@ type Marathon = {
   month_label: string | null
   chat_channel_slug: string | null
   ration_pdf_url: string | null
-  ration_html: string | null
-  shopping_list: string | null
+  shopping_list_pdf_url: string | null
   announce_title: string | null
   announce_features: AnnounceFeature[] | null
   announce_prepare_text: string | null
@@ -48,12 +47,20 @@ export default function AdminMarathonEditPage({ params }: { params: Promise<{ id
   const [saving, setSaving] = useState(false)
   const [saveOk, setSaveOk] = useState(false)
   const [saveErr, setSaveErr] = useState('')
+  // Ration PDF state
   const [uploadingPdf, setUploadingPdf] = useState(false)
   const [uploadMsg, setUploadMsg] = useState('')
   const [selectedPdfName, setSelectedPdfName] = useState('')
   const [deletingPdf, setDeletingPdf] = useState(false)
   const [confirmDeletePdf, setConfirmDeletePdf] = useState(false)
   const pdfFileRef = useRef<HTMLInputElement>(null)
+  // Shopping list PDF state
+  const [uploadingShopPdf, setUploadingShopPdf] = useState(false)
+  const [uploadShopMsg, setUploadShopMsg] = useState('')
+  const [selectedShopPdfName, setSelectedShopPdfName] = useState('')
+  const [deletingShopPdf, setDeletingShopPdf] = useState(false)
+  const [confirmDeleteShopPdf, setConfirmDeleteShopPdf] = useState(false)
+  const shopPdfFileRef = useRef<HTMLInputElement>(null)
 
   // Form state
   const [form, setForm] = useState({
@@ -66,8 +73,6 @@ export default function AdminMarathonEditPage({ params }: { params: Promise<{ id
     ends_at: '',
     duration_days: '10',
     chat_channel_slug: '',
-    shopping_list: '',
-    ration_html: '',
     announce_title: '',
     announce_prepare_text: '',
     next_date: '',
@@ -91,8 +96,6 @@ export default function AdminMarathonEditPage({ params }: { params: Promise<{ id
         ends_at: toDatetimeLocal(m.ends_at),
         duration_days: String(m.duration_days ?? 10),
         chat_channel_slug: m.chat_channel_slug ?? `marathon-${id}`,
-        shopping_list: m.shopping_list ?? '',
-        ration_html: m.ration_html ?? '',
         announce_title: m.announce_title ?? '',
         announce_prepare_text: m.announce_prepare_text ?? '',
         next_date: m.next_date ?? '',
@@ -118,8 +121,6 @@ export default function AdminMarathonEditPage({ params }: { params: Promise<{ id
         ends_at: form.ends_at || null,
         next_date: form.next_date || null,
         announce_features: features.length > 0 ? features : null,
-        ration_html: form.ration_html || null,
-        shopping_list: form.shopping_list || null,
         announce_prepare_text: form.announce_prepare_text || null,
       }),
     })
@@ -133,6 +134,11 @@ export default function AdminMarathonEditPage({ params }: { params: Promise<{ id
   async function handlePdfUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadMsg('❌ Файл слишком большой. Максимум 10 МБ')
+      if (pdfFileRef.current) pdfFileRef.current.value = ''
+      return
+    }
     setSelectedPdfName(file.name)
     setUploadingPdf(true)
     setUploadMsg('')
@@ -156,6 +162,39 @@ export default function AdminMarathonEditPage({ params }: { params: Promise<{ id
     setUploadMsg('')
     setSelectedPdfName('')
     if (pdfFileRef.current) pdfFileRef.current.value = ''
+  }
+
+  async function handleShopPdfUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadShopMsg('❌ Файл слишком большой. Максимум 10 МБ')
+      if (shopPdfFileRef.current) shopPdfFileRef.current.value = ''
+      return
+    }
+    setSelectedShopPdfName(file.name)
+    setUploadingShopPdf(true)
+    setUploadShopMsg('')
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await fetch(`/api/admin/marathons/${id}/upload?type=shopping`, { method: 'POST', body: fd })
+    const d = await res.json().catch(() => ({})) as { url?: string; error?: string }
+    setUploadingShopPdf(false)
+    if (!res.ok) { setUploadShopMsg(`Ошибка: ${d.error ?? 'неизвестная'}`); return }
+    setUploadShopMsg('✅ PDF загружен')
+    setMarathon(prev => prev ? { ...prev, shopping_list_pdf_url: d.url! } : prev)
+  }
+
+  async function handleShopPdfDelete() {
+    setDeletingShopPdf(true)
+    const res = await fetch(`/api/admin/marathons/${id}/upload?type=shopping`, { method: 'DELETE' })
+    setDeletingShopPdf(false)
+    setConfirmDeleteShopPdf(false)
+    if (!res.ok) { setUploadShopMsg('Ошибка удаления PDF'); return }
+    setMarathon(prev => prev ? { ...prev, shopping_list_pdf_url: null } : prev)
+    setUploadShopMsg('')
+    setSelectedShopPdfName('')
+    if (shopPdfFileRef.current) shopPdfFileRef.current.value = ''
   }
 
   function addFeature() {
@@ -380,20 +419,66 @@ export default function AdminMarathonEditPage({ params }: { params: Promise<{ id
           )}
         </div>
 
-        {/* HTML ration */}
-        <div style={{ marginBottom: 12 }}>
-          <label style={labelStyle}>HTML рациона (аккордеон, необязательно)</label>
-          <textarea value={form.ration_html} onChange={e => setForm(f => ({ ...f, ration_html: e.target.value }))}
-            rows={5} placeholder="<p>Завтрак: …</p>"
-            style={{ ...inputStyle, resize: 'vertical', fontFamily: 'monospace', fontSize: 12 }} />
-        </div>
-
-        {/* Shopping list */}
+        {/* Shopping list PDF */}
         <div>
-          <label style={labelStyle}>Список продуктов (по одному на строку)</label>
-          <textarea value={form.shopping_list} onChange={e => setForm(f => ({ ...f, shopping_list: e.target.value }))}
-            rows={6} placeholder="Куриная грудка&#10;Яйца&#10;Творог 5%&#10;Огурцы&#10;Помидоры"
-            style={{ ...inputStyle, resize: 'vertical' }} />
+          <label style={labelStyle}>PDF списка продуктов</label>
+          {marathon.shopping_list_pdf_url && (
+            <div style={{ marginBottom: 8 }}>
+              {!confirmDeleteShopPdf ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <a href={marathon.shopping_list_pdf_url} target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: 12, color: 'var(--pur)', fontWeight: 700 }}>
+                    🛒 Текущий PDF — открыть ↗
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDeleteShopPdf(true)}
+                    title="Удалить PDF"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: '#C0392B', padding: '2px 4px', lineHeight: 1 }}
+                  >🗑</button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 10, background: '#FFF5F5', border: '1px solid #FFD0D0' }}>
+                  <span style={{ fontSize: 12, color: '#C0392B', flex: 1 }}>Удалить PDF файл?</span>
+                  <button type="button" onClick={handleShopPdfDelete} disabled={deletingShopPdf}
+                    style={{ padding: '4px 12px', borderRadius: 8, border: 'none', background: '#C0392B', color: '#fff', fontSize: 12, fontWeight: 700, cursor: deletingShopPdf ? 'not-allowed' : 'pointer', opacity: deletingShopPdf ? 0.7 : 1 }}>
+                    {deletingShopPdf ? '...' : 'Да'}
+                  </button>
+                  <button type="button" onClick={() => setConfirmDeleteShopPdf(false)}
+                    style={{ padding: '4px 12px', borderRadius: 8, border: '1px solid #EDE8FF', background: '#fff', color: '#7B6FAA', fontSize: 12, cursor: 'pointer' }}>
+                    Нет
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+          <input ref={shopPdfFileRef} type="file" accept=".pdf" onChange={handleShopPdfUpload}
+            disabled={uploadingShopPdf} style={{ display: 'none' }} />
+          {selectedShopPdfName && !uploadShopMsg ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 12, background: '#F0EEFF', border: '1px solid #DDD5FF' }}>
+              <span style={{ fontSize: 13, color: '#3D2B8A', flex: 1, wordBreak: 'break-all' }}>📄 {selectedShopPdfName}</span>
+              <button type="button"
+                onClick={() => { setSelectedShopPdfName(''); setUploadShopMsg(''); if (shopPdfFileRef.current) shopPdfFileRef.current.value = '' }}
+                style={{ fontSize: 16, color: '#7B6FAA', background: 'none', border: 'none', cursor: 'pointer', lineHeight: 1, padding: 0 }}>×</button>
+            </div>
+          ) : (
+            <button type="button" onClick={() => shopPdfFileRef.current?.click()} disabled={uploadingShopPdf}
+              style={{
+                display: 'block', width: '100%', padding: '12px 20px', borderRadius: 12,
+                border: '1px dashed #7C5CFC', background: '#F8F6FF', color: '#7C5CFC',
+                fontSize: 13, fontWeight: 600, cursor: uploadingShopPdf ? 'not-allowed' : 'pointer',
+                textAlign: 'center',
+              }}
+              onMouseEnter={e => { if (!uploadingShopPdf) (e.currentTarget as HTMLButtonElement).style.background = '#EDE8FF' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#F8F6FF' }}>
+              {uploadingShopPdf ? '⏳ Загружаем…' : '🛒 Выбрать PDF списка продуктов'}
+            </button>
+          )}
+          {uploadShopMsg && (
+            <div style={{ fontSize: 12, marginTop: 6, color: uploadShopMsg.startsWith('✅') ? '#2D6A4F' : '#E53E3E' }}>
+              {uploadShopMsg}
+            </div>
+          )}
         </div>
       </div>
 

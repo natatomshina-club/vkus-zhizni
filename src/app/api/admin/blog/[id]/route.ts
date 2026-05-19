@@ -1,21 +1,13 @@
 import { NextResponse } from 'next/server'
-import { createClient, createServiceClient } from '@/lib/supabase/server'
-
-async function requireAdmin() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const { data: member } = await supabase.from('members').select('role').eq('id', user.id).single()
-  if (member?.role !== 'admin') return null
-  return user
-}
+import { createServiceClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/auth/requireAdmin'
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await requireAdmin()
-  if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const auth = await requireAdmin()
+  if (!auth.ok) return auth.response
 
   const { id } = await params
   const body = await request.json()
@@ -33,7 +25,10 @@ export async function PATCH(
   if ('meta_title' in body) updates.meta_title = body.meta_title || null
   if ('meta_description' in body) updates.meta_description = body.meta_description || null
   if ('category' in body) updates.category = body.category || null
+  if ('subcategory' in body) updates.subcategory = body.subcategory || null
   if ('widget_type' in body) updates.widget_type = body.widget_type || null
+  if ('main_keyword' in body) updates.main_keyword = body.main_keyword || null
+  if ('cluster_name' in body) updates.cluster_name = body.cluster_name || null
   if ('is_published' in body) {
     updates.is_published = body.is_published
     if (body.is_published && !body.keep_published_at) {
@@ -62,8 +57,8 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await requireAdmin()
-  if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const auth = await requireAdmin()
+  if (!auth.ok) return auth.response
 
   const { id } = await params
   const supabase = createServiceClient()

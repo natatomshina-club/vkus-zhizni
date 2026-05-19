@@ -22,5 +22,5 @@ export default async function WeeklyPlanPage({
 
   if (error || !plan) notFound()
 
-  return <WeeklyPlanView plan={plan as Parameters<typeof WeeklyPlanView>[0]['plan']} />
+  return <WeeklyPlanView plan={plan as Parameters<typeof WeeklyPlanView>[0]['plan']} userId={user.id} />
 }

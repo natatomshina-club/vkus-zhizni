@@ -1,175 +1,199 @@
-# CLAUDE.md — Вкус Жизни (главный файл)
+# CLAUDE.md — операционные правила для Claude Code
 
-## ⚠️ КРИТИЧЕСКОЕ ПРАВИЛО
-НИКОГДА не использовать слова «кето», «лоукарб», «LCHF».
-Заменять на: «питание для гормонального баланса», «метод Натальи», «умное питание», «питание без голода».
+> [!info] Источник истины: Vault в docs/
+> Этот документ содержит только правила работы Claude Code с проектом.
+> Все содержательные знания (модули, инфраструктура, история, todo) — в docs/.
+> Главная карта Vault: [[docs/00-INDEX]].
 
 ---
 
-## 🏗 СТЕК
-- Next.js 16 (App Router) + TypeScript
-- Tailwind CSS v4
-- Supabase (PostgreSQL + Auth) — URL: https://byykvsjamtcklwtnjkpf.supabase.co
-- Vercel (хостинг)
-- YandexGPT (ИИ-бот) — YANDEX_FOLDER_ID=b1g69djak9cp81fs17a7
-- Prodamus (оплата)
-- Crisp (чат с Наташей)
-- Kinescope (видео embed)
-- Resend (email)
+## 1. О проекте
 
-## 🔑 КОМАНДЫ
-```bash
-npm run dev      # http://localhost:3000
-npm run build
-npm run lint
+**Название:** Клуб стройных и здоровых «Вкус Жизни»
+**Основатель:** Наталья Томшина — нутрициолог (не врач)
+**Домен клуба:** `club.nata-tomshina.ru` | **Репозиторий:** `~/Desktop/vkus-zhizni`
+**Стек:** Next.js 14 (App Router) + TypeScript → Docker → Supabase self-hosted → Beget VDS
+
+---
+
+## 2. Источники истины — порядок доверия
+
+**Это главное правило. Нарушение — причина 99% ошибок в Vault.**
+
+При сборке или обновлении любого факта о проекте — источники в этом порядке:
+
+1. **Код** — главный источник истины. Если работает на проде — актуален.
+   - Типы (`src/types/*.ts`) — для имён состояний, полей, объединений
+   - Библиотеки (`src/lib/*.ts`) — для сигнатур функций
+   - Миграции (`*.sql`) — для реальной схемы БД
+   - API-роуты — для контрактов
+   - Компоненты — для UI-логики
+2. **Сессии в `07-sessions/`** — для понимания «почему так», история изменений, контекст решений.
+3. **Этот CLAUDE.md** — правила работы агента и архитектурные принципы.
+4. **Документация в `~/Desktop/Клуб разработка/`** — стартовая карта модуля, **никогда не источник фактов**. Все факты перепроверять по коду.
+5. **PROJECT_BRAIN_v*.md** — историческая хронология. Использовать для дат и контекста, не для текущего состояния.
+
+**Перед записью любого факта в Vault** — посмотреть в код, который этот факт реализует.
+Имена, значения, поля, сигнатуры — копировать из кода, не воспроизводить из памяти.
+
+**Если документация противоречит коду — код прав.** Устаревшие данные можно упомянуть как историю с пометкой «было N, стало M».
+
+---
+
+## 3. Правила работы Claude Code в этом репозитории
+
+Полные правила: [[_templates/CLAUDE-RULES]].
+
+Ключевые принципы:
+- Работать поэтапно: разведка → сверка с кодом → показать Наташе → «делай» → правки → отчёт
+- Не расширять scope задачи без явного согласования — спросить в чате
+- Не делать `git push`, деплой, SQL-миграции без явной команды «делай»
+- Не создавать новые папки верхнего уровня в `docs/` без согласования
+- Не писать секреты (ключи, токены, пароли) в Vault — только имена переменных
+
+---
+
+## 4. Критические правила разработки
+
+### 1. member_id — email lookup, не user.id (было #1 в v15)
+
+```typescript
+const supabaseAdmin = createServiceClient()
+const { data: member } = await supabaseAdmin
+  .from('members')
+  .select('id')
+  .eq('email', user.email)
+  .single()
+// member.id — НЕ user.id!
 ```
 
-## ⚙️ ВАЖНО: Next.js 16
-- middleware.ts переименован в proxy.ts
-- Функция должна называться `proxy`, не `middleware`
+### 2. select('*') не подхватывает новые колонки (было #2 в v15)
 
----
+После `ALTER TABLE` нужно либо перезапустить PostgREST, либо писать явный список полей.
+**Всегда писать явный список полей** в запросах после добавления новых колонок.
 
-## 🗂 РОУТЫ
+### 3. Email — только через mailer.ts (было #3 в v15)
 
-### Публичные
-- `/` — лендинг
-- `/auth` — вход magic link
-- `/join` — страница оплаты (49₽ триал)
-- `/minicourse` — бесплатный мини-курс
-
-### ЛК (защищены proxy.ts)
-- `/dashboard` — главная
-- `/dashboard/kitchen` — умная кухня (YandexGPT)
-- `/dashboard/rations` — примеры рационов PDF
-- `/dashboard/favorites` — избранные рецепты
-- `/dashboard/diary` — дневник питания
-- `/dashboard/tracker` — трекер замеров
-- `/dashboard/wins` — маленькие победы
-- `/dashboard/body` — я и моё тело
-- `/dashboard/webinars` — вебинары
-- `/dashboard/meditations` — медитации
-- `/dashboard/minicourse` — мини-курс
-- `/dashboard/marathon` — марафон
-- `/dashboard/profile` — профиль
-- `/dashboard/chat` — чат с Наташей (Crisp)
-- `/dashboard/about` — о клубе
-
-### API
-- `/api/kitchen/generate` — YandexGPT рецепты
-- `/api/webhook/prodamus` — вебхук оплаты
-- `/auth/callback` — Supabase OAuth callback
-
-### Админка
-- `/admin` — только Наташа
-
----
-
-## 🎨 ДИЗАЙН
-
-### Шрифты (next/font/google)
-```tsx
-import { Unbounded, Nunito } from 'next/font/google'
-// Unbounded — заголовки (700, 800)
-// Nunito — текст (400, 600, 700, 800)
-// subsets: ['cyrillic', 'latin']
+```typescript
+import { sendEmail } from '@/lib/mailer'
+await sendEmail({ to, subject, html })
+// Никогда напрямую через Resend!
 ```
 
-### CSS переменные
-```css
---pur: #7C5CFC;       /* фиолетовый основной */
---pur-lt: #F0EEFF;    /* фиолетовый светлый */
---pur-br: #DDD5FF;    /* фиолетовый рамка */
---grn: #A8E6CF;       /* зелёный */
---grn-dk: #2D6A4F;    /* зелёный тёмный */
---yel: #FFD93D;       /* жёлтый */
---yel-dk: #5C4200;    /* жёлтый тёмный */
---ora: #FF9F43;       /* оранжевый */
---red: #FF6B6B;       /* красный */
---bg: #FAF8FF;        /* фон страницы */
---card: #ffffff;      /* фон карточек */
---text: #2D1F6E;      /* основной текст */
---muted: #7B6FAA;     /* приглушённый текст */
---pale: #9B8FCC;      /* очень приглушённый */
---border: #EDE8FF;    /* рамки */
+При замене провайдера менять только `src/lib/mailer.ts`.
+
+### 4. SQL миграции — вручную в Supabase Studio (было #4 в v15)
+
+Роут: `https://studio.nata-tomshina.ru → SQL Editor`
+
+### 5. Два статуса в members — не путать (было #6 в v15)
+
+```
+status              — УСТАРЕВШАЯ, всегда 'trial', НЕ обновляется
+subscription_status — АКТУАЛЬНАЯ ('trial'|'active'|'expired'), обновляется при оплатах
 ```
 
----
+**Всегда использовать `subscription_status`!**
 
-## 📐 АДАПТИВНОСТЬ (ОБЯЗАТЕЛЬНО)
-```tsx
-// Layout структура
-<div className="flex h-screen overflow-hidden">
-  <Sidebar className="hidden lg:flex w-[220px] flex-shrink-0" />
-  <main className="flex-1 overflow-y-auto pb-20 lg:pb-0">
-    {children}
-  </main>
-  <MobileNav className="lg:hidden fixed bottom-0 left-0 right-0" />
-</div>
+### 6. Supabase embedded join без FK не работает (было #8 в v15)
+
+```typescript
+// НЕ РАБОТАЕТ без FK в схеме БД:
+.select('*, members(email)')
+// РАБОТАЕТ — запрашивать отдельно и мержить в памяти
 ```
-- Кнопки: минимум `min-h-[48px]`
-- Текст: минимум `text-sm` (14px), `text-base` на мобайле
 
----
+### 7. Supabase Realtime — новые таблицы (было #18 в v15)
 
-## 🗄 БАЗА ДАННЫХ (Supabase)
+При создании новой таблицы для Realtime — обязательно добавить в publication:
 
-### Таблицы
-- `members` — участницы (email, статус, профиль, КБЖУ, здоровье, сегмент)
-- `measurements` — замеры (вес, объёмы, энергия)
-- `diary_entries` — дневник питания
-- `saved_recipes` — избранные рецепты из кухни
-- `wins` — маленькие победы
-- `lessons` — уроки мини-курса
-- `lesson_progress` — прогресс уроков
-- `meal_plans` — рационы от Наташи
-
-### Ключевые поля members
 ```sql
-id, email, full_name, status (trial/active/expired),
-created_at, access_until,
-weight, height, age, goal_weight, activity_level,
-health_conditions (jsonb), allergies (text),
-kbju_calories, kbju_protein, kbju_fat, kbju_carbs,
-segment (quick_start/mama/health/maintain),
-kitchen_requests_today (int4), kitchen_date (text)
+ALTER PUBLICATION supabase_realtime ADD TABLE имя_таблицы;
 ```
 
+Иначе WebSocket подключится, но события не придут.
+Текущие таблицы в publication: `channel_posts`, `private_messages`.
+
+### 8. RegExp с флагом /g — не использовать для .test() (было #19 в v15)
+
+RegExp с флагом `/g` сохраняет `lastIndex` между вызовами → `.test()` даёт непредсказуемый результат.
+При `split(/(capturing group)/)` совпадения на нечётных индексах (`i % 2 === 1`) — надёжнее.
+
+### 9. getSession() вместо getUser() — производительность (было #20 в v15)
+
+```typescript
+// МЕДЛЕННО — делает сетевой вызов к GoTrue для валидации JWT:
+const { data: { user } } = await supabase.auth.getUser()
+// БЫСТРО — декодирует JWT из cookie локально (в 10-100x быстрее):
+const { data: { session } } = await supabase.auth.getSession()
+```
+
+Использовать `getSession()` везде где не нужна серверная валидация токена.
+
+### 10. OTP — не отправлять expired участницам (было #22 в v15)
+
+В роуте отправки OTP проверять `subscription_status`.
+Если `'expired'` → вернуть `{ error: 'not_found' }`.
+Страница `/auth` показывает «Участница с таким email не найдена» для этой ошибки.
+
+### 11. requireAdmin — email lookup, не id lookup (было #24 в v15)
+
+```typescript
+// НЕПРАВИЛЬНО — member.id ≠ auth.users.id в этом проекте:
+.eq('id', user.id)
+// ПРАВИЛЬНО:
+.eq('email', user.email)
+```
+
+### 12. subscription_plan — два значения ('month' и 'monthly') (было #17 в правилах работы v15)
+
+В колонке `members.subscription_plan` исторически встречаются оба значения: `'month'` и `'monthly'`.
+При любых SQL-запросах и условиях кода — обрабатывать оба: `WHERE plan IN ('month','monthly')`.
+
 ---
 
-## 🔐 АВТОРИЗАЦИЯ
-- Magic link через Supabase Auth (без пароля)
-- proxy.ts защищает все роуты /dashboard/* и /admin
-- Редирект неавторизованных на /auth
-- После входа — редирект на /dashboard
+## 5. Как ориентироваться в проекте
+
+Полная карта: [[00-INDEX]].
+
+- Модули клуба (участница) → [[03-club/INDEX]]
+- Админ-модули → [[04-admin/INDEX]]
+- Инфраструктура (сервер, БД, бэкапы, платежи, DNS, безопасность) → [[05-infrastructure/INDEX]]
+- Типовые операции и SQL → [[06-operations/INDEX]]
+- Хронология сессий → [[07-sessions/INDEX]]
+- Roadmap (todo, tech-debt, ideas) → [[08-roadmap/INDEX]]
+- История эволюции проекта → [[07-sessions/project-history.md]] *(в работе)*
 
 ---
 
-## 📱 МОБИЛЬНОЕ МЕНЮ (5 пунктов)
-🏠 Главная | 🍳 Кухня | 📓 Дневник | 👤 Профиль | 💬 Чат
+## 6. Что в этом файле НЕТ (и почему)
+
+CLAUDE.md — не справочник. За конкретными данными — в Vault:
+
+- Схемы таблиц БД → в модулях разделов (`03-club/modules/`, `05-infrastructure/`)
+- Тарифы, уровни участниц, логика доступа → [[03-club/modules/subscriptions]] *(не создан)*
+- CloudPayments флоу → [[05-infrastructure/payments]] *(не создан)*
+- Партнёрская программа → [[03-club/modules/affiliate]] *(не создан)*
+- Storage Buckets → [[05-infrastructure/storage]] *(не создан)*
+- CRON-задачи → [[05-infrastructure/server]] *(не создан)*
+- Безопасность (чеклист) → [[05-infrastructure/security]] *(не создан)*
+- SSH-команды, деплой, бэкапы → [[05-infrastructure/server]] *(не создан)*
+- Что сделано по сессиям → [[07-sessions/INDEX]]
+- Нерешённые баги → [[08-roadmap/tech-debt]]
+- Текущие приоритеты → [[08-roadmap/todo]]
 
 ---
 
-## 🖥 САЙДБАР ДЕСКТОП (220px)
-- Логотип: текст «Вкус Жизни» + «Клуб» (БЕЗ иконки)
-- Блок участницы: имя, день N · статус, 4 чипа КБЖУ
-- Меню: Главная, О клубе → Кухня, Избранное, Дневник, Трекер, Победы → [Обучение]: Мини-курс, Я и тело, Вебинары, Медитации → Марафон, Чат, Профиль
-- Плашка триал (фиолетовая) или полный клуб (зелёная)
+## 7. Контакты и доступы
+
+**Переменные окружения:** `.env.production.local` — на сервере в `/home/deploy/app/`. Не хранятся в репозитории и не копируются в Vault.
+
+**SSH:** `ssh deploy@155.212.130.228` (root-логин закрыт). Docker-команды — с `sudo`.
+Подробнее — [[05-infrastructure/server]] *(когда будет создан)*.
 
 ---
 
-## 💳 ТАРИФЫ
-- Триал: 49₽/7 дней → автосписание 1500₽
-- Месяц: 1500₽
-- Полгода: 6000₽
+## История версий
 
-### Доступ в триале
-✅ Кухня (3 запроса/день), Дневник, Трекер, Победы, Мини-курс (6 уроков)
-🔒 Марафон, Карточки-спасалки, расширенная библиотека
-
----
-
-## 📧 EMAIL (Resend)
-- Письмо входа: кастомизировать под стиль «Вкус Жизни» (TODO)
-- Серия триала: дни 0,1,2,3,4,5,6,7 (Make.com)
-- Webhook Prodamus: https://vkuszhizni.ru/api/webhook/prodamus
+- **v16 — 18 мая 2026** — переработан в операционный документ; содержательные знания перенесены в Vault (`docs/`); 12 критических правил (11 из v15 + правило про subscription_plan)
+- **v15 — 14 апреля 2026** — заархивирован в `docs/_archive/CLAUDE-v15-2026-04-14.md`

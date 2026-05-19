@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
-import { Resend } from 'resend'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+import { sendEmail } from '@/lib/mailer'
 
 // Transliterate Russian → Latin for ref_code generation
 function transliterate(text: string): string {
@@ -84,8 +82,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Notify admin
-    await resend.emails.send({
-      from: 'Вкус Жизни <hello@nata-tomshina.ru>',
+    await sendEmail({
+      from: 'Вкус Жизни <noreply@nata-tomshina.ru>',
       to: ['nata.tomshina@gmail.com', 'jm-consult@mail.ru'],
       subject: `Новая заявка партнёра — ${name.trim()}`,
       html: `
@@ -101,11 +99,11 @@ export async function POST(req: NextRequest) {
           <p style="font-size:13px;color:#9B8FCC;margin:0;">Одобрите или отклоните заявку в <a href="https://club.nata-tomshina.ru/admin" style="color:#7C5CFC;">панели администратора</a>.</p>
         </div>
       `,
-    }).catch(e => console.error('[partner/apply] admin email error:', e))
+    }).catch(() => {})
 
     // Confirm to applicant
-    await resend.emails.send({
-      from: 'Наталья Томшина <hello@nata-tomshina.ru>',
+    await sendEmail({
+      from: 'Наталья Томшина <noreply@nata-tomshina.ru>',
       to: cleanEmail,
       subject: 'Заявка в партнёрскую программу получена',
       html: `
@@ -131,7 +129,7 @@ export async function POST(req: NextRequest) {
           <p style="font-size:13px;color:#9B8FCC;margin:0;">Наталья Томшина · Клуб «Вкус Жизни»</p>
         </div>
       `,
-    }).catch(e => console.error('[partner/apply] confirm email error:', e))
+    }).catch(() => {})
 
     return NextResponse.json({ ok: true })
   } catch (err) {

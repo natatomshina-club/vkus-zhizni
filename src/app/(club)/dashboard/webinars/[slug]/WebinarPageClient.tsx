@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import type { WebinarRow, WebinarLesson, WebinarMaterial } from '@/types/webinars'
 
 interface Props {
@@ -54,7 +55,19 @@ function MaterialItem({ material }: { material: WebinarMaterial }) {
 }
 
 export default function WebinarPageClient({ webinar, lessons, materials }: Props) {
+  const router = useRouter()
   const generalMaterials = materials.filter(m => m.lesson_id === null)
+
+  function openPresentation() {
+    const isMobile = window.innerWidth < 768 ||
+      window.matchMedia('(display-mode: standalone)').matches
+    const proxyUrl = `/api/webinars/presentation?url=${encodeURIComponent(webinar.html_url!)}`
+    if (isMobile) {
+      router.push(`/dashboard/webinars/presentation?url=${encodeURIComponent(webinar.html_url!)}`)
+    } else {
+      window.open(proxyUrl, '_blank')
+    }
+  }
 
   return (
     <div style={{
@@ -101,6 +114,29 @@ export default function WebinarPageClient({ webinar, lessons, materials }: Props
           </p>
         )}
       </div>
+
+      {/* Presentation button */}
+      {webinar.html_url && (
+        <div style={{ marginBottom: 24 }}>
+          <button
+            onClick={openPresentation}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+              padding: '14px 18px', borderRadius: 14,
+              background: '#FAF8FF', border: '2px solid #EDE8FF',
+              cursor: 'pointer', textAlign: 'left',
+              fontSize: 15, fontWeight: 700, color: 'var(--text)',
+              fontFamily: 'var(--font-nunito)',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = '#F0EEFF')}
+            onMouseLeave={e => (e.currentTarget.style.background = '#FAF8FF')}
+          >
+            <span style={{ fontSize: 22 }}>📊</span>
+            <span style={{ flex: 1 }}>Открыть презентацию</span>
+            <span style={{ fontSize: 13, color: 'var(--muted)' }}>↗</span>
+          </button>
+        </div>
+      )}
 
       {/* Lessons */}
       {lessons.length > 0 && (

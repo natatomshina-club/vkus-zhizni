@@ -1,8 +1,17 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { PrivateMessage } from '@/types/channel'
+
+function renderTextWithLinks(text: string): React.ReactNode[] {
+  const parts = text.split(/(https?:\/\/[^\s<>"']+)/)
+  return parts.map((part, i) =>
+    i % 2 === 1
+      ? <a key={i} href={part} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--pur)', textDecoration: 'underline', wordBreak: 'break-all' }}>{part}</a>
+      : part
+  )
+}
 
 function formatTime(iso: string): string {
   const d = new Date(iso)
@@ -31,7 +40,7 @@ function compressImage(file: File): Promise<Blob> {
       canvas.width = width
       canvas.height = height
       ctx.drawImage(img, 0, 0, width, height)
-      canvas.toBlob((blob) => resolve(blob!), 'image/jpeg', 0.85)
+      canvas.toBlob((blob) => resolve(blob!), 'image/jpeg', 0.8)
     }
     img.src = URL.createObjectURL(file)
   })
@@ -43,8 +52,8 @@ export default function DirectChat({ memberId }: { memberId: string }) {
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
-  const [mediaFile, setMediaFile] = useState<File | null>(null)
-  const [mediaPreview, setMediaPreview] = useState<string | null>(null)
+  const [mediaFiles, setMediaFiles] = useState<File[]>([])
+  const [mediaPreviews, setMediaPreviews] = useState<string[]>([])
   const [bottomOffset, setBottomOffset] = useState(0)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -134,26 +143,31 @@ export default function DirectChat({ memberId }: { memberId: string }) {
     setText(e.target.value.slice(0, 2000))
     const el = e.target
     el.style.height = 'auto'
-    el.style.height = Math.min(el.scrollHeight, 96) + 'px'
+    el.style.height = Math.min(el.scrollHeight, 140) + 'px'
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0] ?? null
-    if (!file) { setMediaFile(null); setMediaPreview(null); return }
-    if (!file.type.startsWith('image/')) { setError('Можно загружать только фото'); if (fileRef.current) fileRef.current.value = ''; return }
-    if (file.size > 10 * 1024 * 1024) { setError('Файл слишком большой. Максимум 10 МБ'); if (fileRef.current) fileRef.current.value = ''; return }
+    const newFiles = Array.from(e.target.files ?? [])
+    if (newFiles.length === 0) return
+    const remaining = 3 - mediaFiles.length
+    if (remaining <= 0) { setError('Максимум 3 фото'); if (fileRef.current) fileRef.current.value = ''; return }
+    const toAdd = newFiles.slice(0, remaining)
+    for (const file of toAdd) {
+      if (!file.type.startsWith('image/')) { setError('Можно загружать только фото'); if (fileRef.current) fileRef.current.value = ''; return }
+      if (file.size > 10 * 1024 * 1024) { setError('Файл слишком большой. Максимум 10 МБ'); if (fileRef.current) fileRef.current.value = ''; return }
+    }
     setError('')
-    setMediaFile(file)
-    setMediaPreview(URL.createObjectURL(file))
-  }
-
-  function removeMedia() {
-    setMediaFile(null)
-    setMediaPreview(null)
+    setMediaFiles(prev => [...prev, ...toAdd])
+    setMediaPreviews(prev => [...prev, ...toAdd.map(f => URL.createObjectURL(f))])
     if (fileRef.current) fileRef.current.value = ''
   }
 
-  const canSend = (text.trim().length > 0 || mediaFile !== null) && !sending
+  function removeMedia(index: number) {
+    setMediaFiles(prev => prev.filter((_, i) => i !== index))
+    setMediaPreviews(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const canSend = (text.trim().length > 0 || mediaFiles.length > 0) && !sending
   const charsLeft = 2000 - text.length
 
   async function handleSend() {
@@ -162,9 +176,9 @@ export default function DirectChat({ memberId }: { memberId: string }) {
     setSending(true)
 
     try {
-      let media_url: string | null = null
+      const media_urls: string[] = []
 
-      if (mediaFile) {
+      for (const mediaFile of mediaFiles) {
         const isGif = mediaFile.type === 'image/gif'
         const uploadBlob = isGif ? mediaFile : await compressImage(mediaFile)
         const uploadName = isGif ? mediaFile.name : mediaFile.name.replace(/\.[^.]+$/, '.jpg')
@@ -173,12 +187,7 @@ export default function DirectChat({ memberId }: { memberId: string }) {
         const urlRes = await fetch('/api/channel/upload-url', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            channel: 'private',
-            filename: uploadName,
-            content_type: uploadType,
-            size: uploadBlob.size,
-          }),
+          body: JSON.stringify({ channel: 'private', filename: uploadName, content_type: uploadType, size: uploadBlob.size }),
         })
         if (!urlRes.ok) {
           const err = await urlRes.json().catch(() => ({})) as { error?: string }
@@ -187,7 +196,7 @@ export default function DirectChat({ memberId }: { memberId: string }) {
         const { signedUrl, publicUrl } = await urlRes.json() as { signedUrl: string; path: string; publicUrl: string }
         const uploadRes = await fetch(signedUrl, { method: 'PUT', headers: { 'Content-Type': uploadType }, body: uploadBlob })
         if (!uploadRes.ok) throw new Error('Ошибка загрузки фото на сервер')
-        media_url = publicUrl
+        media_urls.push(publicUrl)
       }
 
       const trimmed = text.trim()
@@ -195,20 +204,22 @@ export default function DirectChat({ memberId }: { memberId: string }) {
         id: `optimistic-${Date.now()}`,
         member_id: memberId,
         text: trimmed || null,
-        media_url,
+        media_url: media_urls[0] ?? null,
+        media_urls: media_urls.length > 0 ? media_urls : null,
         from_admin: false,
         is_read: false,
         created_at: new Date().toISOString(),
       }
       setMessages(prev => [...prev, optimistic])
       setText('')
-      removeMedia()
-      if (textareaRef.current) textareaRef.current.style.height = 'auto'
+      setMediaFiles([])
+      setMediaPreviews([])
+      if (textareaRef.current) textareaRef.current.style.height = '48px'
 
       const res = await fetch('/api/channel/direct', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: trimmed || '', media_url: media_url ?? undefined }),
+        body: JSON.stringify({ text: trimmed || '', media_urls: media_urls.length > 0 ? media_urls : undefined }),
       })
       const data = await res.json() as { message?: PrivateMessage; error?: string }
       if (data.message) {
@@ -276,19 +287,24 @@ export default function DirectChat({ memberId }: { memberId: string }) {
                   border: msg.from_admin ? '1px solid #FFE58F' : '1px solid var(--pur-br)',
                 }}
               >
-                {msg.media_url && (
+                {(msg.media_urls && msg.media_urls.length > 0 ? msg.media_urls : msg.media_url ? [msg.media_url] : []).map((url, idx, arr) => (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={msg.media_url}
+                    key={idx}
+                    src={url}
                     alt="фото"
                     style={{
                       display: 'block',
                       width: '100%',
                       maxWidth: 260,
-                      borderRadius: msg.text ? '17px 17px 0 0' : msg.from_admin ? '17px 17px 17px 3px' : '17px 17px 3px 17px',
+                      borderRadius: idx === 0 && arr.length === 1 && !msg.text
+                        ? (msg.from_admin ? '17px 17px 17px 3px' : '17px 17px 3px 17px')
+                        : idx === 0 ? '17px 17px 0 0'
+                        : idx === arr.length - 1 && !msg.text ? '0 0 17px 17px'
+                        : 0,
                     }}
                   />
-                )}
+                ))}
                 {msg.text && (
                   <p
                     className="px-4 py-2.5"
@@ -299,7 +315,7 @@ export default function DirectChat({ memberId }: { memberId: string }) {
                       wordBreak: 'break-word',
                     }}
                   >
-                    {msg.text}
+                    {renderTextWithLinks(msg.text)}
                   </p>
                 )}
               </div>
@@ -325,25 +341,37 @@ export default function DirectChat({ memberId }: { memberId: string }) {
           transition: 'transform 0.15s ease',
         }}
       >
-        {/* Thumbnail preview above input */}
-        {mediaPreview && (
-          <div className="px-4 pt-3 pb-0">
-            <div className="relative inline-block">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={mediaPreview}
-                alt="preview"
-                style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 10, display: 'block' }}
-              />
+        {/* Thumbnail previews above input */}
+        {mediaPreviews.length > 0 && (
+          <div className="px-4 pt-3 pb-0 flex gap-2" style={{ overflowX: 'auto', flexWrap: 'nowrap' }}>
+            {mediaPreviews.map((src, idx) => (
+              <div key={idx} className="relative shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={src}
+                  alt="preview"
+                  style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 10, display: 'block' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeMedia(idx)}
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center font-bold"
+                  style={{ background: 'rgba(0,0,0,0.65)', color: '#fff', fontSize: 9, lineHeight: 1 }}
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+            {mediaPreviews.length < 3 && (
               <button
                 type="button"
-                onClick={removeMedia}
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
-                style={{ background: 'rgba(0,0,0,0.6)', color: '#fff', lineHeight: 1 }}
+                onClick={() => fileRef.current?.click()}
+                className="shrink-0 rounded-xl flex items-center justify-center text-lg"
+                style={{ width: 56, height: 56, background: 'var(--bg)', border: '1px dashed var(--border)', color: 'var(--muted)' }}
               >
-                ✕
+                +
               </button>
-            </div>
+            )}
           </div>
         )}
 
@@ -359,7 +387,8 @@ export default function DirectChat({ memberId }: { memberId: string }) {
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="shrink-0 rounded-xl flex items-center justify-center text-xl"
+            disabled={mediaFiles.length >= 3}
+            className="shrink-0 rounded-xl flex items-center justify-center text-xl disabled:opacity-40"
             style={{ minHeight: 48, minWidth: 48, background: 'var(--bg)', border: '1px solid var(--border)' }}
           >
             📷
@@ -368,12 +397,13 @@ export default function DirectChat({ memberId }: { memberId: string }) {
             ref={fileRef}
             type="file"
             accept="image/jpeg,image/png,image/webp,image/heic,image/heif,image/gif"
+            multiple
             className="hidden"
             onChange={handleFileChange}
           />
 
           {/* Textarea */}
-          <div className="flex-1 relative" style={{ alignSelf: 'stretch', display: 'flex', flexDirection: 'column' }}>
+          <div className="flex-1 relative">
             <textarea
               ref={textareaRef}
               value={text}
@@ -381,16 +411,17 @@ export default function DirectChat({ memberId }: { memberId: string }) {
               onKeyDown={handleKeyDown}
               placeholder="Написать Наташе..."
               rows={1}
-              className="w-full resize-none rounded-2xl px-4 py-3 text-sm outline-none border"
+              className="w-full resize-none rounded-2xl px-4 py-3 outline-none border"
               style={{
                 fontFamily: 'var(--font-nunito)',
+                fontSize: 16,
                 background: 'var(--bg)',
                 color: 'var(--text)',
                 borderColor: 'var(--border)',
                 lineHeight: '1.5',
-                overflow: 'hidden',
+                overflowY: 'auto',
                 minHeight: 48,
-                flex: 1,
+                display: 'block',
               }}
             />
             {charsLeft < 200 && (

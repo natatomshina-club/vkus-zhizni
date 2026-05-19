@@ -158,7 +158,9 @@ export default function OnboardingForm() {
   const router = useRouter()
 
   const [form, setForm] = useState({
-    full_name: '',
+    last_name:  '',
+    first_name: '',
+    middle_name: '',
     age: '',
     weight: '',
     height: '',
@@ -205,7 +207,7 @@ export default function OnboardingForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!form.full_name.trim()) { setError('Укажи своё имя'); return }
+    if (!form.last_name.trim() || !form.first_name.trim()) { setError('Укажи фамилию и имя'); return }
     if (!form.age || !form.weight || !form.height) { setError('Заполни возраст, вес и рост'); return }
     if (!form.activity) { setError('Выбери уровень активности'); return }
     if (!form.goal_weight) { setError('Укажи желаемый вес'); return }
@@ -222,8 +224,14 @@ export default function OnboardingForm() {
       const kbju = calculateKBJU({ weight: w, height: h, age: a, activity })
       const conditions = noneChecked ? [] : form.health_conditions
 
+      const firstName = form.first_name.trim()
+      const nameParts = [form.last_name.trim(), firstName, form.middle_name.trim()].filter(Boolean)
+      const fullName = nameParts.join(' ')
+
       const payload = {
-        name: form.full_name.trim(),
+        full_name:  fullName,
+        first_name: firstName,
+        name:       firstName,
         age: a,
         weight: w,
         start_weight: w,
@@ -300,17 +308,30 @@ export default function OnboardingForm() {
 
       {/* Name */}
       <Card>
-        <SectionTitle>Полное Ф.И.О.</SectionTitle>
-        <input
-          type="text"
-          placeholder="Например: Иванова Мария Сергеевна"
-          value={form.full_name}
-          onChange={e => handleChange('full_name', e.target.value)}
-          className={inputClass}
-          style={inputStyle}
-          onFocus={onFocus}
-          onBlur={onBlur}
-        />
+        <SectionTitle>Ф.И.О.</SectionTitle>
+        <div className="flex flex-col gap-2">
+          {[
+            { field: 'last_name',   label: 'Фамилия',            placeholder: 'Иванова',   required: true  },
+            { field: 'first_name',  label: 'Имя',                placeholder: 'Мария',     required: true  },
+            { field: 'middle_name', label: 'Отчество (необяз.)', placeholder: 'Сергеевна', required: false },
+          ].map(({ field, label, placeholder }) => (
+            <div key={field}>
+              <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
+                {label}
+              </p>
+              <input
+                type="text"
+                placeholder={placeholder}
+                value={form[field as keyof typeof form] as string}
+                onChange={e => handleChange(field, e.target.value)}
+                className={inputClass}
+                style={inputStyle}
+                onFocus={onFocus}
+                onBlur={onBlur}
+              />
+            </div>
+          ))}
+        </div>
       </Card>
 
       {/* Age / Weight / Height */}
@@ -398,7 +419,7 @@ export default function OnboardingForm() {
         {kbjuPreview && (
           <div className="rounded-xl px-3 py-2.5" style={{ background: 'var(--pur-light)' }}>
             <p className="text-xs font-semibold" style={{ color: 'var(--pur)', fontFamily: 'var(--font-nunito)' }}>
-              Твой КБЖУ: {kbjuPreview.calories} ккал · Б {kbjuPreview.protein}г · Ж {kbjuPreview.fat}г · У {kbjuPreview.carbs}г
+              Твой КБЖУ: {kbjuPreview.calories} ккал · Б {kbjuPreview.protein}г · Ж {kbjuPreview.fat}г · У до {kbjuPreview.carbs}г
             </p>
           </div>
         )}

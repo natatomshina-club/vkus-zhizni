@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
-import { Resend } from 'resend'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+import { sendEmail } from '@/lib/mailer'
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,7 +15,7 @@ export async function POST(req: NextRequest) {
     // Only active affiliates can log in
     const { data: affiliate } = await supabase
       .from('affiliates')
-      .select('id, name')
+      .select('id, name, otp_expires_at')
       .eq('email', cleanEmail)
       .eq('status', 'active')
       .single()
@@ -25,6 +23,19 @@ export async function POST(req: NextRequest) {
     if (!affiliate) {
       // Don't reveal whether email exists — generic message
       return NextResponse.json({ ok: true })
+    }
+
+    // Rate limit: не чаще одного OTP в 2 минуты
+    if (affiliate.otp_expires_at) {
+      const issuedAt = new Date(affiliate.otp_expires_at).getTime() - 15 * 60 * 1000
+      const secondsSinceIssue = (Date.now() - issuedAt) / 1000
+      if (secondsSinceIssue < 120) {
+        const waitSeconds = Math.ceil(120 - secondsSinceIssue)
+        return NextResponse.json(
+          { error: `Код уже отправлен. Повторить можно через ${waitSeconds} сек.` },
+          { status: 429 }
+        )
+      }
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString()
@@ -37,8 +48,8 @@ export async function POST(req: NextRequest) {
 
     const firstName = (affiliate.name as string).split(' ')[0]
 
-    await resend.emails.send({
-      from: 'Вкус Жизни <hello@nata-tomshina.ru>',
+    await sendEmail({
+      from: 'Вкус Жизни <noreply@nata-tomshina.ru>',
       to: cleanEmail,
       subject: 'Код для входа в кабинет партнёра',
       html: `

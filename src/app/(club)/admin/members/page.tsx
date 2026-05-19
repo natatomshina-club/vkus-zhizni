@@ -22,8 +22,11 @@ const STATUS_BADGE: Record<string, { label: string; bg: string; color: string }>
 
 const TARIFF_LABEL: Record<string, string> = {
   trial: 'Пробный',
+  'Пробный': 'Пробный',
+  month: 'Месяц',
   monthly: 'Месяц',
   halfyear: 'Полгода',
+  'Полгода': 'Полгода',
 }
 
 function StatusBadge({ status }: { status: string }) {

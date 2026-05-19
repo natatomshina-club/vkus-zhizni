@@ -19,7 +19,9 @@ export default function BirthdayBanner({ name }: Props) {
     }
   }, [])
 
-  const firstName = name.split(' ')[0] || name
+  const parts = name.trim().split(/\s+/)
+  // Russian format: "Фамилия Имя" — take second word; fallback to first
+  const firstName = (parts.length > 1 ? parts[1] : parts[0]) || name
 
   return (
     <>

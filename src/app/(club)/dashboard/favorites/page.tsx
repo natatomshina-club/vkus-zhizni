@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import FavoritesClient from '@/components/FavoritesClient'
 
 export default async function FavoritesPage() {
@@ -7,11 +7,27 @@ export default async function FavoritesPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth')
 
-  const { data: recipes, count } = await supabase
-    .from('saved_recipes')
-    .select('id, title, description, meal_type, ingredients, steps, time_minutes, kbju_calories, kbju_protein, kbju_fat, kbju_carbs, created_at', { count: 'exact' })
-    .eq('member_id', user.id)
-    .order('created_at', { ascending: false })
+  const adminDb = createServiceClient()
+  const { data: member } = await adminDb
+    .from('members')
+    .select('id')
+    .eq('email', user.email!)
+    .single()
+
+  if (!member) redirect('/auth')
+
+  const [{ data: recipes, count }, { data: memberRecipes }] = await Promise.all([
+    adminDb
+      .from('saved_recipes')
+      .select('id, title, description, meal_type, ingredients, steps, time_minutes, kbju_calories, kbju_protein, kbju_fat, kbju_carbs, created_at', { count: 'exact' })
+      .eq('member_id', member.id)
+      .order('created_at', { ascending: false }),
+    adminDb
+      .from('member_recipes')
+      .select('id, name, ingredients, total_calories, total_protein, total_fat, total_carbs, servings_count, created_at')
+      .eq('member_id', member.id)
+      .order('created_at', { ascending: false }),
+  ])
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
@@ -34,10 +50,11 @@ export default async function FavoritesPage() {
         </div>
 
         <FavoritesClient
-          userId={user.id}
+          userId={member.id}
           initialRecipes={recipes ?? []}
           totalCount={count ?? 0}
           maxCount={50}
+          initialMemberRecipes={memberRecipes ?? []}
         />
       </div>
     </div>

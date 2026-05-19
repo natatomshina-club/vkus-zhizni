@@ -3,6 +3,48 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 
 const STORAGE_BUCKET = 'channel-media'
 
+// ── GET /api/channel/posts/[id] ────────────────────────────────────────────────
+
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const { id } = await params
+    const admin = createServiceClient()
+
+    const { data: post, error } = await admin
+      .from('channel_posts')
+      .select('id, member_id, channel, text, media_url, media_urls, media_expires_at, meal_tag, is_ai_reply, is_pinned, parent_id, likes_count, expires_at, created_at, member:members(name, full_name, role, avatar_url)')
+      .eq('id', id)
+      .is('parent_id', null)
+      .maybeSingle()
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (!post) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+    const [{ data: userLike }, { data: commentRows }] = await Promise.all([
+      admin.from('channel_likes').select('post_id').eq('post_id', id).eq('member_id', user.id).maybeSingle(),
+      admin.from('channel_posts').select('id').eq('parent_id', id),
+    ])
+
+    return NextResponse.json({
+      post: {
+        ...post,
+        liked_by_me: !!userLike,
+        comments_count: (commentRows ?? []).length,
+      },
+    })
+  } catch (e) {
+    console.error('[channel/posts/[id] GET]', e)
+    return NextResponse.json({ error: String(e) }, { status: 500 })
+  }
+}
+
 function extractStoragePath(url: string): string | null {
   const marker = `/${STORAGE_BUCKET}/`
   const idx = url.indexOf(marker)

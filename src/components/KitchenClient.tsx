@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import VideoWithCover from '@/components/VideoWithCover'
 import type { RecipePortionResult } from '@/lib/recipeCalculator'
 import KitchenCalculator from '@/components/KitchenCalculator'
 
@@ -15,6 +16,9 @@ interface ExtendedRecipe extends RecipePortionResult {
   requires_macro_calculation?: boolean
   servings?: number
   tip_tags?: string[]
+  time_minutes?: number | null
+  cooking_method?: string | null
+  cuisine?: string | null
 }
 
 interface KitchenResult {
@@ -33,6 +37,9 @@ interface Props {
   kbjuProtein: number | null
   kbjuFat: number | null
   kbjuCarbs: number | null
+  helpDescription?: string | null
+  helpVideoId?: string | null
+  helpCoverUrl?: string | null
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -77,6 +84,9 @@ export default function KitchenClient({
   kbjuProtein,
   kbjuFat,
   kbjuCarbs,
+  helpDescription,
+  helpVideoId,
+  helpCoverUrl,
 }: Props) {
   const router = useRouter()
   const [tab, setTab] = useState<'kitchen' | 'calculator'>('kitchen')
@@ -180,6 +190,7 @@ export default function KitchenClient({
         .from('nutrition')
         .select('id, name, name_alt, category')
         .or(`name.ilike.%${query}%,name_alt.ilike.%${query}%`)
+        .neq('id', 209)  // фарш говяжий 15% — нет рецептов с таким protein_tag
         .limit(8)
       const names = (data ?? []).map((r: { name: string }) => r.name)
       setSuggestions(names)
@@ -443,12 +454,23 @@ export default function KitchenClient({
 
         {helpOpen && (
           <div
-            className="px-4 pb-4 pt-1"
+            className="px-4 pb-4 pt-2"
             style={{ background: '#F0EEFF', borderTop: '1px solid #DDD5FF' }}
           >
-            <div className="prose text-sm" style={{ color: 'var(--text)', fontFamily: 'var(--font-nunito)' }}>
-              <p>🎬 Здесь скоро появится видео-инструкция или пошаговое руководство.</p>
-              <p>А пока: выбери категорию блюда → укажи продукты из холодильника → нажми «Подобрать 3 рецепта»!</p>
+            {(helpVideoId || helpCoverUrl) && (
+              <div className="rounded-xl overflow-hidden mb-3">
+                <VideoWithCover videoId={helpVideoId} coverUrl={helpCoverUrl} />
+              </div>
+            )}
+            <div className="text-sm" style={{ color: 'var(--text)', fontFamily: 'var(--font-nunito)' }}>
+              {helpDescription ? (
+                <p style={{ whiteSpace: 'pre-wrap' }}>{helpDescription}</p>
+              ) : (
+                <>
+                  <p>🎬 Здесь скоро появится видео-инструкция или пошаговое руководство.</p>
+                  <p className="mt-1">А пока: выбери категорию блюда → укажи продукты из холодильника → нажми «Подобрать 3 рецепта»!</p>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -964,10 +986,19 @@ export default function KitchenClient({
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
-function formatIngredientGrams(name: string, grams: number): string {
+const EGG_WEIGHT: Record<number, number> = { 86: 60, 87: 12 }
+
+function formatIngredientGrams(name: string, grams: number, nutritionId?: number): string {
+  const eggWeight = nutritionId !== undefined ? EGG_WEIGHT[nutritionId] : undefined
+  if (eggWeight !== undefined) {
+    const count = Math.round(grams / eggWeight)
+    return count >= 1 ? `${grams}г (≈${count} шт.)` : `${grams}г`
+  }
+  // Fallback: name-based detection for cases without nutrition_id
   const lower = name.toLowerCase()
   if (lower.includes('яйцо') || lower.includes('яйца')) {
-    const count = Math.round(grams / 60)
+    const w = lower.includes('перепел') ? 12 : 60
+    const count = Math.round(grams / w)
     return count >= 1 ? `${grams}г (≈${count} шт.)` : `${grams}г`
   }
   return `${grams}г`
@@ -1047,9 +1078,31 @@ function RecipeCard({
           </span>
         </div>
         {recipe.category === 'суп' && servings > 1 && (
-          <p className="text-xs mt-2" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
-            Порция ~300–350 г | Кастрюля на {servings} {getPorcionWord(servings)}
+          <p className="text-xs mt-1.5" style={{ color: 'rgba(255,255,255,0.75)', fontFamily: 'var(--font-nunito)' }}>
+            Порция ~300–350 г · Кастрюля на {servings} {getPorcionWord(servings)}
           </p>
+        )}
+        {(recipe.time_minutes || recipe.cooking_method) && (
+          <div className="flex flex-wrap gap-2 mt-2">
+            {recipe.time_minutes && (
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                style={{ background: 'rgba(255,255,255,0.18)', color: '#fff' }}>
+                ⏱ {recipe.time_minutes} мин
+              </span>
+            )}
+            {recipe.cooking_method && (
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                style={{ background: 'rgba(255,255,255,0.18)', color: '#fff' }}>
+                🍳 {recipe.cooking_method}
+              </span>
+            )}
+            {recipe.cuisine && (
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                style={{ background: 'rgba(255,255,255,0.18)', color: '#fff' }}>
+                🌍 {recipe.cuisine}
+              </span>
+            )}
+          </div>
         )}
       </div>
 
@@ -1060,17 +1113,20 @@ function RecipeCard({
           {ingredientsLabel()}
         </p>
         <ul className="flex flex-col gap-1">
-          {recipe.ingredients.map((ing, i) => (
+          {recipe.ingredients.map((ing, i) => {
+            const displayGrams = recipe.category === 'десерт' ? Math.round(ing.grams * servings) : ing.grams
+            return (
             <li key={i} className="flex items-baseline justify-between gap-2">
               <span className="text-sm" style={{ color: 'var(--text)', fontFamily: 'var(--font-nunito)' }}>
                 • {ing.name}
               </span>
               <span className="text-sm font-semibold shrink-0"
                 style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
-                {formatIngredientGrams(ing.name, ing.grams)}
+                {formatIngredientGrams(ing.name, displayGrams, ing.nutrition_id)}
               </span>
             </li>
-          ))}
+            )
+          })}
         </ul>
         {recipe.extra_products.length > 0 && (
           <div className="mt-2.5 px-3 py-2 rounded-xl" style={{ background: '#F0EEFF' }}>

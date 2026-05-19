@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+const normalize = (s: string) => s.toLowerCase().replace(/ё/g, 'е').trim()
+
 export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get('q')?.trim() ?? ''
 
@@ -8,11 +10,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ results: [] })
   }
 
+  const qNorm = normalize(q)
+  // Ищем и нормализованный вариант (ё→е), и оригинал (если в БД есть ё)
+  const conditions = qNorm !== q.toLowerCase()
+    ? `name.ilike.%${qNorm}%,name_alt.ilike.%${qNorm}%,name.ilike.%${q}%,name_alt.ilike.%${q}%`
+    : `name.ilike.%${qNorm}%,name_alt.ilike.%${qNorm}%`
+
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('nutrition')
     .select('name')
-    .or(`name.ilike.%${q}%,name_alt.ilike.%${q}%`)
+    .or(conditions)
     .limit(8)
 
   if (error) {

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { Resend } from 'resend'
+import { sendEmail } from '@/lib/mailer'
 
 
 async function requireAdmin() {
@@ -19,8 +19,9 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const search = searchParams.get('search')?.trim() ?? ''
   const statusFilter = searchParams.get('status') ?? 'all'
+  const segment = searchParams.get('segment') ?? ''
   const page = Math.max(1, parseInt(searchParams.get('page') ?? '1'))
-  const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') ?? '20')))
+  const limit = Math.min(200, Math.max(1, parseInt(searchParams.get('limit') ?? '20')))
   const offset = (page - 1) * limit
 
   const admin = createServiceClient()
@@ -36,8 +37,25 @@ export async function GET(req: Request) {
     query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%`)
   }
 
-  if (statusFilter !== 'all') {
-    query = query.eq('subscription_status', statusFilter)
+  if (segment) {
+    if (segment === 'trial') {
+      query = query.eq('subscription_status', 'trial')
+    } else if (segment === 'monthly') {
+      query = query.eq('subscription_status', 'active').in('tariff', ['month', 'monthly'])
+    } else if (segment === 'halfyear') {
+      query = query.eq('subscription_status', 'active').eq('tariff', 'halfyear')
+    } else if (segment === 'expired_trial') {
+      query = query.eq('subscription_status', 'expired').in('tariff', ['trial', 'Пробный'])
+    } else if (segment === 'expired') {
+      query = query.eq('subscription_status', 'expired').in('tariff', ['month', 'monthly', 'halfyear'])
+    } else if (segment === 'cancelled') {
+      query = query.eq('subscription_status', 'cancelled')
+    } else if (segment === 'blocked') {
+      query = query.eq('is_blocked', true)
+    }
+  } else if (statusFilter !== 'all') {
+    const dbStatus = statusFilter === 'cancelled' ? 'expired' : statusFilter
+    query = query.eq('subscription_status', dbStatus)
   }
 
   const { data, count, error: dbErr } = await query
@@ -142,9 +160,8 @@ export async function POST(req: Request) {
   const magicLink = linkData.properties.action_link
   const firstName = full_name.split(' ')[0]
 
-  // Send invite email via Resend SDK
-  const resend = new Resend(process.env.RESEND_API_KEY)
-  const { data: emailData, error: emailErr } = await resend.emails.send({
+  // Send invite email
+  const emailOk = await sendEmail({
     from: 'Вкус Жизни <noreply@nata-tomshina.ru>',
     to: email,
     subject: 'Добро пожаловать в Клуб «Вкус Жизни» — ссылка для входа',
@@ -234,12 +251,11 @@ export async function POST(req: Request) {
 </html>`,
   })
 
-  if (emailErr || !emailData?.id) {
-    console.error('[add-member] resend error:', emailErr)
+  if (!emailOk) {
     return NextResponse.json({
       member: { id: uid, email, full_name },
       magic_link: magicLink,
-      warning: `Участница добавлена, но письмо не отправлено: ${emailErr?.message ?? 'нет id в ответе Resend'}`,
+      warning: 'Участница добавлена, но письмо не отправлено',
     }, { status: 201 })
   }
 

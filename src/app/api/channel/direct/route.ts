@@ -54,21 +54,21 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => null)
   const text = typeof body?.text === 'string' ? body.text.trim() : ''
-  const media_url: string | null = typeof body?.media_url === 'string' ? body.media_url.trim() || null : null
+  const rawUrls: string[] = Array.isArray(body?.media_urls) ? body.media_urls.slice(0, 3) : []
 
-  if (media_url) {
+  const supabaseHost = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://invalid').hostname
+  const media_urls: string[] = []
+  for (const url of rawUrls) {
+    if (typeof url !== 'string') continue
     try {
-      const parsedMedia = new URL(media_url)
-      const parsedSupabase = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://invalid')
-      if (parsedMedia.hostname !== parsedSupabase.hostname) {
-        return NextResponse.json({ error: 'Invalid media domain' }, { status: 400 })
-      }
+      if (new URL(url).hostname !== supabaseHost) return NextResponse.json({ error: 'Invalid media domain' }, { status: 400 })
+      media_urls.push(url)
     } catch {
       return NextResponse.json({ error: 'Invalid media domain' }, { status: 400 })
     }
   }
 
-  if (!text && !media_url) return NextResponse.json({ error: 'text или фото обязательны' }, { status: 400 })
+  if (!text && media_urls.length === 0) return NextResponse.json({ error: 'text или фото обязательны' }, { status: 400 })
   if (text.length > 2000) return NextResponse.json({ error: 'max 2000 символов' }, { status: 400 })
 
   const { data, error } = await createServiceClient()
@@ -76,7 +76,8 @@ export async function POST(req: Request) {
     .insert({
       member_id: memberId,
       text: text || '',
-      media_url,
+      media_url: media_urls[0] ?? null,
+      media_urls: media_urls.length > 0 ? media_urls : null,
       from_admin: false,
       is_read: false,
     })

@@ -3,6 +3,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 
+function renderTextWithLinks(text: string): React.ReactNode[] {
+  const parts = text.split(/(https?:\/\/[^\s<>"']+)/)
+  return parts.map((part, i) =>
+    i % 2 === 1
+      ? <a key={i} href={part} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--pur)', textDecoration: 'underline', wordBreak: 'break-all' }}>{part}</a>
+      : part
+  )
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface MemberInfo {
@@ -11,6 +20,8 @@ interface MemberInfo {
   full_name: string | null
   email: string
   status: string
+  subscription_status: string | null
+  tariff: string | null
   created_at: string
   weight?: number | null
 }
@@ -76,11 +87,15 @@ function getMemberDay(createdAt: string): number {
   return Math.floor((Date.now() - new Date(createdAt).getTime()) / 86_400_000) + 1
 }
 
-function getStatusLabel(status: string): string {
-  if (status === 'trial') return 'Триал'
-  if (status === 'active') return 'Активная'
-  if (status === 'expired') return 'Истёк'
-  return status
+function getStatusLabel(subscriptionStatus: string | null, tariff: string | null): string {
+  if (subscriptionStatus === 'trial') return 'Триал'
+  if (subscriptionStatus === 'active') {
+    if (tariff === 'halfyear' || tariff === 'Полгода') return 'Полгода'
+    if (tariff === 'month' || tariff === 'monthly') return 'Месяц'
+    return 'Активная'
+  }
+  if (subscriptionStatus === 'expired' || subscriptionStatus === 'cancelled') return 'Истёк'
+  return subscriptionStatus ?? '—'
 }
 
 function getMemberName(m: MemberInfo | null): string {
@@ -393,7 +408,7 @@ function ChatPanel({
     setReplyText(e.target.value)
     const el = e.target
     el.style.height = 'auto'
-    el.style.height = Math.min(el.scrollHeight, 96) + 'px'
+    el.style.height = Math.min(el.scrollHeight, 140) + 'px'
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -449,7 +464,7 @@ function ChatPanel({
       setMessages(prev => [...prev, optimistic])
       setReplyText('')
       removeMedia()
-      if (textareaRef.current) textareaRef.current.style.height = 'auto'
+      if (textareaRef.current) textareaRef.current.style.height = '48px'
 
       const res = await fetch(`/api/admin/direct/${memberId}`, {
         method: 'POST',
@@ -489,7 +504,7 @@ function ChatPanel({
             {getMemberName(member)}
             {member && (
               <span className="font-normal ml-2" style={{ color: 'var(--muted)' }}>
-                · {getStatusLabel(member.status)} · день {getMemberDay(member.created_at)}
+                · {getStatusLabel(member.subscription_status, member.tariff)} · день {getMemberDay(member.created_at)}
               </span>
             )}
           </p>
@@ -571,7 +586,7 @@ function ChatPanel({
                       wordBreak: 'break-word',
                     }}
                   >
-                    {msg.text}
+                    {renderTextWithLinks(msg.text)}
                   </p>
                 )}
               </div>
@@ -629,7 +644,7 @@ function ChatPanel({
             onChange={handleFileChange}
           />
 
-          <div className="flex-1 relative" style={{ alignSelf: 'stretch', display: 'flex', flexDirection: 'column' }}>
+          <div className="flex-1 relative">
             <textarea
               ref={textareaRef}
               value={replyText}
@@ -645,9 +660,9 @@ function ChatPanel({
                 color: 'var(--text)',
                 borderColor: 'var(--border)',
                 lineHeight: '1.5',
-                overflow: 'hidden',
+                overflowY: 'auto',
                 minHeight: 48,
-                flex: 1,
+                display: 'block',
               }}
             />
             {charsLeft < 200 && (

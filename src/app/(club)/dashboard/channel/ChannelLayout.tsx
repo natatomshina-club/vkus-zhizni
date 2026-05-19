@@ -13,6 +13,9 @@ interface Props {
   isCurator: boolean
   memberName: string
   memberFullName: string | null
+  memberAvatarUrl: string | null
+  initialChannel?: string
+  initialPost?: string
 }
 
 // ── Sidebar channel button ────────────────────────────────────────────────────
@@ -64,6 +67,8 @@ function ChannelContent({
   isCurator,
   memberName,
   memberFullName,
+  memberAvatarUrl,
+  targetPostId,
 }: {
   channel: Channel
   memberId: string
@@ -71,6 +76,8 @@ function ChannelContent({
   isCurator: boolean
   memberName: string
   memberFullName: string | null
+  memberAvatarUrl: string | null
+  targetPostId?: string
 }) {
   if (channel.type === 'feed') {
     return (
@@ -82,6 +89,8 @@ function ChannelContent({
         isCurator={isCurator}
         memberName={memberName}
         memberFullName={memberFullName}
+        memberAvatarUrl={memberAvatarUrl}
+        targetPostId={targetPostId}
       />
     )
   }
@@ -96,11 +105,17 @@ function ChannelContent({
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
-export default function ChannelLayout({ channels, memberId, isAdmin, isCurator, memberName, memberFullName }: Props) {
+export default function ChannelLayout({ channels, memberId, isAdmin, isCurator, memberName, memberFullName, memberAvatarUrl, initialChannel, initialPost }: Props) {
   const unlockedChannels = channels.filter(c => !c.locked)
-  const [activeSlug, setActiveSlug] = useState<ChannelSlug>(
-    unlockedChannels[0]?.slug ?? 'boltalka'
-  )
+
+  const initialSlug = (() => {
+    if (initialChannel && unlockedChannels.some(c => c.slug === initialChannel)) {
+      return initialChannel as ChannelSlug
+    }
+    return unlockedChannels[0]?.slug ?? 'boltalka'
+  })()
+
+  const [activeSlug, setActiveSlug] = useState<ChannelSlug>(initialSlug)
   const [lockedMsg, setLockedMsg] = useState(false)
   const [unreadDirect, setUnreadDirect] = useState(0)
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({})
@@ -366,6 +381,8 @@ export default function ChannelLayout({ channels, memberId, isAdmin, isCurator, 
                 isCurator={isCurator}
                 memberName={memberName}
                 memberFullName={memberFullName}
+                memberAvatarUrl={memberAvatarUrl}
+                targetPostId={initialPost}
               />
             )}
           </div>
@@ -420,6 +437,8 @@ export default function ChannelLayout({ channels, memberId, isAdmin, isCurator, 
               isCurator={isCurator}
               memberName={memberName}
               memberFullName={memberFullName}
+              memberAvatarUrl={memberAvatarUrl}
+              targetPostId={initialPost}
             />
           )}
         </div>

@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+html { scroll-behavior: smooth; }
+
 :root {
   --pur: #7C5CFC;
   --pur-light: #EDE9FF;
@@ -196,3 +198,4 @@ button:not(:disabled):not(.no-press):active,
   user-drag: none;
   -webkit-touch-callout: none;
 }
+

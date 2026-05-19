@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 
 // ── Типы ─────────────────────────────────────────────────────────────────────
 interface PlanIngredient {
@@ -25,15 +26,6 @@ interface PlanMeal {
   repeat_meal_type?: string
 }
 
-interface PlanDessert {
-  recipe_id: number
-  title: string
-  steps: string[]
-  ingredients: PlanIngredient[]
-  total: { calories: number; protein: number; fat: number; carbs: number }
-  servings: number
-}
-
 interface PlanDay {
   day_number: number; day_name: string
   cook_group: number; is_cook_day: boolean; cook_group_days: string
@@ -52,9 +44,9 @@ interface WeeklyPlan {
   plan_json: {
     days: PlanDay[]
     summary: { avg_calories: number; avg_protein: number; avg_fat: number; avg_carbs: number }
-    bonus_desserts?: PlanDessert[]
   }
-  shopping_list_json: { have: { name: string; total_grams: number }[]; buy: { name: string; total_grams: number }[] }
+  /** @deprecated Removed 17 May 2026. Kept optional for backward compatibility with old plans in DB. */
+  shopping_list_json?: { have: { name: string; total_grams: number }[]; buy: { name: string; total_grams: number }[] }
 }
 
 // ── Хелперы ───────────────────────────────────────────────────────────────────
@@ -70,8 +62,10 @@ function getPorcionWord(n: number): string {
 
 /** Форматирует граммы. Для яиц добавляет «≈N шт.» */
 function fmtGrams(name: string, grams: number): string {
-  if (/яйц[оа]/i.test(name)) {
-    const count = Math.round(grams / 60)
+  const lower = name.toLowerCase()
+  if (/яйц[оа]/i.test(lower)) {
+    const eggWeight = lower.includes('перепел') ? 12 : 60
+    const count = Math.round(grams / eggWeight)
     if (count >= 1) return `${grams}г (≈${count} шт.)`
   }
   return `${grams}г`
@@ -93,16 +87,24 @@ function mealLabel(t: string): string {
 
 function dayOfWeekShort(n: number) { return ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'][n - 1] }
 
+const MEAL_TYPE_OPTIONS = [
+  { value: 'breakfast', label: 'Завтрак'     },
+  { value: 'lunch',     label: 'Обед / Ужин' },
+  { value: 'snack',     label: 'Перекус'     },
+] as const
+type MealType = typeof MEAL_TYPE_OPTIONS[number]['value']
+
 // ── Правила пользования ───────────────────────────────────────────────────────
 const RULES = [
+  { icon: '🔄', text: 'Если какой-то рецепт/блюдо не нравится, можно подобрать/заменить на другой в Умной кухне.' },
   { icon: '🎯', text: 'Рацион подобран под твои личные цели по КБЖУ — старайся соблюдать порции' },
   { icon: '🍲', text: 'Суп варится ОДИН РАЗ в день 1 — кушаешь по 1 порции два дня подряд' },
   { icon: '🥗', text: 'Салат готовится свежим каждый день — не удваивается и не повторяется' },
   { icon: '📦', text: 'В режиме «на 2 дня» — готовишь двойную порцию и убираешь половину в контейнер' },
   { icon: '🔄', text: 'Блюда с пометкой ♻️ — это готовое из предыдущего дня, просто разогрей' },
-  { icon: '🛒', text: 'Оранжевые ингредиенты — нужно купить. Список покупок на всю неделю собран ниже' },
+  { icon: '🛒', text: 'Оранжевые ингредиенты — нужно купить. Уточняй необходимые продукты в карточках блюд.' },
   { icon: '🥦', text: 'Овощи, зелень и ягоды взаимозаменяемы — используй сезонные и доступные. Брокколи ↔ цветная капуста ↔ кабачок ↔ шпинат ↔ стручковая фасоль — всё взаимозаменяемо. Ягоды в десертах тоже можно менять по сезону.' },
-  { icon: '🍎', text: 'Если норма углеводов кажется низкой — добавь к приёму пищи фрукт, небольшую порцию гречки, риса или овсянки. Это не нарушит метод, а поможет чувствовать себя сытой.' },
+  { icon: '🍎', text: 'Если норма углеводов кажется низкой — добавь к приёму пищи фрукт, небольшую порцию любой крупы, или десерт (НО! в пределах макросов). Это не нарушит метод, а поможет чувствовать себя сытой.' },
 ]
 
 function RulesAccordion({ forceOpen }: { forceOpen?: boolean }) {
@@ -139,7 +141,52 @@ function RulesAccordion({ forceOpen }: { forceOpen?: boolean }) {
 }
 
 // ── Карточка блюда ────────────────────────────────────────────────────────────
-function MealCard({ meal }: { meal: PlanMeal }) {
+function MealCard({ meal, userId }: { meal: PlanMeal; userId: string }) {
+  const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [diaryOpen, setDiaryOpen] = useState(false)
+  const [diaryLoading, setDiaryLoading] = useState(false)
+
+  async function handleSave() {
+    if (saved || saving) return
+    setSaving(true)
+    const supabase = createClient()
+    const { error } = await supabase.from('saved_recipes').insert({
+      member_id:     userId,
+      title:         meal.title,
+      meal_type:     meal.meal_type,
+      ingredients:   meal.ingredients,
+      steps:         meal.steps,
+      kbju_calories: meal.total.calories,
+      kbju_protein:  Math.round(meal.total.protein),
+      kbju_fat:      Math.round(meal.total.fat),
+      kbju_carbs:    Math.round(meal.total.carbs),
+    })
+    setSaving(false)
+    if (!error) setSaved(true)
+  }
+
+  async function handleDiaryAdd(mealType: MealType) {
+    setDiaryLoading(true)
+    const today = new Date().toISOString().split('T')[0]
+    await fetch('/api/diary/entries', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        date:      today,
+        meal_type: mealType,
+        title:     meal.title,
+        calories:  meal.total.calories,
+        protein:   Math.round(meal.total.protein),
+        fat:       Math.round(meal.total.fat),
+        carbs:     Math.round(meal.total.carbs),
+        source:    'bot',
+      }),
+    })
+    setDiaryLoading(false)
+    setDiaryOpen(false)
+  }
+
   const c = MEAL_COLORS[meal.meal_type] ?? MEAL_COLORS.обед
 
   if (meal.is_repeat) {
@@ -243,86 +290,65 @@ function MealCard({ meal }: { meal: PlanMeal }) {
             </ol>
           </div>
         )}
-      </div>
-    </div>
-  )
-}
 
-// ── Карточка десерта ──────────────────────────────────────────────────────────
-function DessertCard({ dessert }: { dessert: PlanDessert }) {
-  return (
-    <div className="meal-card rounded-[20px] overflow-hidden"
-      style={{ background: '#fff', border: '1px solid #F5C8A0', boxShadow: '0 2px 16px rgba(0,0,0,.06)' }}>
-      <div className="flex items-center gap-3 px-5 py-3.5"
-        style={{ background: '#FFF4EB', borderBottom: '2px solid #F5C8A0' }}>
-        <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black text-white shrink-0"
-          style={{ background: '#D4884A' }}>🍰</div>
-        <div>
-          <div className="text-[10px] font-bold uppercase tracking-widest mb-0.5" style={{ color: '#8A5030' }}>Десерт</div>
-          <div className="text-sm font-extrabold leading-snug" style={{ color: '#2D3A2E' }}>{dessert.title}</div>
-        </div>
-      </div>
-      <div className="px-5 py-4">
-        {dessert.ingredients.length > 0 && (
-          <div className="mb-4">
-            <div className="text-[11px] font-bold uppercase tracking-widest mb-2.5" style={{ color: '#C07040', letterSpacing: '1.5px' }}>
-              🛒 Ингредиенты · 1 {getPorcionWord(1)}
-            </div>
-            <ul className="flex flex-col">
-              {dessert.ingredients.map((ing, i) => (
-                <li key={i} className="flex items-baseline justify-between py-1.5"
-                  style={{ borderBottom: i < dessert.ingredients.length - 1 ? '1px dashed #f5e8d5' : 'none' }}>
-                  <span className="text-[13.5px]" style={{ color: ing.is_user_product ? '#2D3A2E' : '#E87050' }}>
-                    {!ing.is_user_product && <span className="mr-1">🛒</span>}{ing.name}
-                  </span>
-                  <span className="text-[12.5px] font-bold ml-2 shrink-0" style={{ color: '#8A5030' }}>
-                    {fmtGrams(ing.name, ing.grams)}
-                  </span>
-                </li>
-              ))}
-            </ul>
+        {/* Кнопки */}
+        <div className="pt-3 flex flex-col gap-2 no-print">
+          <div className="flex gap-2">
+            <button
+              onClick={handleSave}
+              disabled={saved || saving}
+              className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-60"
+              style={{
+                minHeight:  44,
+                fontFamily: 'var(--font-nunito)',
+                background: saved ? '#A8E6CF33' : '#fff',
+                color:      saved ? '#2D6A4F'   : '#4A5E4B',
+                border:     `1.5px solid ${saved ? '#A8E6CF' : '#D4E6D5'}`,
+              }}>
+              {saving ? '...' : saved ? '✓ Сохранено' : '⭐ Сохранить'}
+            </button>
+            <button
+              onClick={() => setDiaryOpen(v => !v)}
+              className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all"
+              style={{
+                minHeight:  44,
+                fontFamily: 'var(--font-nunito)',
+                background: diaryOpen ? '#E8F0FF' : '#fff',
+                color:      diaryOpen ? '#5060C8' : '#4A5E4B',
+                border:     `1.5px solid ${diaryOpen ? '#B8C8F0' : '#D4E6D5'}`,
+              }}>
+              📓 В дневник
+            </button>
           </div>
-        )}
-        <div className="flex gap-2 flex-wrap mb-4">
-          {[
-            { label: 'Ккал', val: dessert.total.calories },
-            { label: 'Б',    val: Math.round(dessert.total.protein) },
-            { label: 'Ж',    val: Math.round(dessert.total.fat) },
-            { label: 'У',    val: Math.round(dessert.total.carbs) },
-          ].map(({ label, val }) => (
-            <span key={label} className="text-xs px-2 py-1 rounded-lg font-semibold"
-              style={{ background: '#FFF4EB', color: '#C07040', fontFamily: 'var(--font-nunito)' }}>
-              {label}: {val}
-            </span>
-          ))}
-        </div>
-        {dessert.steps.length > 0 && (
-          <div>
-            <div className="text-[11px] font-bold uppercase tracking-widest mb-2.5" style={{ color: '#D4884A', letterSpacing: '1.5px' }}>
-              👨‍🍳 Приготовление
-            </div>
-            <ol className="flex flex-col gap-1.5">
-              {dessert.steps.map((step, i) => (
-                <li key={i} className="flex gap-2.5 text-[13px] leading-snug py-1.5"
-                  style={{ borderBottom: i < dessert.steps.length - 1 ? '1px solid #f5f5f5' : 'none', color: '#555' }}>
-                  <span className="shrink-0 w-[22px] h-[22px] rounded-full flex items-center justify-center text-[11px] font-black mt-0.5"
-                    style={{ background: '#FFF4EB', color: '#C07040' }}>{i + 1}</span>
-                  {step}
-                </li>
+          {diaryOpen && (
+            <div className="flex gap-2">
+              {MEAL_TYPE_OPTIONS.map(mt => (
+                <button
+                  key={mt.value}
+                  onClick={() => handleDiaryAdd(mt.value)}
+                  disabled={diaryLoading}
+                  className="flex-1 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+                  style={{
+                    minHeight:  40,
+                    fontFamily: 'var(--font-nunito)',
+                    background: '#7C5CFC',
+                    color:      '#fff',
+                  }}>
+                  {mt.label}
+                </button>
               ))}
-            </ol>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
 }
 
 // ── Основной компонент ────────────────────────────────────────────────────────
-export default function WeeklyPlanView({ plan }: { plan: WeeklyPlan }) {
+export default function WeeklyPlanView({ plan, userId }: { plan: WeeklyPlan; userId: string }) {
   const days = plan.plan_json.days
   const summary = plan.plan_json.summary
-  const bonus_desserts = plan.plan_json.bonus_desserts ?? []
   const kbju = { calories: plan.kbju_calories, protein: plan.kbju_protein, fat: plan.kbju_fat, carbs: plan.kbju_carbs }
 
   const [activeDay, setActiveDay] = useState(1)
@@ -330,14 +356,8 @@ export default function WeeklyPlanView({ plan }: { plan: WeeklyPlan }) {
 
   const activeData = days.find(d => d.day_number === activeDay) ?? days[0]
 
-  const handlePrint = () => {
-    setShowAllDays(true)
-    setTimeout(() => {
-      window.print()
-      setTimeout(() => {
-        setShowAllDays(false)
-      }, 1000)
-    }, 300)
+  const handleDownloadPdf = () => {
+    window.location.href = `/api/kitchen/weekly/${plan.id}/pdf`
   }
 
   return (
@@ -360,10 +380,10 @@ export default function WeeklyPlanView({ plan }: { plan: WeeklyPlan }) {
           {plan.meals_per_day}-разовое питание · 7 дней
         </p>
         <div className="flex justify-center gap-3 no-print">
-          <button onClick={handlePrint}
+          <button onClick={handleDownloadPdf}
             className="px-5 py-2.5 rounded-xl text-sm font-bold"
             style={{ background: 'rgba(255,255,255,.2)', border: '1px solid rgba(255,255,255,.4)', color: '#fff', fontFamily: 'var(--font-nunito)' }}>
-            🖨 Скачать / Печать
+            ⬇️ Скачать PDF
           </button>
           <Link href="/dashboard/kitchen/weekly"
             className="px-5 py-2.5 rounded-xl text-sm font-bold"
@@ -415,7 +435,7 @@ export default function WeeklyPlanView({ plan }: { plan: WeeklyPlan }) {
 
         {/* ── Один день (интерактив) ── */}
         {!showAllDays && activeData && (
-          <DaySection day={activeData} kbju={kbju} />
+          <DaySection day={activeData} kbju={kbju} userId={userId} />
         )}
 
         {/* ── Все дни (print + showAllDays) ── */}
@@ -423,19 +443,12 @@ export default function WeeklyPlanView({ plan }: { plan: WeeklyPlan }) {
           <div>
             {days.map((day, i) => (
               <div key={day.day_number} className={i > 0 ? 'print-page-break' : ''}>
-                <DaySection day={day} kbju={kbju} />
+                <DaySection day={day} kbju={kbju} userId={userId} />
               </div>
             ))}
           </div>
         )}
 
-        {/* ── Список продуктов (аккордеон) ── */}
-        <ShoppingAccordion shopping={plan.shopping_list_json} forcePrint={showAllDays} />
-
-        {/* ── Десерты (аккордеон) ── */}
-        {bonus_desserts.length > 0 && (
-          <DessertsAccordion desserts={bonus_desserts} forcePrint={showAllDays} />
-        )}
       </div>
 
       <style>{`
@@ -453,9 +466,10 @@ export default function WeeklyPlanView({ plan }: { plan: WeeklyPlan }) {
 }
 
 // ── Секция дня ────────────────────────────────────────────────────────────────
-function DaySection({ day, kbju }: {
+function DaySection({ day, kbju, userId }: {
   day: PlanDay
   kbju: { calories: number; protein: number; fat: number; carbs: number }
+  userId: string
 }) {
   return (
     <div className="mb-8">
@@ -483,7 +497,7 @@ function DaySection({ day, kbju }: {
 
       <div className="grid gap-4 lg:grid-cols-2 mb-4">
         {day.meals.map((meal, i) => (
-          <MealCard key={i} meal={meal} />
+          <MealCard key={i} meal={meal} userId={userId} />
         ))}
       </div>
 
@@ -506,118 +520,4 @@ function DaySection({ day, kbju }: {
   )
 }
 
-// ── Список продуктов — аккордеон ──────────────────────────────────────────────
-function ShoppingAccordion({ shopping, forcePrint }: {
-  shopping: { have: { name: string; total_grams: number }[]; buy: { name: string; total_grams: number }[] }
-  forcePrint?: boolean
-}) {
-  const [open, setOpen] = useState(false)
-  const isOpen = forcePrint || open
 
-  return (
-    <div className="mt-8 rounded-2xl overflow-hidden"
-      style={{ background: '#fff', border: '1px solid #D4E6D5', boxShadow: '0 2px 12px rgba(0,0,0,.06)' }}>
-      <button
-        type="button"
-        onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between px-5 py-4 no-print"
-        style={{ fontFamily: 'var(--font-nunito)' }}
-      >
-        <span className="text-base font-black" style={{ color: '#2D3A2E' }}>🛒 Список продуктов</span>
-        <span className="accordion-header-arrow" style={{ display: 'inline-block', transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s', color: '#7A9E7E', fontSize: 18, lineHeight: 1 }}>▾</span>
-      </button>
-
-      {/* Print header (always visible in print) */}
-      <div className="hidden print:block px-5 pt-5">
-        <h2 className="text-xl font-black mb-1" style={{ color: '#2D3A2E', fontFamily: 'var(--font-unbounded)' }}>Список продуктов</h2>
-        <div className="h-0.5 mb-4" style={{ background: '#D4E6D5' }} />
-      </div>
-
-      {isOpen && (
-        <div className="px-5 pb-5 accordion-content">
-          <div className="h-px mb-5 no-print" style={{ background: '#D4E6D5' }} />
-          <div className="grid gap-4 lg:grid-cols-2">
-            {shopping.have.length > 0 && (
-              <div className="rounded-2xl p-4" style={{ background: '#F5FBF5', border: '1px solid #C8DDC9' }}>
-                <div className="text-[11px] font-black uppercase tracking-widest mb-3 pb-2"
-                  style={{ color: '#4A5E4B', borderBottom: '2px solid #C8DDC9', fontFamily: 'var(--font-nunito)' }}>
-                  ✅ Есть в холодильнике
-                </div>
-                {shopping.have.map((item, i) => (
-                  <div key={i} className="flex justify-between items-center py-1.5 text-[13px]"
-                    style={{ borderBottom: i < shopping.have.length - 1 ? '1px dashed #d4e6d5' : 'none' }}>
-                    <span style={{ color: '#3A4A3B' }}>{item.name}</span>
-                    <span className="font-bold ml-2 shrink-0" style={{ color: '#4A5E4B' }}>
-                      {fmtGrams(item.name, item.total_grams)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-            {shopping.buy.length > 0 && (
-              <div className="rounded-2xl p-4" style={{ background: '#FFFBF5', border: '1px solid #F5C8A0' }}>
-                <div className="text-[11px] font-black uppercase tracking-widest mb-3 pb-2"
-                  style={{ color: '#B07040', borderBottom: '2px solid #F0C898', fontFamily: 'var(--font-nunito)' }}>
-                  🛒 Список покупок
-                </div>
-                {shopping.buy.map((item, i) => (
-                  <div key={i} className="flex justify-between items-center py-1.5 text-[13px]"
-                    style={{ borderBottom: i < shopping.buy.length - 1 ? '1px dashed #f0c898' : 'none' }}>
-                    <span style={{ color: '#3A4A3B' }}>{item.name}</span>
-                    <span className="font-bold ml-2 shrink-0" style={{ color: '#B07040' }}>
-                      {fmtGrams(item.name, item.total_grams)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ── Десерты — аккордеон ───────────────────────────────────────────────────────
-function DessertsAccordion({ desserts, forcePrint }: { desserts: PlanDessert[]; forcePrint?: boolean }) {
-  const [open, setOpen] = useState(false)
-  const isOpen = forcePrint || open
-
-  return (
-    <div className="mt-4 rounded-2xl overflow-hidden"
-      style={{ background: '#fff', border: '1px solid #F5C8A0', boxShadow: '0 2px 12px rgba(0,0,0,.06)' }}>
-      <button
-        type="button"
-        onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between px-5 py-4 no-print"
-        style={{ fontFamily: 'var(--font-nunito)' }}
-      >
-        <span className="text-base font-black" style={{ color: '#2D3A2E' }}>🍰 Десерты на случай тяги к сладкому</span>
-        <span className="accordion-header-arrow" style={{ display: 'inline-block', transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s', color: '#D4884A', fontSize: 18, lineHeight: 1 }}>▾</span>
-      </button>
-
-      {/* Print header */}
-      <div className="hidden print:block px-5 pt-5">
-        <h2 className="text-xl font-black mb-1" style={{ color: '#2D3A2E', fontFamily: 'var(--font-unbounded)' }}>🍰 Десерты</h2>
-        <div className="h-0.5 mb-4" style={{ background: '#F5C8A0' }} />
-      </div>
-
-      {isOpen && (
-        <div className="px-5 pb-5 accordion-content">
-          <div className="h-px mb-4 no-print" style={{ background: '#F5C8A0' }} />
-          <div className="rounded-xl px-4 py-3 mb-5"
-            style={{ background: '#FFF4EB', border: '1px solid #F5C8A0' }}>
-            <p className="text-sm" style={{ color: '#8A5030', fontFamily: 'var(--font-nunito)' }}>
-              Десерты — приятный бонус, не обязательная часть рациона. Съешьте <strong>вместо одного основного приёма</strong> или как дополнение, если вписываетесь в норму КБЖУ дня.
-            </p>
-          </div>
-          <div className="grid gap-4 lg:grid-cols-3">
-            {desserts.map((dessert, i) => (
-              <DessertCard key={i} dessert={dessert} />
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}

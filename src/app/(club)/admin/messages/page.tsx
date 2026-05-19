@@ -17,7 +17,7 @@ export default async function AdminMessagesPage() {
   // Initial dialogs
   const { data: messages } = await admin
     .from('private_messages')
-    .select('member_id, text, from_admin, is_read, created_at, member:members!inner(id, name, full_name, email, status, created_at)')
+    .select('member_id, text, from_admin, is_read, created_at, member:members!inner(id, name, full_name, email, status, subscription_status, tariff, created_at)')
     .order('created_at', { ascending: true })
 
   type MsgRow = {
@@ -26,7 +26,7 @@ export default async function AdminMessagesPage() {
     from_admin: boolean
     is_read: boolean
     created_at: string
-    member: { id: string; name: string | null; full_name: string | null; email: string; status: string; created_at: string } | null
+    member: { id: string; name: string | null; full_name: string | null; email: string; status: string; subscription_status: string | null; tariff: string | null; created_at: string } | null
   }
 
   const dialogMap = new Map<string, {
@@ -70,7 +70,7 @@ export default async function AdminMessagesPage() {
     .maybeSingle()
 
   return (
-    <div className="h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
+    <div style={{ height: 'calc(100dvh - 56px)', overflow: 'hidden', margin: '-24px -16px -48px', background: 'var(--bg)' }}>
       <Suspense fallback={null}>
         <MessagesLayout initialDialogs={dialogs} marathon={marathon} />
       </Suspense>

@@ -34,7 +34,8 @@ function Toast({ msg }: { msg: string }) {
       zIndex: 200, background: '#2D1F6E', color: '#fff',
       padding: '12px 22px', borderRadius: 14, fontSize: 14, fontWeight: 600,
       boxShadow: '0 4px 24px rgba(44,30,110,0.22)',
-      whiteSpace: 'nowrap', maxWidth: '90vw',
+      whiteSpace: 'normal', maxWidth: 'calc(100vw - 32px)',
+      textAlign: 'center', wordBreak: 'break-word',
       animation: 'fadeUp 0.25s ease',
     }}>
       {msg}
@@ -119,6 +120,7 @@ function WebinarCard({
         display: 'flex',
         alignItems: 'flex-start',
         justifyContent: 'space-between',
+        flexWrap: 'wrap',
         gap: 12,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -409,22 +411,24 @@ export default function WebinarsClient({
                 const isActive = statusLabel.includes(row.label)
                 return (
                 <div key={row.label} style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
+                  display: 'flex', alignItems: 'flex-start', gap: 10,
                   padding: isActive ? '10px 14px' : '8px 12px',
                   borderRadius: 12,
                   background: isActive ? '#FFD93D' : '#FAF8FF',
                   border: `1px solid ${isActive ? '#FFD93D' : '#EDE8FF'}`,
+                  flexWrap: 'wrap',
                 }}>
                   <span style={{ fontSize: isActive ? 20 : 18, flexShrink: 0 }}>{row.icon}</span>
                   <span style={{
-                    fontSize: 13, minWidth: 120,
+                    fontSize: 13,
                     fontWeight: 700,
                     fontFamily: isActive ? 'var(--font-unbounded)' : 'var(--font-nunito)',
                     color: isActive ? '#5C4200' : 'var(--text)',
+                    flexShrink: 0,
                   }}>
                     {row.label}
                   </span>
-                  <span style={{ fontSize: 12, color: isActive ? '#7A5500' : 'var(--muted)', minWidth: 50 }}>{row.months}</span>
+                  <span style={{ fontSize: 12, color: isActive ? '#7A5500' : 'var(--muted)', flexShrink: 0 }}>{row.months}</span>
                   <span style={{ fontSize: 13, color: isActive ? '#5C4200' : 'var(--text)' }}>{row.desc}</span>
                 </div>
                 )

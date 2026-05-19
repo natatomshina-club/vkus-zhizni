@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { getMonthsInClub, getStatusLabel, getWebinarQuota, getWebinarState } from '@/lib/webinars'
+import { getEffectiveMonths, getStatusLabel, getWebinarQuota, getWebinarState } from '@/lib/webinars'
 import type { WebinarRow, WebinarAccess, WebinarSelection } from '@/types/webinars'
 import WebinarsClient from './WebinarsClient'
 
@@ -32,7 +32,7 @@ export default async function WebinarsPage() {
       .order('sort_order', { ascending: true }),
     admin
       .from('members')
-      .select('created_at, last_status_notified_months')
+      .select('created_at, subscription_started_at, last_status_notified_months, subscription_plan')
       .eq('id', user.id)
       .single(),
     admin
@@ -41,20 +41,20 @@ export default async function WebinarsPage() {
       .eq('member_id', user.id),
     admin
       .from('webinar_selections')
-      .select('id,member_id,webinar_id,status,selected_at')
+      .select('id,member_id,webinar_id,status,is_paid,selected_at')
       .eq('member_id', user.id),
   ])
 
   const webinars = (webinarsRes.data ?? []) as WebinarRow[]
   const member = memberRes.data
-  const createdAt = member?.created_at ?? new Date().toISOString()
+  const createdAt = member?.subscription_started_at ?? member?.created_at ?? new Date().toISOString()
   const access = (accessRes.data ?? []) as WebinarAccess[]
   const selections = (selectionsRes.data ?? []) as WebinarSelection[]
 
-  const months = getMonthsInClub(createdAt)
+  const months = getEffectiveMonths(createdAt, member?.subscription_plan)
   const quota = getWebinarQuota(months)
-  const quotaUsed = selections.filter(s => s.status === 'pending' || s.status === 'granted').length
-  const quotaLeft = quota === Infinity ? Infinity : Math.max(0, quota - quotaUsed)
+  const quotaUsed = selections.filter(s => (s.status === 'pending' || s.status === 'granted') && !s.is_paid).length
+  const quotaLeft = quota === 999 ? 999 : Math.max(0, quota - quotaUsed)
 
   const webinarsWithState = webinars.map(w => ({
     ...w,
@@ -69,7 +69,7 @@ export default async function WebinarsPage() {
     const label = getStatusLabel(months).replace(/^[^ ]+ /, '') // strip emoji for text
     const labelFull = getStatusLabel(months)
     const notifyQuota = getWebinarQuota(crossedThreshold)
-    const text = STATUS_NOTIFY_TEXT[crossedThreshold]?.(labelFull, notifyQuota === Infinity ? 0 : notifyQuota) ?? ''
+    const text = STATUS_NOTIFY_TEXT[crossedThreshold]?.(labelFull, notifyQuota === 999 ? 0 : notifyQuota) ?? ''
 
     // Find admin id
     const { data: adminMember } = await admin
@@ -95,9 +95,9 @@ export default async function WebinarsPage() {
   return (
     <WebinarsClient
       webinars={webinarsWithState}
-      quotaTotal={quota === Infinity ? null : quota}
+      quotaTotal={quota === 999 ? null : quota}
       quotaUsed={quotaUsed}
-      quotaLeft={quotaLeft === Infinity ? null : quotaLeft}
+      quotaLeft={quotaLeft === 999 ? null : quotaLeft}
       monthsInClub={months}
       statusLabel={getStatusLabel(months)}
     />

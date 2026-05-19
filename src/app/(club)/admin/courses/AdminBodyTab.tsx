@@ -11,6 +11,7 @@ interface BodyMaterial {
   description: string | null
   format: string
   content_url: string | null
+  video_urls: string[] | null
   thumbnail_url: string | null
   duration_label: string | null
   sort_order: number
@@ -92,6 +93,9 @@ export default function AdminBodyTab() {
   const [matForm, setMatForm] = useState({ ...EMPTY_MAT })
   const [matSaving, setMatSaving] = useState(false)
   const [matError, setMatError] = useState('')
+
+  // Video URLs (multiple)
+  const [videoUrls, setVideoUrls] = useState<string[]>([])
 
   // Attachments
   const [attachments, setAttachments] = useState<Attachment[]>([])
@@ -175,6 +179,7 @@ export default function AdminBodyTab() {
     setEditingMat(null)
     setMatForm({ ...EMPTY_MAT, sort_order: materials.length })
     setAttachments([])
+    setVideoUrls([])
     setMatError('')
     setShowMatForm(true)
   }
@@ -188,6 +193,7 @@ export default function AdminBodyTab() {
       is_published: m.is_published,
     })
     setAttachments(m.attachments ?? [])
+    setVideoUrls(m.video_urls ?? [])
     setMatError('')
     setShowMatForm(true)
   }
@@ -203,6 +209,7 @@ export default function AdminBodyTab() {
       description: matForm.description || null,
       format: matForm.format,
       content_url: matForm.content_url || null,
+      video_urls: matForm.format === 'video' ? videoUrls.filter(u => u.trim() !== '') : [],
       duration_label: matForm.duration_label || null,
       sort_order: Number(matForm.sort_order) || 0,
       is_published: matForm.is_published,
@@ -247,6 +254,7 @@ export default function AdminBodyTab() {
   // ── Upload helpers ─────────────────────────────────────
 
   async function uploadContentFile(file: File) {
+    if (file.size > 10 * 1024 * 1024) { alert('Файл слишком большой. Максимум 10 МБ'); return }
     setFileUploading(true)
     try {
       const fd = new FormData()
@@ -267,6 +275,7 @@ export default function AdminBodyTab() {
   }
 
   async function uploadAttachment(file: File) {
+    if (file.size > 10 * 1024 * 1024) { alert('Файл слишком большой. Максимум 10 МБ'); return }
     setAttachUploading(true)
     try {
       const fd = new FormData()
@@ -413,16 +422,48 @@ export default function AdminBodyTab() {
                         onChange={val => setMatForm(f => ({ ...f, content_url: val }))}
                       />
                     </>
+                  ) : matForm.format === 'video' ? (
+                    <>
+                      <label style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 700, display: 'block', marginBottom: 6 }}>
+                        Видео (Kinescope) — можно добавить несколько
+                      </label>
+                      {videoUrls.map((url, index) => (
+                        <div key={index} style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+                          <input
+                            value={url}
+                            onChange={e => {
+                              const updated = [...videoUrls]
+                              updated[index] = e.target.value
+                              setVideoUrls(updated)
+                            }}
+                            placeholder="https://kinescope.io/..."
+                            style={{ ...INPUT, fontFamily: 'monospace', fontSize: 12, flex: 1 }}
+                          />
+                          <button
+                            onClick={() => setVideoUrls(videoUrls.filter((_, i) => i !== index))}
+                            style={{ ...BTN_RED, padding: '5px 10px', flexShrink: 0 }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => setVideoUrls([...videoUrls, ''])}
+                        style={BTN_GHOST}
+                      >
+                        + Добавить видео
+                      </button>
+                    </>
                   ) : (
                     <>
                       <label style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 700 }}>
-                        {matForm.format === 'video' ? 'Kinescope iframe / URL видео' : 'URL файла'}
+                        URL файла
                       </label>
                       <textarea
                         value={matForm.content_url}
                         onChange={e => setMatForm(f => ({ ...f, content_url: e.target.value }))}
-                        style={{ ...TEXTAREA, marginTop: 4, minHeight: matForm.format === 'video' ? 80 : 60, fontFamily: 'monospace', fontSize: 12 }}
-                        placeholder={matForm.format === 'video' ? '<iframe src="https://kinescope.io/..." ...></iframe>' : 'https://...'}
+                        style={{ ...TEXTAREA, marginTop: 4, minHeight: 60, fontFamily: 'monospace', fontSize: 12 }}
+                        placeholder="https://..."
                       />
                       {(matForm.format === 'pdf' || matForm.format === 'audio') && (
                         <div style={{ marginTop: 6 }}>

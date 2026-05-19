@@ -16,8 +16,7 @@ type Marathon = {
   month_label: string | null
   chat_channel_slug: string | null
   ration_pdf_url: string | null
-  ration_html: string | null
-  shopping_list: string | null
+  shopping_list_pdf_url: string | null
   announce_title: string | null
   announce_features: AnnounceFeature[] | null
   announce_prepare_text: string | null
@@ -42,6 +41,7 @@ type MarathonDay = {
   task_text: string | null
   coach_comment: string | null
   ration_text: string | null
+  is_active: boolean
 }
 
 type Measurement = {
@@ -105,6 +105,35 @@ function Countdown({ startsAt }: { startsAt: string }) {
   )
 }
 
+function TrialLockBlock() {
+  return (
+    <div style={{
+      background: 'var(--pur-lt)', border: '2px solid var(--pur-br)',
+      borderRadius: 16, padding: '22px 16px', marginBottom: 14, textAlign: 'center',
+    }}>
+      <div style={{ fontSize: 30, marginBottom: 8 }}>🔒</div>
+      <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', marginBottom: 8, fontFamily: 'var(--font-nunito)' }}>
+        Контент марафона доступен только участницам клуба
+      </div>
+      <div style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.55, marginBottom: 18, fontFamily: 'var(--font-nunito)' }}>
+        Откройте полный доступ, чтобы получить рационы, планы питания и участвовать в марафоне вместе со всеми.
+      </div>
+      <Link
+        href="/dashboard/upgrade"
+        style={{
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          background: 'linear-gradient(135deg, #2A9D5C 0%, #52C98D 100%)',
+          color: '#fff', borderRadius: 12, padding: '12px 24px',
+          fontSize: 14, fontWeight: 800, textDecoration: 'none',
+          fontFamily: 'var(--font-nunito)',
+        }}
+      >
+        🌿 Открыть полный доступ
+      </Link>
+    </div>
+  )
+}
+
 function ShoppingList({ text }: { text: string }) {
   const [checked, setChecked] = useState<Set<string>>(new Set())
   const [open, setOpen] = useState(false)
@@ -120,7 +149,10 @@ function ShoppingList({ text }: { text: string }) {
           padding: '13px 14px', background: 'none', border: 'none', cursor: 'pointer',
         }}
       >
-        <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)' }}>🛒 Список продуктов</span>
+        <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+          Список продуктов
+        </span>
         <span style={{ fontSize: 13, color: 'var(--muted)', transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'none' }}>▼</span>
       </button>
       {open && (
@@ -195,6 +227,7 @@ export default function MarathonPage() {
   const [measurement, setMeasurement] = useState<Measurement | null>(null)
   const [trackerWeight, setTrackerWeight] = useState<number | null>(null)
   const [reminderSet, setReminderSet] = useState(false)
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [completing, setCompleting] = useState(false)
   const [completedToday, setCompletedToday] = useState(false)
@@ -207,7 +240,20 @@ export default function MarathonPage() {
     try {
       const r = await fetch('/api/marathons')
       if (!r.ok) { setLoading(false); return }
-      const { marathon: m, past: p } = await r.json() as { marathon: Marathon | null; past: PastMarathon[] }
+      const { marathon: m, past: p, subscription_status: ss } = await r.json() as { marathon: Marathon | null; past: PastMarathon[]; subscription_status: string | null }
+      setSubscriptionStatus(ss ?? '')
+      // Нормализуем announce_features: могут прийти как строки (старый text[])
+      // или как объекты (после миграции в jsonb). Поддерживаем оба формата.
+      if (m && m.announce_features) {
+        m.announce_features = (m.announce_features as unknown as (AnnounceFeature | string)[])
+          .map(f => {
+            if (typeof f === 'string') {
+              try { return JSON.parse(f) as AnnounceFeature } catch { return null }
+            }
+            return f
+          })
+          .filter((f): f is AnnounceFeature => !!f && typeof f === 'object')
+      }
       setMarathon(m)
       setPast(p ?? [])
 
@@ -251,15 +297,22 @@ export default function MarathonPage() {
 
   async function handleComplete(dayNumber: number) {
     if (!marathon) return
+    console.log('COMPLETE START:', { dayNumber, completionsBefore: [...completions] })
     setCompleting(true)
     const res = await fetch(`/api/marathons/${marathon.id}/complete`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ day_number: dayNumber }),
     })
+    const data = await res.json().catch(() => ({}))
     setCompleting(false)
+    console.log('COMPLETE RESPONSE:', { ok: res.ok, status: res.status, data })
     if (res.ok) {
-      setCompletions(prev => new Set([...prev, dayNumber]))
+      setCompletions(prev => {
+        const next = new Set([...prev, dayNumber])
+        console.log('COMPLETE SET:', { dayNumber, completionsAfter: [...next], size: next.size })
+        return next
+      })
       setCompletedToday(true)
     }
   }
@@ -341,12 +394,14 @@ export default function MarathonPage() {
             completedToday={completedToday}
             onComplete={handleComplete}
             onSaveWeight={handleSaveWeight}
+            isTrial={subscriptionStatus === 'trial'}
           />
         ) : marathon?.status === 'planned' ? (
           <PlannedMarathon
             marathon={marathon}
             reminderSet={reminderSet}
             onSetReminder={handleSetReminder}
+            isTrial={subscriptionStatus === 'trial'}
           />
         ) : (
           <NoMarathon />
@@ -361,7 +416,7 @@ export default function MarathonPage() {
 function ActiveMarathon({
   marathon, days, completions, measurement, trackerWeight,
   weightInput, weightEndInput, setWeightInput, setWeightEndInput,
-  savingWeight, completing, completedToday, onComplete, onSaveWeight,
+  savingWeight, completing, completedToday, onComplete, onSaveWeight, isTrial,
 }: {
   marathon: Marathon
   days: MarathonDay[]
@@ -377,14 +432,20 @@ function ActiveMarathon({
   completedToday: boolean
   onComplete: (day: number) => void
   onSaveWeight: (type: 'start' | 'end') => void
+  isTrial: boolean
 }) {
-  const currentDay = marathon.starts_at
-    ? getCurrentDay(marathon.starts_at, marathon.duration_days)
-    : 1
+  const activeDayNumbers = days.filter(d => d.is_active).map(d => d.day_number)
+  const currentDay = activeDayNumbers.length > 0
+    ? Math.max(...activeDayNumbers)
+    : (marathon.starts_at ? getCurrentDay(marathon.starts_at, marathon.duration_days) : 1)
   const progress = Math.round((completions.size / marathon.duration_days) * 100)
-  const todayData = days.find(d => d.day_number === currentDay)
+  const [selectedDay, setSelectedDay] = useState(currentDay)
+  useEffect(() => { setSelectedDay(currentDay) }, [currentDay])
+  const isViewingCurrentDay = selectedDay === currentDay
+  const selectedDayData = days.find(d => d.day_number === selectedDay)
+  const todayData = selectedDayData
   const isLastDay = currentDay === marathon.duration_days
-  const isDayCompleted = completions.has(currentDay)
+  const isDayCompleted = completions.has(selectedDay)
   const weightDiff = measurement?.weight_start && measurement?.weight_end
     ? (measurement.weight_start - measurement.weight_end).toFixed(1)
     : null
@@ -410,7 +471,7 @@ function ActiveMarathon({
           {marathon.title}
         </div>
         {marathon.description && (
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', marginBottom: 12, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', marginBottom: 12, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
             {marathon.description}
           </div>
         )}
@@ -420,15 +481,24 @@ function ActiveMarathon({
             const dn = i + 1
             const isDone = completions.has(dn)
             const isToday = dn === currentDay
-            const isFuture = dn > currentDay
+            const isSelected = dn === selectedDay
+            const isActive = days.find(d => d.day_number === dn)?.is_active ?? false
+            const isLocked = !isActive && !isToday
+            const isClickable = isActive || isToday
             return (
-              <div key={dn} style={{
-                width: 26, height: 26, borderRadius: 8,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: isToday ? 11 : 10, fontWeight: 800, flexShrink: 0,
-                background: isToday ? '#fff' : isDone ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.12)',
-                color: isToday ? '#FF6B35' : isFuture ? 'rgba(255,255,255,0.45)' : '#fff',
-              }}>
+              <div
+                key={dn}
+                onClick={isClickable ? () => setSelectedDay(dn) : undefined}
+                style={{
+                  width: 26, height: 26, borderRadius: 8,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: isSelected ? 11 : 10, fontWeight: 800, flexShrink: 0,
+                  background: isSelected && isToday ? '#fff' : isSelected ? 'rgba(255,255,255,0.9)' : isDone ? 'rgba(255,255,255,0.35)' : isActive ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.08)',
+                  color: isSelected && isToday ? '#FF6B35' : isSelected ? '#FF6B35' : isLocked ? 'rgba(255,255,255,0.3)' : '#fff',
+                  cursor: isClickable ? 'pointer' : 'default',
+                  outline: isSelected && !isToday ? '2px solid rgba(255,255,255,0.6)' : 'none',
+                }}
+              >
                 {dn}
               </div>
             )
@@ -436,7 +506,7 @@ function ActiveMarathon({
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>
-            День {currentDay} из {marathon.duration_days}
+            {isViewingCurrentDay ? `День ${currentDay} из ${marathon.duration_days}` : `День ${selectedDay} из ${marathon.duration_days} · сейчас день ${currentDay}`}
           </div>
           <div style={{ fontFamily: 'var(--font-unbounded)', fontSize: 16, fontWeight: 800, color: '#fff' }}>
             {progress}%
@@ -445,7 +515,7 @@ function ActiveMarathon({
       </div>
 
       {/* Chat button */}
-      {marathon.chat_channel_slug && (
+      {!isTrial && marathon.chat_channel_slug && (
         <Link
           href={`/dashboard/channel?slug=${marathon.chat_channel_slug}`}
           style={{
@@ -459,8 +529,11 @@ function ActiveMarathon({
         </Link>
       )}
 
+      {/* Trial lock block */}
+      {isTrial && <TrialLockBlock />}
+
       {/* Weight card */}
-      <div style={{
+      {!isTrial && <div style={{
         background: '#fff', border: '2px solid var(--border)', borderRadius: 16,
         padding: '13px 14px', marginBottom: 12,
       }}>
@@ -557,10 +630,10 @@ function ActiveMarathon({
             )}
           </div>
         </div>
-      </div>
+      </div>}
 
       {/* Today's task */}
-      {todayData ? (
+      {!isTrial && (todayData ? (
         <div style={{
           background: '#fff', border: '2px solid var(--border)', borderRadius: 16,
           overflow: 'hidden', marginBottom: 12,
@@ -571,7 +644,7 @@ function ActiveMarathon({
           }}>
             <div>
               <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                День {currentDay}
+                День {selectedDay}
               </div>
               <div style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>
                 {todayData.task_title ?? 'Задание дня'}
@@ -580,20 +653,21 @@ function ActiveMarathon({
           </div>
           <div style={{ padding: '12px 14px' }}>
             {todayData.task_text && (
-              <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.65, fontWeight: 600, marginBottom: 12 }}>
-                {todayData.task_text}
-              </div>
+              <div
+                style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.65, fontWeight: 600, marginBottom: 12 }}
+                dangerouslySetInnerHTML={{ __html: todayData.task_text.replace(/\n/g, '<br/>') }}
+              />
             )}
-            {isDayCompleted || completedToday ? (
+            {isDayCompleted || (isViewingCurrentDay && completedToday) ? (
               <div style={{
                 width: '100%', background: '#A8E6CF', color: '#2D6A4F', borderRadius: 11,
                 padding: 12, fontSize: 14, fontWeight: 800, textAlign: 'center',
               }}>
-                ✅ День {currentDay} засчитан!
+                ✅ День {selectedDay} засчитан!
               </div>
             ) : (
               <button
-                onClick={() => onComplete(currentDay)}
+                onClick={() => onComplete(selectedDay)}
                 disabled={completing}
                 style={{
                   width: '100%', background: '#A8E6CF', color: '#2D6A4F', border: 'none',
@@ -612,12 +686,12 @@ function ActiveMarathon({
           background: '#fff', border: '2px solid var(--border)', borderRadius: 16,
           padding: '20px 14px', marginBottom: 12, textAlign: 'center', color: 'var(--muted)',
         }}>
-          Задание на день {currentDay} ещё не добавлено
+          Задание на день {selectedDay} ещё не добавлено
         </div>
-      )}
+      ))}
 
       {/* Coach comment */}
-      {todayData?.coach_comment && (
+      {!isTrial && todayData?.coach_comment && (
         <div style={{
           background: 'var(--pur-lt)', border: '2px solid var(--pur-br)', borderRadius: 16,
           padding: '13px 14px', marginBottom: 12,
@@ -625,66 +699,115 @@ function ActiveMarathon({
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--pur)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
             💜 Слово Наташи
           </div>
-          <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.6 }}>
-            {todayData.coach_comment}
-          </div>
+          <div
+            style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.6 }}
+            dangerouslySetInnerHTML={{ __html: todayData.coach_comment.replace(/\n/g, '<br/>') }}
+          />
         </div>
       )}
 
       {/* Day ration */}
-      {todayData?.ration_text && (
+      {!isTrial && todayData?.ration_text && (
         <div style={{
           background: '#fff', border: '2px solid var(--border)', borderRadius: 16,
           padding: '13px 14px', marginBottom: 12,
         }}>
           <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', marginBottom: 10 }}>
-            🥗 Рацион дня {currentDay}
+            🥗 Рацион дня {selectedDay}
           </div>
           <div
             style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.6 }}
-            dangerouslySetInnerHTML={{ __html: todayData.ration_text }}
+            dangerouslySetInnerHTML={{ __html: todayData.ration_text.replace(/\n/g, '<br>') }}
           />
         </div>
       )}
 
       {/* Full ration PDF */}
       {marathon.ration_pdf_url && (
-        <a
-          href={marathon.ration_pdf_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
+        isTrial ? (
+          <div style={{
             display: 'flex', alignItems: 'center', gap: 9,
             background: '#FFF5E8', border: '2px solid #FFD4A0', borderRadius: 14,
-            padding: '9px 12px', marginBottom: 12, textDecoration: 'none',
-          }}
-        >
-          <div style={{
-            width: 32, height: 32, background: '#FF9F43', borderRadius: 9,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0,
-          }}>📄</div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: '#8B4A00' }}>Полный рацион марафона</div>
+            padding: '9px 12px', marginBottom: 12, opacity: 0.6, cursor: 'default',
+          }}>
+            <div style={{
+              width: 32, height: 32, background: '#FF9F43', borderRadius: 9,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0,
+            }}>📄</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: '#8B4A00' }}>Полный рацион марафона</div>
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#FF9F43' }}>🔒 После оплаты</div>
           </div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#FF9F43' }}>PDF ↓</div>
-        </a>
+        ) : (
+          <Link
+            href={`/dashboard/body/pdf?url=${encodeURIComponent(marathon.ration_pdf_url)}`}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 9,
+              background: '#FFF5E8', border: '2px solid #FFD4A0', borderRadius: 14,
+              padding: '9px 12px', marginBottom: 12, textDecoration: 'none',
+            }}
+          >
+            <div style={{
+              width: 32, height: 32, background: '#FF9F43', borderRadius: 9,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0,
+            }}>📄</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: '#8B4A00' }}>Полный рацион марафона</div>
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#FF9F43' }}>PDF →</div>
+          </Link>
+        )
       )}
 
-      {/* Full ration HTML */}
-      {marathon.ration_html && <RationAccordion html={marathon.ration_html} />}
-
-      {/* Shopping list */}
-      {marathon.shopping_list && <ShoppingList text={marathon.shopping_list} />}
+      {/* Shopping list PDF */}
+      {marathon.shopping_list_pdf_url && (
+        isTrial ? (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            background: '#F0EEFF', border: '2px solid #DDD5FF', borderRadius: 14,
+            padding: '9px 12px', marginBottom: 12, opacity: 0.6, cursor: 'default',
+          }}>
+            <div style={{
+              width: 32, height: 32, background: 'var(--pur)', borderRadius: 9,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: '#3D2B8A' }}>Список продуктов</div>
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--pur)' }}>🔒 После оплаты</div>
+          </div>
+        ) : (
+          <Link
+            href={`/dashboard/body/pdf?url=${encodeURIComponent(marathon.shopping_list_pdf_url)}`}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              background: '#F0EEFF', border: '2px solid #DDD5FF', borderRadius: 14,
+              padding: '9px 12px', marginBottom: 12, textDecoration: 'none',
+            }}
+          >
+            <div style={{
+              width: 32, height: 32, background: 'var(--pur)', borderRadius: 9,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: '#3D2B8A' }}>Список продуктов</div>
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--pur)' }}>PDF →</div>
+          </Link>
+        )
+      )}
     </>
   )
 }
 
 function PlannedMarathon({
-  marathon, reminderSet, onSetReminder,
+  marathon, reminderSet, onSetReminder, isTrial,
 }: {
   marathon: Marathon
   reminderSet: boolean
   onSetReminder: () => void
+  isTrial: boolean
 }) {
   return (
     <>
@@ -743,7 +866,7 @@ function PlannedMarathon({
       )}
 
       {/* Prepare text */}
-      {marathon.announce_prepare_text && (
+      {!isTrial && marathon.announce_prepare_text && (
         <div style={{
           background: 'var(--pur-lt)', border: '2px solid var(--pur-br)',
           borderRadius: 16, padding: '13px 14px', marginBottom: 12,
@@ -751,10 +874,89 @@ function PlannedMarathon({
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--pur)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
             💜 Как подготовиться
           </div>
-          <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.6 }}>
+          <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
             {marathon.announce_prepare_text}
           </div>
         </div>
+      )}
+
+      {/* Trial lock block */}
+      {isTrial && <TrialLockBlock />}
+
+      {/* Ration PDF */}
+      {marathon.ration_pdf_url && (
+        isTrial ? (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 9,
+            background: '#FFF5E8', border: '2px solid #FFD4A0', borderRadius: 14,
+            padding: '9px 12px', marginBottom: 12, opacity: 0.6, cursor: 'default',
+          }}>
+            <div style={{
+              width: 32, height: 32, background: '#FF9F43', borderRadius: 9,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0,
+            }}>📄</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: '#8B4A00' }}>Полный рацион марафона</div>
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#FF9F43' }}>🔒 После оплаты</div>
+          </div>
+        ) : (
+          <Link
+            href={`/dashboard/body/pdf?url=${encodeURIComponent(marathon.ration_pdf_url)}`}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 9,
+              background: '#FFF5E8', border: '2px solid #FFD4A0', borderRadius: 14,
+              padding: '9px 12px', marginBottom: 12, textDecoration: 'none',
+            }}
+          >
+            <div style={{
+              width: 32, height: 32, background: '#FF9F43', borderRadius: 9,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0,
+            }}>📄</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: '#8B4A00' }}>Полный рацион марафона</div>
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#FF9F43' }}>PDF →</div>
+          </Link>
+        )
+      )}
+
+      {/* Shopping list PDF */}
+      {marathon.shopping_list_pdf_url && (
+        isTrial ? (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            background: '#F0EEFF', border: '2px solid #DDD5FF', borderRadius: 14,
+            padding: '9px 12px', marginBottom: 12, opacity: 0.6, cursor: 'default',
+          }}>
+            <div style={{
+              width: 32, height: 32, background: 'var(--pur)', borderRadius: 9,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: '#3D2B8A' }}>Список продуктов</div>
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--pur)' }}>🔒 После оплаты</div>
+          </div>
+        ) : (
+          <Link
+            href={`/dashboard/body/pdf?url=${encodeURIComponent(marathon.shopping_list_pdf_url)}`}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              background: '#F0EEFF', border: '2px solid #DDD5FF', borderRadius: 14,
+              padding: '9px 12px', marginBottom: 12, textDecoration: 'none',
+            }}
+          >
+            <div style={{
+              width: 32, height: 32, background: 'var(--pur)', borderRadius: 9,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: '#3D2B8A' }}>Список продуктов</div>
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--pur)' }}>PDF →</div>
+          </Link>
+        )
       )}
     </>
   )

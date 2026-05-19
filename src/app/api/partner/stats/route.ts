@@ -29,7 +29,7 @@ export async function GET() {
 
     supabase
       .from('affiliate_commissions')
-      .select('id, payment_amount, commission_amount, type, status, created_at, approve_after')
+      .select('id, payment_amount, commission_amount, type, status, created_at, approve_after, member_id')
       .eq('affiliate_id', partner.affiliate_id)
       .order('created_at', { ascending: false })
       .limit(100),
@@ -38,7 +38,23 @@ export async function GET() {
   const affiliate = affiliateRes.data
   if (!affiliate) return NextResponse.json({ error: 'Affiliate not found' }, { status: 404 })
 
-  const commissions = commissionsRes.data ?? []
+  const rawCommissions = commissionsRes.data ?? []
+
+  // Fetch member emails separately (no FK — can't use embedded resource)
+  const memberIds = [...new Set(rawCommissions.map(c => c.member_id).filter(Boolean))]
+  let emailMap: Record<string, string> = {}
+  if (memberIds.length > 0) {
+    const { data: memberRows } = await supabase
+      .from('members')
+      .select('id, email')
+      .in('id', memberIds)
+    for (const row of memberRows ?? []) emailMap[row.id] = row.email
+  }
+
+  const commissions = rawCommissions.map(c => ({
+    ...c,
+    members: c.member_id ? { email: emailMap[c.member_id] ?? null } : null,
+  }))
 
   // Paid-out sum
   const paid = commissions

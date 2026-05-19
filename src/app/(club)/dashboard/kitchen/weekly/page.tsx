@@ -10,7 +10,7 @@ export default async function WeeklyKitchenPage() {
 
   const [{ data: member }, { data: latestPlan }] = await Promise.all([
     supabase.from('members')
-      .select('kbju_calories, kbju_protein, kbju_fat, kbju_carbs, status')
+      .select('kbju_calories, kbju_protein, kbju_fat, kbju_carbs, subscription_status')
       .eq('id', user.id)
       .single(),
     supabase.from('weekly_plans')
@@ -21,7 +21,7 @@ export default async function WeeklyKitchenPage() {
       .maybeSingle(),
   ])
 
-  const isTrial = member?.status === 'trial' || !member?.status
+  const isTrial = member?.subscription_status === 'trial' || !member?.subscription_status
   const sevenDaysMs = 7 * 24 * 60 * 60 * 1000
   const hasActivePlan = latestPlan && (Date.now() - new Date(latestPlan.created_at).getTime() < sevenDaysMs)
   const nextAvailable = latestPlan

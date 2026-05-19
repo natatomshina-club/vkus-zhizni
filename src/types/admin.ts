@@ -14,9 +14,19 @@ export interface MemberRow {
   blocked_at: string | null
   blocked_reason: string | null
   created_at: string
+  subscription_started_at: string | null
   birth_date: string | null
   admin_note: string | null
   is_manual_subscription: boolean
+  subscription_plan: string | null
+}
+
+export interface PaymentLog {
+  id: string
+  created_at: string
+  amount: number | null
+  plan: string | null
+  event_type: string | null
 }
 
 export interface AdminStats {

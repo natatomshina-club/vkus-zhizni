@@ -4,7 +4,8 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 
 type Member = {
   id: string
-  name: string
+  name: string       // full display name (full_name || name)
+  first_name: string // first name for greetings
   email: string
   role: string
   status: string
@@ -42,15 +43,26 @@ export function MemberProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch('/api/member/me')
       if (!res.ok) { setLoading(false); return }
-      const json = await res.json() as { member: Member & { full_name?: string } }
+      const json = await res.json() as { member: Member & { full_name?: string; first_name?: string } }
       const data = json.member
-      if (data) setMember({
-        ...data,
-        name: data.full_name || data.name || 'Участница',
-        role: data.role ?? 'user',
-        health_conditions: data.health_conditions || [],
-        kitchen_requests_today: data.kitchen_requests_today ?? 0,
-      })
+      if (data) {
+        const fullName = data.full_name || data.name || ''
+        // first_name: stored value → second word of ФИО → whole name → fallback
+        const computedFirstName = data.first_name
+          || (() => {
+            const parts = fullName.trim().split(/\s+/)
+            return parts.length >= 2 ? parts[1] : parts[0]
+          })()
+          || 'Участница'
+        setMember({
+          ...data,
+          name: fullName || 'Участница',
+          first_name: computedFirstName,
+          role: data.role ?? 'user',
+          health_conditions: data.health_conditions || [],
+          kitchen_requests_today: data.kitchen_requests_today ?? 0,
+        })
+      }
     } finally {
       setLoading(false)
     }

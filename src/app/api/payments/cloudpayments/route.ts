@@ -10,16 +10,36 @@ const supabaseAdmin = createClient(
 )
 
 
+const CP_SECRET_PROD = process.env.CP_API_SECRET ?? '94e2750be00e370189423df2fc83616d'
+const CP_SECRET_TEST = process.env.CP_API_SECRET_TEST ?? '61e2a0b8613f359c49996226f4a57be4'
+
 function verifyHmac(body: string, signature: string): boolean {
-  const secret = process.env.CLOUDPAYMENTS_API_SECRET
-  if (!secret) return true
-  const hmac = crypto.createHmac('sha256', secret).update(body).digest('base64')
-  return hmac === signature
+  const hmacProd = crypto.createHmac('sha256', CP_SECRET_PROD).update(body).digest('base64')
+  const hmacTest = crypto.createHmac('sha256', CP_SECRET_TEST).update(body).digest('base64')
+  return signature === hmacProd || signature === hmacTest
 }
 
-function getPlanByAmount(amount: number): { plan: string; days: number } | null {
+const PLAN_DAYS: Record<string, number> = {
+  trial: 7, month: 30, monthly: 30, halfyear: 180,
+}
+
+function resolvePlan(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  payload: Record<string, any>,
+  amount: number
+): { plan: string; days: number } | null {
+  // 1. Сначала читаем из Data.Metadata.plan
+  const metaPlan: string | undefined =
+    payload.Data?.Metadata?.plan ??
+    payload.JsonData?.Metadata?.plan
+
+  if (metaPlan && PLAN_DAYS[metaPlan] !== undefined) {
+    return { plan: metaPlan, days: PLAN_DAYS[metaPlan] }
+  }
+
+  // 2. Fallback по сумме
   if (amount === 149)  return { plan: 'trial',    days: 7   }
-  if (amount === 1500) return { plan: 'monthly',  days: 30  }
+  if (amount === 1500) return { plan: 'month',    days: 30  }
   if (amount === 6000) return { plan: 'halfyear', days: 180 }
   return null
 }
@@ -85,16 +105,19 @@ async function processAffiliateCommission({
 
 export async function POST(req: NextRequest) {
   const bodyText = await req.text()
-  const signature = req.headers.get('X-Content-HMAC') || ''
+  const signature = req.headers.get('Content-HMAC') || req.headers.get('X-Content-HMAC') || ''
 
   // Debug-логи для диагностики
   console.log('CP webhook body:', bodyText.substring(0, 500))
   console.log('CP webhook signature:', signature)
 
-  // HMAC — не блокируем (тестовый режим)
+  // Проверка HMAC-подписи CloudPayments
   if (signature) {
     const isValid = verifyHmac(bodyText, signature)
-    if (!isValid) console.warn('CP webhook: HMAC mismatch (ok in test mode)')
+    if (!isValid) {
+      console.error('CloudPayments HMAC mismatch', { received: signature })
+      return NextResponse.json({ code: 0 }, { status: 200 })
+    }
   }
 
   // Парсинг — CloudPayments шлёт form-urlencoded
@@ -138,7 +161,7 @@ export async function POST(req: NextRequest) {
     if (Status === 'Completed' && OperationType === 'Payment') {
       console.log('PAY condition matched, processing...')
       try {
-        const planData = getPlanByAmount(Amount)
+        const planData = resolvePlan(payload, Amount)
         console.log('planData:', planData)
 
         if (!planData) {
@@ -147,6 +170,34 @@ export async function POST(req: NextRequest) {
         }
 
         const { plan, days } = planData
+
+        // ── Защита от повторного триала ────────────────────────────
+        if (plan === 'trial') {
+          const { data: existingForTrialCheck } = await supabaseAdmin
+            .from('members')
+            .select('id, subscription_status, last_payment_amount')
+            .eq('email', AccountId)
+            .maybeSingle()
+
+          if (
+            existingForTrialCheck &&
+            existingForTrialCheck.last_payment_amount !== null &&
+            ['trial', 'active', 'expired'].includes(existingForTrialCheck.subscription_status ?? '')
+          ) {
+            console.warn('Duplicate trial attempt:', AccountId)
+            await supabaseAdmin.from('payment_logs').insert({
+              member_id: existingForTrialCheck.id,
+              transaction_id: String(TransactionId),
+              amount: Amount,
+              plan,
+              event_type: 'duplicate_trial',
+              payload,
+            })
+            return NextResponse.json({ code: 0 })
+          }
+        }
+        // ──────────────────────────────────────────────────────────
+
         const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
         console.log('Looking up member:', AccountId)
 
@@ -208,6 +259,7 @@ export async function POST(req: NextRequest) {
         const { error: updateError } = await supabaseAdmin.from('members').update({
           subscription_status: plan === 'trial' ? 'trial' : 'active',
           tariff: plan,
+          subscription_plan: plan,
           subscription_started_at: new Date().toISOString(),
           subscription_ends_at: expiresAt,
           subscription_expires_at: expiresAt,
@@ -255,6 +307,51 @@ export async function POST(req: NextRequest) {
         } catch (e) {
           console.warn('Subscriber conversion warning:', e)
         }
+
+        // Запуск серии писем welcome_members при любом первом платеже
+        try {
+          const { data: subRow } = await supabaseAdmin
+            .from('subscribers')
+            .select('id')
+            .eq('email', AccountId)
+            .maybeSingle()
+
+          const subscriberId = subRow?.id
+          if (subscriberId) {
+            const { data: existingProgress } = await supabaseAdmin
+              .from('subscriber_sequence_progress')
+              .select('id')
+              .eq('subscriber_id', subscriberId)
+              .eq('series', 'welcome_members')
+              .maybeSingle()
+
+            if (!existingProgress) {
+              const firstSendAt = new Date(Date.now() + 60 * 60 * 1000).toISOString()
+              await supabaseAdmin.from('subscriber_sequence_progress').insert({
+                subscriber_id: subscriberId,
+                series: 'welcome_members',
+                current_step: 0,
+                next_send_at: firstSendAt,
+                completed: false,
+              })
+            }
+          }
+        } catch (e) {
+          console.warn('[members-sequence] error:', e)
+        }
+
+        // Синхронизация в subscribers
+        await supabaseAdmin
+          .from('subscribers')
+          .upsert({
+            email: AccountId,
+            name: AccountId,
+            source: 'club_member',
+            status: 'active',
+            converted_to_member: true,
+            converted_at: new Date().toISOString(),
+            subscribed_at: new Date().toISOString(),
+          }, { onConflict: 'email' })
 
         // ── Affiliate attribution + commission (PAY) ──────────────
         if (member) {
@@ -337,17 +434,20 @@ export async function POST(req: NextRequest) {
 
     // --- RECURRENT (автосписание) ---
     if (Status === 'Completed' && OperationType === 'Recurrent') {
-      const planData = getPlanByAmount(Amount)
+      const planData = resolvePlan(payload, Amount)
       if (!planData) return NextResponse.json({ code: 0 })
       const { plan, days } = planData
 
       const { data: member } = await supabaseAdmin
         .from('members')
-        .select('id, subscription_ends_at, referred_by')
+        .select('id, subscription_ends_at, referred_by, is_manual_subscription')
         .eq('email', AccountId)
         .single()
 
       if (!member) return NextResponse.json({ code: 0 })
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const isManual = (member as any).is_manual_subscription === true
 
       const currentEnd = (member as { subscription_ends_at?: string }).subscription_ends_at
       const base = currentEnd
@@ -355,15 +455,23 @@ export async function POST(req: NextRequest) {
         : new Date()
       const expiresAt = new Date(base.getTime() + days * 24 * 60 * 60 * 1000).toISOString()
 
-      await supabaseAdmin.from('members').update({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const recurrentUpdate: Record<string, any> = {
         subscription_status: 'active',
         tariff: plan,
-        subscription_ends_at: expiresAt,
-        subscription_expires_at: expiresAt,
+        subscription_plan: plan,
         last_payment_at: new Date().toISOString(),
         last_payment_amount: Amount,
         payment_transaction_id: String(TransactionId),
-      }).eq('id', member.id)
+      }
+      if (!isManual) {
+        recurrentUpdate.subscription_ends_at = expiresAt
+        recurrentUpdate.subscription_expires_at = expiresAt
+      } else {
+        console.log('[recurrent] manual subscription — skipping date overwrite for member:', member.id)
+      }
+
+      await supabaseAdmin.from('members').update(recurrentUpdate).eq('id', member.id)
 
       await supabaseAdmin.from('payment_logs').insert({
         member_id: member.id,

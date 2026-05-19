@@ -118,6 +118,20 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const hostname = request.headers.get('host') ?? ''
 
+  // Route public site SEO pages to /public-site/* prefix
+  const PUBLIC_SITE_PATHS = ['/blog', '/recipes', '/about', '/results', '/club', '/free', '/free-kurs', '/marathon', '/menyu', '/racion']
+  const isPublicSitePath = PUBLIC_SITE_PATHS.some(p =>
+    pathname === p || pathname.startsWith(p + '/')
+  )
+  if (hostname === 'nata-tomshina.ru' || hostname === 'www.nata-tomshina.ru') {
+    if (pathname === '/') {
+      return NextResponse.rewrite(new URL('/public-site', request.url))
+    }
+    if (isPublicSitePath) {
+      return NextResponse.rewrite(new URL(`/public-site${pathname}`, request.url))
+    }
+  }
+
   // /auth и /auth/* — никогда не редиректить, страница сама управляет состоянием
   if (pathname.startsWith('/auth')) {
     return NextResponse.next()
@@ -210,5 +224,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|api/).*)'],
 }

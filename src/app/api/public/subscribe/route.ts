@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
-import { Resend } from 'resend'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+import { sendEmail } from '@/lib/mailer'
+import { headers } from 'next/headers'
 
 export async function POST(request: Request) {
   try {
@@ -11,51 +10,87 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Некорректный email' }, { status: 400 })
     }
 
-    // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString()
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString() // 15 min
+    const hdrs = await headers()
+    const ip =
+      hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+      hdrs.get('x-real-ip') ??
+      'unknown'
+    const userAgent = hdrs.get('user-agent') ?? ''
 
     const supabase = createServiceClient()
 
-    // Upsert OTP record
-    const { error: dbError } = await supabase.from('email_otps').upsert({
-      email: email.toLowerCase().trim(),
-      otp,
-      expires_at: expiresAt,
-    }, { onConflict: 'email' })
+    const { error: dbError } = await supabase
+      .from('subscribers')
+      .upsert(
+        {
+          email: email.toLowerCase().trim(),
+          ip,
+          user_agent: userAgent,
+          email_sent: false,
+        },
+        { onConflict: 'email' }
+      )
 
     if (dbError) {
-      console.error('email_otps upsert error:', dbError)
-      return NextResponse.json({ error: 'Ошибка сохранения кода. Попробуйте ещё раз.' }, { status: 500 })
+      console.error('[subscribe] DB error:', dbError)
+      return NextResponse.json({ error: 'Ошибка. Попробуйте ещё раз.' }, { status: 500 })
     }
 
-    // Send email
-    const { error: emailError } = await resend.emails.send({
-      from: 'Наталья Томшина <hello@nata-tomshina.ru>',
-      to: email,
-      subject: 'Ваш код для входа в мини-курс',
-      html: `
-        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 24px;">
-          <h2 style="font-size: 22px; color: #3D2B8A; margin-bottom: 12px;">Код подтверждения</h2>
-          <p style="color: #7B6FAA; margin-bottom: 28px;">Введите этот код, чтобы получить доступ к бесплатному мини-курсу «Волшебный пендель»:</p>
-          <div style="font-size: 40px; font-weight: 700; color: #3D2B8A; letter-spacing: 8px; margin-bottom: 28px; text-align: center; padding: 20px; background: #F0EEFF; border-radius: 16px;">
-            ${otp}
-          </div>
-          <p style="font-size: 13px; color: #9B8FCC;">Код действует 15 минут. Если вы не запрашивали доступ — просто проигнорируйте это письмо.</p>
-          <hr style="border: none; border-top: 1px solid #EDE8FF; margin: 28px 0;" />
-          <p style="font-size: 13px; color: #9B8FCC;">Наталья Томшина · Клуб «Вкус Жизни»</p>
-        </div>
-      `,
-    })
+    // Non-blocking email with course access link
+    sendAccessEmail(email.toLowerCase().trim()).catch(err =>
+      console.error('[subscribe] email error:', err)
+    )
 
-    if (emailError) {
-      console.error('Resend error:', emailError)
-      return NextResponse.json({ error: 'Не удалось отправить письмо. Проверьте email и попробуйте ещё раз.' }, { status: 500 })
-    }
-
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Subscribe route error:', error)
+    console.error('[subscribe] error:', error)
     return NextResponse.json({ error: 'Внутренняя ошибка сервера' }, { status: 500 })
+  }
+}
+
+async function sendAccessEmail(email: string) {
+  const supabase = createServiceClient()
+
+  const sent = await sendEmail({
+    to: email,
+    subject: 'Ваш доступ к курсу «Волшебный пендель»',
+    html: `
+      <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 40px 24px; background: #fff;">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <span style="font-family: Georgia, serif; font-size: 22px; color: #2c5f2e; font-weight: 600;">Наталья Томшина</span>
+        </div>
+        <h2 style="font-family: Georgia, serif; font-size: 24px; color: #1a2c1a; font-weight: 700; margin: 0 0 16px;">
+          Ваш бесплатный курс готов
+        </h2>
+        <p style="color: #5a6e5a; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
+          Курс «Волшебный пендель» — 7 уроков о том, почему диеты не работают и что делать прямо сейчас.
+        </p>
+        <div style="text-align: center; margin: 32px 0;">
+          <a href="https://nata-tomshina.ru/free-kurs"
+             style="display: inline-block; background: #3a7c3e; color: #fff; font-size: 16px; font-weight: 700; padding: 18px 44px; border-radius: 50px; text-decoration: none; letter-spacing: 0.02em;">
+            Открыть курс →
+          </a>
+        </div>
+        <p style="color: #8a9e8a; font-size: 13px; line-height: 1.6; margin: 0 0 8px;">
+          Доступ постоянный — возвращайтесь в любое время.
+        </p>
+        <hr style="border: none; border-top: 1px solid #e8f0e8; margin: 24px 0;" />
+        <p style="font-size: 12px; color: #a0b0a0; margin: 0;">
+          Наталья Томшина · Клуб «Вкус Жизни»
+        </p>
+      </div>
+    `,
+  })
+
+  if (sent) {
+    await supabase
+      .from('subscribers')
+      .update({ email_sent: true, email_sent_at: new Date().toISOString() })
+      .eq('email', email)
+  } else {
+    await supabase
+      .from('subscribers')
+      .update({ email_error: 'send_failed' })
+      .eq('email', email)
   }
 }

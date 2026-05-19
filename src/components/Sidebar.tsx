@@ -28,6 +28,7 @@ const nav = [
       { href: '/dashboard/courses', label: 'Я и моё тело', icon: '🌿' },
       { href: '/dashboard/webinars', label: 'Вебинары', icon: '🎥' },
       { href: '/dashboard/meditations', label: 'Медитации', icon: '🧘' },
+      { href: '/dashboard/help', label: 'Карта помощи', icon: '🗺' },
     ],
   },
   {
@@ -77,7 +78,7 @@ export default function Sidebar() {
     { label: 'К',   value: member?.kbju_calories, unit: '' },
     { label: 'Б',   value: member?.kbju_protein,  unit: 'г' },
     { label: 'Ж',   value: member?.kbju_fat,       unit: 'г' },
-    { label: 'У',   value: member?.kbju_carbs,     unit: 'г' },
+    { label: 'У',   value: member?.kbju_carbs,     unit: 'г', prefix: 'до ' },
   ]
 
   async function handleSignOut() {
@@ -115,13 +116,13 @@ export default function Sidebar() {
 
           {/* КБЖУ chips */}
           <div className="mt-2.5 flex flex-wrap gap-1">
-            {kbzhu.map(({ label, value, unit }) => (
+            {kbzhu.map(({ label, value, unit, prefix }) => (
               <span
                 key={label}
                 className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
                 style={{ background: 'var(--pur-light)', color: 'var(--pur)' }}
               >
-                {label}: {value != null ? `${value}${unit}` : '—'}
+                {label}: {value != null ? `${prefix ?? ''}${value}${unit}` : '—'}
               </span>
             ))}
           </div>

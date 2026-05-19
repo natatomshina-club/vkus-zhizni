@@ -1,18 +1,26 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createServiceClient } from '@/lib/supabase/server'
-import type { MemberRow } from '@/types/admin'
+import type { MemberRow, PaymentLog } from '@/types/admin'
 import MemberClient from './MemberClient'
 
 export default async function MemberPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const admin = createServiceClient()
 
-  const { data, error } = await admin
-    .from('members')
-    .select('id, email, full_name, avatar_url, role, subscription_status, tariff, subscription_ends_at, is_blocked, blocked_at, blocked_reason, created_at, birth_date, admin_note, is_manual_subscription')
-    .eq('id', id)
-    .single()
+  const [{ data, error }, { data: payments }] = await Promise.all([
+    admin
+      .from('members')
+      .select('id, email, full_name, avatar_url, role, subscription_status, tariff, subscription_plan, subscription_ends_at, is_blocked, blocked_at, blocked_reason, created_at, subscription_started_at, birth_date, admin_note, is_manual_subscription')
+      .eq('id', id)
+      .single(),
+    admin
+      .from('payment_logs')
+      .select('id, created_at, amount, plan, event_type')
+      .eq('member_id', id)
+      .not('amount', 'is', null)
+      .order('created_at', { ascending: true }),
+  ])
 
   if (error || !data) redirect('/admin/members')
 
@@ -51,7 +59,7 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
         </h1>
       </div>
 
-      <MemberClient initial={member} />
+      <MemberClient initial={member} payments={(payments ?? []) as PaymentLog[]} />
     </div>
   )
 }

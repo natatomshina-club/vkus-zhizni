@@ -2,13 +2,29 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '50mb',
+    },
+  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'byykvsjamtcklwtnjkpf.supabase.co' },
       { protocol: 'https', hostname: '**.supabase.co' },
       { protocol: 'https', hostname: 'kinescope.io' },
       { protocol: 'https', hostname: '**.kinescope.io' },
+      { protocol: 'http', hostname: 'supabase-kong' },
+      { protocol: 'https', hostname: 'club.nata-tomshina.ru' },
     ],
+  },
+  async redirects() {
+    return [
+      {
+        source: '/blog/pohudenie/bez-diet-bez-golodaniy/:path*',
+        destination: '/blog/pohudenie/bez-diet-bez-sporta/:path*',
+        permanent: true,
+      },
+    ]
   },
   async headers() {
     return [

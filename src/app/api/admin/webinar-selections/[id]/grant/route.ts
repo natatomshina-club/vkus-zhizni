@@ -5,7 +5,8 @@ async function requireAdmin() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { user: null, error: 'Unauthorized', status: 401 as const }
-  const { data: member } = await supabase.from('members').select('role').eq('id', user.id).single()
+  const admin = createServiceClient()
+  const { data: member } = await admin.from('members').select('role').eq('email', user.email!).single()
   if (member?.role !== 'admin') return { user: null, error: 'Forbidden', status: 403 as const }
   return { user, error: null, status: 200 as const }
 }

@@ -12,7 +12,7 @@ async function getStats(): Promise<AdminStats> {
     admin.from('members').select('id', { count: 'exact', head: true }),
     admin.from('members').select('id', { count: 'exact', head: true }).eq('subscription_status', 'trial'),
     admin.from('members').select('id', { count: 'exact', head: true }).eq('subscription_status', 'active'),
-    admin.from('members').select('id', { count: 'exact', head: true }).eq('subscription_status', 'cancelled'),
+    admin.from('members').select('id', { count: 'exact', head: true }).eq('subscription_status', 'expired'),
     admin.from('members').select('id', { count: 'exact', head: true }).eq('subscription_status', 'blocked'),
     admin.from('members').select('id', { count: 'exact', head: true }).gte('created_at', todayStart),
     admin.from('members').select('id', { count: 'exact', head: true }).gte('created_at', weekStart),
@@ -63,6 +63,19 @@ const SECTIONS = [
     icon: (
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#FF9F43" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Карта помощи',
+    desc: 'FAQ и материалы для участниц',
+    href: '/admin/help',
+    active: true,
+    icon: (
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0097A7" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
+        <line x1="9" y1="3" x2="9" y2="18" />
+        <line x1="15" y1="6" x2="15" y2="21" />
       </svg>
     ),
   },
@@ -165,6 +178,17 @@ const SECTIONS = [
     ),
   },
   {
+    label: 'Истории',
+    desc: 'Результаты и преображения',
+    href: '/admin/results-stories',
+    active: true,
+    icon: (
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#FF9DC5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+      </svg>
+    ),
+  },
+  {
     label: 'Партнёры',
     desc: 'Заявки, комиссии, выплаты',
     href: '/admin/affiliates',
@@ -186,6 +210,19 @@ const SECTIONS = [
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#FF9DC5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="3" />
         <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Обучающие материалы',
+    desc: 'Тексты и видео для участниц',
+    href: '/admin/onboarding',
+    active: true,
+    icon: (
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#4CAF78" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+        <path d="M6 8h2M6 12h2M16 8h2M16 12h2" />
       </svg>
     ),
   },

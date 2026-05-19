@@ -15,6 +15,7 @@ export interface WebinarRow {
   is_published: boolean
   content_type: 'webinar' | 'course'
   created_at: string
+  html_url?: string | null
 }
 
 export interface WebinarLesson {
@@ -49,5 +50,6 @@ export interface WebinarSelection {
   member_id: string
   webinar_id: string
   status: 'pending' | 'granted'
+  is_paid: boolean
   selected_at: string
 }

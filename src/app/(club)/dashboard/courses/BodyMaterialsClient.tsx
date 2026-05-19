@@ -17,16 +17,11 @@ const FMT: Record<string, { label: string; icon: string; bg: string; color: stri
   audio:   { label: 'Аудио', icon: '🎧', bg: '#E8FBF3', color: '#2D6A4F', cta: 'Слушать',   activeBg: '#2D6A4F' },
 }
 
-// Thumbnail gradients matching body_statiy.html reference
-const THUMB_GRAD: Record<string, string> = {
-  video:   'linear-gradient(135deg,#A78BFA,#7C3AED)',
-  article: 'linear-gradient(135deg,#F0EEFF,#DDD5FF)',
-  pdf:     'linear-gradient(135deg,#FFF5E8,#FFD4A0)',
-  audio:   'linear-gradient(135deg,#A8E6CF,#2D6A4F)',
-}
-
-const THUMB_ICON: Record<string, string> = {
-  video: '▶', article: '📄', pdf: '📎', audio: '🎧',
+const CARD_COLORS: Record<string, string> = {
+  pdf:     'rgba(250, 220, 100, 0.35)',
+  video:   'rgba(180, 170, 220, 0.35)',
+  article: 'rgba(150, 210, 170, 0.35)',
+  audio:   'rgba(255, 182, 193, 0.35)',
 }
 
 export default function BodyMaterialsClient({
@@ -152,55 +147,58 @@ export default function BodyMaterialsClient({
             {section.materials.map(m => {
               const fmt = FMT[m.format] ?? FMT.article
               const isLocked = m.locked
-              const thumbGrad = THUMB_GRAD[m.format] ?? THUMB_GRAD.article
-              const thumbIcon = THUMB_ICON[m.format] ?? '📄'
+              const cardColor = CARD_COLORS[m.format] ?? '#9B8EC4'
 
               const card = (
                 <div
                   className={isLocked ? 'bmc-card bmc-card--locked' : 'bmc-card'}
                   style={{ cursor: isLocked ? 'not-allowed' : 'pointer' }}
                 >
-                  {/* Thumbnail */}
-                  <div style={{ width: '100%', height: 140, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
-                    {m.thumbnail_url ? (
-                      <div style={{ position: 'absolute', inset: 0, background: `url(${m.thumbnail_url}) center/cover no-repeat` }} />
-                    ) : (
-                      <div style={{ position: 'absolute', inset: 0, background: thumbGrad, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {m.format === 'video' ? (
-                          <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,.92)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, boxShadow: '0 2px 12px rgba(0,0,0,.2)' }}>
-                            ▶
-                          </div>
-                        ) : (
-                          <span style={{ fontSize: 36 }}>{thumbIcon}</span>
-                        )}
-                      </div>
-                    )}
+                  {/* Colored header with title */}
+                  <div style={{
+                    width: '100%', minHeight: 120, position: 'relative',
+                    display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+                    padding: '14px 14px 14px', overflow: 'hidden', flexShrink: 0,
+                    background: m.thumbnail_url ? `url(${m.thumbnail_url}) center/cover no-repeat` : cardColor,
+                  }}>
+                    {/* Format badge — top right */}
+                    <span style={{
+                      position: 'absolute', top: 10, right: 10,
+                      background: 'rgba(255,255,255,0.7)', color: '#3D2B8A',
+                      fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 20,
+                    }}>
+                      {fmt.icon} {fmt.label}
+                    </span>
 
-                    {/* Locked overlay on thumbnail */}
+                    {/* Title */}
+                    <p style={{
+                      position: 'relative', margin: 0,
+                      fontSize: 16, fontWeight: 700,
+                      fontFamily: 'var(--font-nunito)',
+                      color: '#3D2B8A', lineHeight: 1.35,
+                      display: '-webkit-box', WebkitLineClamp: 3,
+                      WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                    }}>
+                      {m.title}
+                    </p>
+
+                    {/* Locked overlay */}
                     {isLocked && (
-                      <div style={{ position: 'absolute', inset: 0, background: 'rgba(45,31,110,0.55)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                      <div style={{ position: 'absolute', inset: 0, background: 'rgba(45,31,110,0.6)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
                         <span style={{ fontSize: 28 }}>🔒</span>
                         <span style={{ fontSize: 11, fontWeight: 800, color: '#fff' }}>Полный клуб</span>
                       </div>
                     )}
                   </div>
 
-                  {/* Card body — blurred for locked */}
-                  <div style={{ padding: '12px 14px', filter: isLocked ? 'blur(3px)' : 'none', userSelect: isLocked ? 'none' : 'auto' }}>
-                    <div style={{ marginBottom: 7 }}>
-                      <span style={{ background: fmt.bg, color: fmt.color, fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 20, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        {fmt.icon} {fmt.label}
-                      </span>
-                    </div>
-                    <p style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', lineHeight: 1.35, marginBottom: 6 }}>
-                      {m.title}
-                    </p>
+                  {/* Card body */}
+                  <div style={{ padding: '10px 14px 12px', filter: isLocked ? 'blur(3px)' : 'none', userSelect: isLocked ? 'none' : 'auto', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     {m.description && (
-                      <p className="bmc-desc">
+                      <p className="bmc-desc" style={{ marginBottom: 8 }}>
                         {m.description}
                       </p>
                     )}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       {m.duration_label ? (
                         <span style={{ fontSize: 11, color: '#9B8FCC', fontWeight: 600 }}>⏱ {m.duration_label}</span>
                       ) : <span />}
@@ -212,10 +210,14 @@ export default function BodyMaterialsClient({
                 </div>
               )
 
+              const href = m.format === 'pdf' && m.content_url
+                ? `/dashboard/body/pdf?url=${encodeURIComponent(m.content_url)}`
+                : `/dashboard/body/${m.id}`
+
               return isLocked ? (
                 <div key={m.id}>{card}</div>
               ) : (
-                <Link key={m.id} href={`/dashboard/body/${m.id}`} style={{ textDecoration: 'none', display: 'block' }}>
+                <Link key={m.id} href={href} style={{ textDecoration: 'none', display: 'block' }}>
                   {card}
                 </Link>
               )

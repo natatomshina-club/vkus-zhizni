@@ -13,7 +13,7 @@ function getRussianDate(): string {
 
 export default function DashboardGreeting() {
   const { member } = useMember()
-  const firstName = member?.name?.split(' ')[0] ?? 'подруга'
+  const firstName = member?.first_name ?? 'подруга'
   const dateStr = getRussianDate()
 
   return (

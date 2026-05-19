@@ -14,6 +14,8 @@ interface MsgRow {
     full_name: string | null
     email: string
     status: string
+    subscription_status: string | null
+    tariff: string | null
     created_at: string
   } | null
 }
@@ -33,7 +35,7 @@ export async function GET() {
 
   const { data: messages, error } = await admin
     .from('private_messages')
-    .select('member_id, text, from_admin, is_read, created_at, member:members!inner(id, name, full_name, email, status, created_at)')
+    .select('member_id, text, from_admin, is_read, created_at, member:members!inner(id, name, full_name, email, status, subscription_status, tariff, created_at)')
     .order('created_at', { ascending: true })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

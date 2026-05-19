@@ -131,9 +131,11 @@ export async function POST(request: NextRequest) {
         })
 
         const { error: kbjuErr } = await supabase.from('members').update({
-          kbju_calories: kbju.calories,
-          kbju_fat:      kbju.fat,
-          kbju_carbs:    kbju.carbs,
+          kbju_calories:     kbju.calories,
+          kbju_fat:          kbju.fat,
+          kbju_carbs:        kbju.carbs,
+          kbju_carbs_system: kbju.carbs,
+          kbju_manual:       false,
           // kbju_protein намеренно не обновляется — зависит от роста/активности, не от веса
         }).eq('id', user.id)
         if (kbjuErr) throw new Error(`kbju_update: ${kbjuErr.message}`)

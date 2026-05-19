@@ -99,12 +99,17 @@ export default function ThemesPage() {
 
   async function handleForce(t: SeasonalTheme) {
     setTogglingId(t.id)
-    await fetch('/api/admin/themes', {
+    const res = await fetch('/api/admin/themes', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: t.id, is_forced: !t.is_forced }),
     })
     setTogglingId(null)
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      alert(`Ошибка: ${data.error ?? res.status}`)
+      return
+    }
     load()
   }
 

@@ -3,8 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import type { MemberRow, Tariff, SubscriptionStatus } from '@/types/admin'
+import type { MemberRow, Tariff, SubscriptionStatus, PaymentLog } from '@/types/admin'
 import Avatar from '@/components/Avatar'
+import { getEffectiveMonths } from '@/lib/webinars'
 
 const STATUS_BADGE: Record<string, { label: string; bg: string; color: string }> = {
   trial: { label: '🟡 Триал', bg: '#FFF3C0', color: '#5C4200' },
@@ -13,14 +14,17 @@ const STATUS_BADGE: Record<string, { label: string; bg: string; color: string }>
   blocked: { label: '⛔ Заблокирована', bg: '#E8E8E8', color: '#444' },
 }
 
-const TARIFF_LABELS: Record<Tariff, string> = {
+const TARIFF_LABELS: Record<string, string> = {
   trial: 'Пробный (7 дней)',
+  'Пробный': 'Пробный (7 дней)',
+  month: 'Месяц',
   monthly: 'Месяц',
   halfyear: 'Полгода',
+  'Полгода': 'Полгода',
 }
 
-function getClubRank(createdAt: string) {
-  const months = (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30)
+function getClubRank(createdAt: string, plan?: string | null) {
+  const months = getEffectiveMonths(createdAt, plan)
   if (months < 3) return '🌸 Новенькая'
   if (months < 6) return '🔥 Вошла во вкус'
   if (months < 9) return '💚 Уже своя'
@@ -52,7 +56,7 @@ function tariffDefaultDate(tariff: Tariff): string {
   return d.toISOString().slice(0, 10)
 }
 
-export default function MemberClient({ initial }: { initial: MemberRow }) {
+export default function MemberClient({ initial, payments }: { initial: MemberRow; payments: PaymentLog[] }) {
   const router = useRouter()
   const [member, setMember] = useState<MemberRow>(initial)
   const [saving, setSaving] = useState(false)
@@ -241,7 +245,7 @@ export default function MemberClient({ initial }: { initial: MemberRow }) {
                 Вступила {formatDate(member.created_at)}
               </span>
               <span style={{ fontSize: 12, background: '#F0EEFF', color: '#7C5CFC', padding: '2px 10px', borderRadius: 20, fontWeight: 600 }}>
-                {getClubRank(member.created_at)}
+                {getClubRank(member.subscription_started_at ?? member.created_at, member.subscription_plan)}
               </span>
             </div>
           </div>
@@ -645,6 +649,64 @@ export default function MemberClient({ initial }: { initial: MemberRow }) {
         >
           ✉️ Написать участнице
         </Link>
+      </Card>
+
+      {/* Payment history */}
+      <Card title="История платежей">
+        {payments.length === 0 ? (
+          <p style={{ margin: 0, fontSize: 14, color: '#7B6FAA' }}>Платежи не найдены</p>
+        ) : (
+          <>
+            {payments.map((p, i) => {
+              const d = new Date(p.created_at)
+              const dateStr = d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                + ' ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+              const isFirst = i === 0
+              return (
+                <div
+                  key={p.id}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    gap: 12, padding: '10px 14px', borderRadius: 12, marginBottom: 8,
+                    background: isFirst ? '#F0EEFF' : '#F9F8FF',
+                    border: `1px solid ${isFirst ? '#DDD5FF' : '#EDE8FF'}`,
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      {isFirst && (
+                        <span style={{ fontSize: 11, background: '#7C5CFC', color: '#fff', padding: '2px 8px', borderRadius: 20, fontWeight: 700 }}>
+                          первый
+                        </span>
+                      )}
+                      <span style={{ fontSize: 13, color: '#7B6FAA', fontFamily: 'var(--font-nunito)' }}>
+                        {dateStr}
+                      </span>
+                    </div>
+                    {p.plan && (
+                      <p style={{ margin: '3px 0 0', fontSize: 13, color: '#3D2B8A', fontWeight: 600 }}>
+                        {p.plan}
+                      </p>
+                    )}
+                  </div>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: '#1A5C3A', whiteSpace: 'nowrap' }}>
+                    {p.amount != null ? `${Number(p.amount).toLocaleString('ru-RU')} ₽` : '—'}
+                  </span>
+                </div>
+              )
+            })}
+            <div style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '10px 14px', borderRadius: 12, marginTop: 4,
+              background: '#D0F5E8', border: '1px solid #9FEBB3',
+            }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#1A5C3A' }}>ИТОГО</span>
+              <span style={{ fontSize: 16, fontWeight: 700, color: '#1A5C3A' }}>
+                {payments.reduce((sum, p) => sum + (p.amount ? Number(p.amount) : 0), 0).toLocaleString('ru-RU')} ₽
+              </span>
+            </div>
+          </>
+        )}
       </Card>
 
       {/* Delete — только для не-администраторов */}

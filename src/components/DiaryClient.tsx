@@ -60,7 +60,7 @@ interface Props {
   initialMarkedDays: number[]
   initialYear: number
   initialMonth: number
-  initialNote: { tags: string[]; note: string }
+  initialFeelings: { mood: string; digestion: string[]; energy: string[]; note: string }
   initialNoteDays: number[]
 }
 
@@ -136,7 +136,7 @@ export default function DiaryClient({
   userId, today, kbju,
   initialEntries, initialWater, initialMarkedDays,
   initialYear, initialMonth,
-  initialNote, initialNoteDays,
+  initialFeelings, initialNoteDays,
 }: Props) {
   // Date state
   const [selectedDate, setSelectedDate] = useState(today)
@@ -150,10 +150,12 @@ export default function DiaryClient({
   const [markedDays, setMarkedDays] = useState(new Set(initialMarkedDays))
   const [noteDays, setNoteDays]     = useState(new Set(initialNoteDays))
 
-  // Wellness note state
-  const [noteTags, setNoteTags]   = useState<string[]>(initialNote.tags)
-  const [noteText, setNoteText]   = useState(initialNote.note)
-  const [noteSaved, setNoteSaved] = useState(false)
+  // Wellness feelings state
+  const [feelMood,      setFeelMood]      = useState(initialFeelings.mood)
+  const [feelDigestion, setFeelDigestion] = useState<string[]>(initialFeelings.digestion)
+  const [feelEnergy,    setFeelEnergy]    = useState<string[]>(initialFeelings.energy)
+  const [feelNote,      setFeelNote]      = useState(initialFeelings.note)
+  const [feelSaved,     setFeelSaved]     = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const selectedDateRef = useRef(today)
   const servingsDebounceRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
@@ -172,28 +174,30 @@ export default function DiaryClient({
     // cancel any pending note save for previous date
     if (debounceRef.current) clearTimeout(debounceRef.current)
     setDateLoading(true)
-    const [entriesRes, waterRes, noteRes] = await Promise.all([
+    const [entriesRes, waterRes, feelingsRes] = await Promise.all([
       apiFetch(`/api/diary/entries?date=${date}`),
       apiFetch(`/api/diary/water?date=${date}`),
-      apiFetch(`/api/diary/notes?date=${date}`),
+      apiFetch(`/api/diary/feelings/${date}`),
     ])
-    const [{ entries: ent }, { glasses_count }, { tags, note }] = await Promise.all([
+    const [{ entries: ent }, { glasses_count }, feelData] = await Promise.all([
       entriesRes.json().catch(() => ({ entries: [] })),
       waterRes.json().catch(() => ({ glasses_count: 0 })),
-      noteRes.json().catch(() => ({ tags: [], note: '' })),
+      feelingsRes.json().catch(() => ({ mood: '', digestion: [], energy: [], note: '' })),
     ])
     setEntries((ent ?? []) as DiaryEntry[])
     setWater(glasses_count ?? 0)
-    setNoteTags(tags ?? [])
-    setNoteText(note ?? '')
+    setFeelMood(feelData.mood ?? '')
+    setFeelDigestion(feelData.digestion ?? [])
+    setFeelEnergy(feelData.energy ?? [])
+    setFeelNote(feelData.note ?? '')
     setDateLoading(false)
   }
 
   async function loadCalendarData(year: number, month: number) {
     const res = await apiFetch(`/api/diary/calendar?year=${year}&month=${month}`)
-    const { days, noteDays: nd } = await res.json().catch(() => ({ days: [], noteDays: [] }))
-    setMarkedDays(new Set(days as number[]))
-    setNoteDays(new Set((nd ?? []) as number[]))
+    const { markedDays: md, feelingDays: fd } = await res.json().catch(() => ({ markedDays: [], feelingDays: [] }))
+    setMarkedDays(new Set((md ?? []) as number[]))
+    setNoteDays(new Set((fd ?? []) as number[]))
   }
 
   // Keep ref in sync with selectedDate so debounced save always writes to the correct date
@@ -316,7 +320,7 @@ export default function DiaryClient({
       .select('id, title, kbju_calories, kbju_protein, kbju_fat, kbju_carbs')
       .eq('member_id', userId)
       .order('created_at', { ascending: false })
-      .limit(30)
+      .limit(5)
 
     setFavItems((favs ?? []) as SavedRecipe[])
     setModalLoading(false)
@@ -324,20 +328,20 @@ export default function DiaryClient({
 
   function closeSection() { setExpandedSection(null) }
 
-  // ── Wellness note ─────────────────────────────────────────────────────────────
-  function triggerNoteSave(tags: string[], text: string) {
+  // ── Wellness feelings ──────────────────────────────────────────────────────────
+  function triggerFeelingsSave(mood: string, digestion: string[], energy: string[], note: string) {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(async () => {
       const date = selectedDateRef.current
-      await apiFetch('/api/diary/notes', {
+      await apiFetch(`/api/diary/feelings/${date}`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ date, tags, note: text }),
+        body:    JSON.stringify({ mood, digestion, energy, note }),
       })
-      setNoteSaved(true)
-      setTimeout(() => setNoteSaved(false), 2000)
+      setFeelSaved(true)
+      setTimeout(() => setFeelSaved(false), 2000)
       const day = parseInt(date.split('-')[2])
-      if (tags.length > 0 || text.trim()) {
+      if (mood || digestion.length > 0 || energy.length > 0 || note.trim()) {
         setNoteDays(prev => new Set(prev).add(day))
       } else {
         setNoteDays(prev => { const n = new Set(prev); n.delete(day); return n })
@@ -345,17 +349,31 @@ export default function DiaryClient({
     }, 1000)
   }
 
-  function toggleNoteTag(chip: string) {
-    const next = noteTags.includes(chip)
-      ? noteTags.filter(t => t !== chip)
-      : [...noteTags, chip]
-    setNoteTags(next)
-    triggerNoteSave(next, noteText)
+  function toggleMood(chip: string) {
+    const next = feelMood === chip ? '' : chip
+    setFeelMood(next)
+    triggerFeelingsSave(next, feelDigestion, feelEnergy, feelNote)
   }
 
-  function handleNoteText(text: string) {
-    setNoteText(text)
-    triggerNoteSave(noteTags, text)
+  function toggleDigestion(chip: string) {
+    const next = feelDigestion.includes(chip)
+      ? feelDigestion.filter(t => t !== chip)
+      : [...feelDigestion, chip]
+    setFeelDigestion(next)
+    triggerFeelingsSave(feelMood, next, feelEnergy, feelNote)
+  }
+
+  function toggleEnergy(chip: string) {
+    const next = feelEnergy.includes(chip)
+      ? feelEnergy.filter(t => t !== chip)
+      : [...feelEnergy, chip]
+    setFeelEnergy(next)
+    triggerFeelingsSave(feelMood, feelDigestion, next, feelNote)
+  }
+
+  function handleFeelNote(text: string) {
+    setFeelNote(text)
+    triggerFeelingsSave(feelMood, feelDigestion, feelEnergy, text)
   }
 
   async function addManual() {
@@ -449,8 +467,8 @@ export default function DiaryClient({
               { label: 'Калории', eaten: totals.calories,                goal: kbju.calories!, unit: 'ккал' },
               { label: 'Белки',   eaten: Math.round(totals.protein),     goal: kbju.protein!,  unit: 'г'    },
               { label: 'Жиры',    eaten: Math.round(totals.fat),         goal: kbju.fat!,      unit: 'г'    },
-              { label: 'Углеводы',eaten: Math.round(totals.carbs),       goal: kbju.carbs!,    unit: 'г'    },
-            ].map(({ label, eaten, goal, unit }) => {
+              { label: 'Углеводы',eaten: Math.round(totals.carbs),       goal: kbju.carbs!,    unit: 'г',    goalPrefix: 'до ' },
+            ].map(({ label, eaten, goal, unit, goalPrefix }) => {
               const pct  = Math.min(100, Math.round((eaten / goal) * 100))
               const over = eaten > goal
               return (
@@ -462,7 +480,7 @@ export default function DiaryClient({
                     </span>
                     <span className="text-sm" style={{ fontFamily: 'var(--font-nunito)', color: 'var(--muted)' }}>
                       <strong style={{ color: over ? '#FF9F43' : 'var(--text)' }}>{eaten}</strong>
-                      {' / '}{goal} {unit}
+                      {' / '}{goalPrefix ?? ''}{goal} {unit}
                     </span>
                   </div>
                   <div className="h-2.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
@@ -626,47 +644,17 @@ export default function DiaryClient({
 
               {isOpen && (
                 <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
-                  {/* Tabs */}
-                  <div className="flex gap-1 mb-1" style={{ borderBottom: '1px solid var(--border)' }}>
-                    {([
-                      { key: 'favorites' as ModalTab, label: 'Избранное' },
-                      { key: 'manual'    as ModalTab, label: 'Вручную'   },
-                    ]).map(({ key, label }) => (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => setModalTab(key)}
-                        className="px-3 py-2 text-sm font-semibold border-b-2 transition-colors"
-                        style={{
-                          borderColor: modalTab === key ? '#4CAF78' : 'transparent',
-                          color:       modalTab === key ? '#4CAF78' : 'var(--muted)',
-                          fontFamily:  'var(--font-nunito)',
-                        }}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Tab content */}
                   {modalLoading ? (
                     <div className="py-6 text-center text-sm" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
                       ⏳ Загружаем...
                     </div>
-                  ) : modalTab === 'favorites' ? (
+                  ) : (
                     <FavoritesTab
                       items={favItems}
                       onAdd={item => addEntry(
                         { title: item.title, calories: item.kbju_calories, protein: item.kbju_protein, fat: item.kbju_fat, carbs: item.kbju_carbs, source: 'favorite' },
                         section.addType
                       )}
-                    />
-                  ) : (
-                    <ManualTab
-                      form={manualForm}
-                      onChange={setManualForm}
-                      onSave={addManual}
-                      saving={manualSaving}
                     />
                   )}
                 </div>
@@ -732,7 +720,8 @@ export default function DiaryClient({
                   style={{
                     fontFamily:  'var(--font-nunito)',
                     fontWeight:  isSelected || isToday_ ? '700' : '400',
-                    background:  isSelected ? '#4CAF78' : isMarked ? '#4CAF7820' : 'transparent',
+                    background:  isSelected ? '#4CAF78' : isMarked ? '#4CAF7826' : 'transparent',
+                    border:      isMarked && !isSelected ? '2px solid #4CAF78' : 'none',
                     color:       isSelected ? '#fff' : isToday_ ? '#4CAF78' : 'var(--text)',
                     outline:     isToday_ && !isSelected ? '2px solid #4CAF78' : 'none',
                     outlineOffset: '-2px',
@@ -763,7 +752,7 @@ export default function DiaryClient({
               Заметка сохранится к этому дню
             </p>
           </div>
-          {noteSaved && (
+          {feelSaved && (
             <span className="text-xs font-semibold" style={{ color: '#4CAF78', fontFamily: 'var(--font-nunito)' }}>
               Сохранено ✓
             </span>
@@ -771,7 +760,7 @@ export default function DiaryClient({
         </div>
 
         {/* Chip groups */}
-        {WELLNESS_GROUPS.map(group => (
+        {WELLNESS_GROUPS.map((group, gIdx) => (
           <div key={group.label}>
             <p className="text-[10px] font-bold uppercase tracking-wide mb-2"
               style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
@@ -779,12 +768,17 @@ export default function DiaryClient({
             </p>
             <div className="flex flex-wrap gap-1.5">
               {group.chips.map(chip => {
-                const active = noteTags.includes(chip)
+                const active = gIdx === 0 ? feelMood === chip
+                  : gIdx === 1 ? feelDigestion.includes(chip)
+                  : feelEnergy.includes(chip)
+                const onToggle = gIdx === 0 ? () => toggleMood(chip)
+                  : gIdx === 1 ? () => toggleDigestion(chip)
+                  : () => toggleEnergy(chip)
                 return (
                   <button
                     key={chip}
                     type="button"
-                    onClick={() => toggleNoteTag(chip)}
+                    onClick={onToggle}
                     className="px-3 py-1.5 rounded-full text-xs font-semibold border transition-all"
                     style={{
                       fontFamily:  'var(--font-nunito)',
@@ -809,8 +803,8 @@ export default function DiaryClient({
           </p>
           <textarea
             rows={3}
-            value={noteText}
-            onChange={e => handleNoteText(e.target.value)}
+            value={feelNote}
+            onChange={e => handleFeelNote(e.target.value)}
             placeholder="Что ещё хочешь запомнить об этом дне?"
             className="w-full rounded-xl border px-3 py-2.5 text-sm resize-none"
             style={{
@@ -836,23 +830,22 @@ function FavoritesTab({
 }) {
   if (items.length === 0) {
     return (
-      <div className="px-4 py-10 text-center">
+      <div className="px-4 py-8 text-center">
         <p className="text-3xl mb-2">⭐</p>
-        <p className="text-sm" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
-          Нет сохранённых рецептов
+        <p className="text-sm mb-3" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
+          Пока нет избранных рецептов. Добавляйте рецепты в избранное и они появятся здесь
         </p>
         <a href="/dashboard/kitchen"
-          className="inline-block mt-2 text-sm font-semibold"
+          className="inline-block text-sm font-semibold"
           style={{ color: '#4CAF78', fontFamily: 'var(--font-nunito)' }}>
-          Сохранить рецепт из кухни →
+          Перейти к рецептам →
         </a>
       </div>
     )
   }
-  const visible = items.slice(0, 5)
   return (
     <div className="flex flex-col divide-y" style={{ borderColor: 'var(--border)' }}>
-      {visible.map(item => (
+      {items.map(item => (
         <div key={item.id} className="px-4 py-3 flex items-center gap-3">
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold truncate"
@@ -872,17 +865,15 @@ function FavoritesTab({
           </button>
         </div>
       ))}
-      {items.length > 5 && (
-        <div className="px-4 py-3 text-center">
-          <Link
-            href="/dashboard/favorites"
-            className="text-sm font-semibold"
-            style={{ color: 'var(--pur)', fontFamily: 'var(--font-nunito)' }}
-          >
-            Открыть все избранные рецепты →
-          </Link>
-        </div>
-      )}
+      <div className="px-4 py-3 text-center">
+        <Link
+          href="/dashboard/favorites"
+          className="text-sm font-semibold"
+          style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}
+        >
+          Все рецепты →
+        </Link>
+      </div>
     </div>
   )
 }

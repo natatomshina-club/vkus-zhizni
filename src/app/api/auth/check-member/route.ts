@@ -10,11 +10,12 @@ export async function POST(req: NextRequest) {
   const { email } = await req.json()
   const { data: member } = await supabaseAdmin
     .from('members')
-    .select('id, status, is_blocked')
+    .select('id, subscription_status, is_blocked')
     .eq('email', email.trim().toLowerCase())
     .single()
 
   if (!member) return NextResponse.json({ status: 'not_found' })
   if (member.is_blocked) return NextResponse.json({ status: 'blocked' })
+  if (member.subscription_status === 'expired') return NextResponse.json({ status: 'not_found' })
   return NextResponse.json({ status: 'ok' })
 }

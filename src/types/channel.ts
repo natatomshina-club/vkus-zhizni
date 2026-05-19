@@ -22,6 +22,7 @@ export interface ChannelPost {
   channel: string
   text: string | null
   media_url: string | null
+  media_urls?: string[] | null
   media_expires_at: string | null
   meal_tag: 'breakfast' | 'lunch' | 'snack' | null
   is_ai_reply: boolean
@@ -96,6 +97,7 @@ export interface PrivateMessage {
   member_id: string
   text: string | null
   media_url?: string | null
+  media_urls?: string[] | null
   from_admin: boolean
   is_read: boolean
   created_at: string

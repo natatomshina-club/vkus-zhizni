@@ -27,7 +27,7 @@ export default function CalcWidget() {
 
   const inputStyle: React.CSSProperties = {
     width: '100%', border: '1.5px solid #EDE8FF', borderRadius: 10,
-    padding: '10px 14px', fontFamily: 'var(--font-nunito)', fontSize: 15, color: '#1A1230',
+    padding: '10px 14px', fontFamily: 'var(--font-nunito, var(--font-body))', fontSize: 15, color: '#1A1230',
     background: '#FAF8FF', outline: 'none',
   }
 
@@ -36,7 +36,7 @@ export default function CalcWidget() {
       <div style={{ padding: '24px 28px 0', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
         <div style={{ width: 48, height: 48, borderRadius: 14, background: '#FFF3CD', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>⚖️</div>
         <div>
-          <div style={{ fontFamily: 'var(--font-unbounded)', fontSize: 17, fontWeight: 700, color: '#3D2B8A', marginBottom: 4, lineHeight: 1.25 }}>Сколько я могу сбросить за 3 месяца?</div>
+          <div style={{ fontFamily: 'var(--font-unbounded, var(--font-display))', fontSize: 17, fontWeight: 700, color: '#3D2B8A', marginBottom: 4, lineHeight: 1.25 }}>Сколько я могу сбросить за 3 месяца?</div>
           <div style={{ fontSize: 14, color: '#7B6FAA' }}>Реалистичный расчёт на основе параметров</div>
         </div>
       </div>
@@ -65,7 +65,7 @@ export default function CalcWidget() {
           <div style={{ gridColumn: '1 / -1' }}>
             <button
               onClick={calculate}
-              style={{ width: '100%', fontFamily: 'var(--font-unbounded)', fontSize: 13, fontWeight: 700, padding: '12px', borderRadius: 100, border: 'none', background: '#3D2B8A', color: '#fff', cursor: 'pointer' }}
+              style={{ width: '100%', fontFamily: 'var(--font-unbounded, var(--font-display))', fontSize: 13, fontWeight: 700, padding: '12px', borderRadius: 100, border: 'none', background: '#3D2B8A', color: '#fff', cursor: 'pointer' }}
             >
               Рассчитать →
             </button>
@@ -77,12 +77,12 @@ export default function CalcWidget() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
               <div>
                 <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'rgba(255,255,255,.5)', marginBottom: 4 }}>За 3 месяца в клубе</div>
-                <div style={{ fontFamily: 'var(--font-unbounded)', fontSize: 36, fontWeight: 700, color: '#7BDFAA', lineHeight: 1 }}>{result.range}</div>
+                <div style={{ fontFamily: 'var(--font-unbounded, var(--font-display))', fontSize: 36, fontWeight: 700, color: '#7BDFAA', lineHeight: 1 }}>{result.range}</div>
                 <div style={{ fontSize: 13, color: 'rgba(255,255,255,.65)', marginTop: 4 }}>{result.sub}</div>
               </div>
               <a
                 href="https://nata-tomshina.ru/club"
-                style={{ background: '#fff', color: '#3D2B8A', fontFamily: 'var(--font-unbounded)', fontSize: 12, fontWeight: 700, padding: '11px 18px', borderRadius: 100, textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}
+                style={{ background: '#fff', color: '#3D2B8A', fontFamily: 'var(--font-unbounded, var(--font-display))', fontSize: 12, fontWeight: 700, padding: '11px 18px', borderRadius: 100, textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}
               >
                 Начать за 149 ₽ →
               </a>

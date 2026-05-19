@@ -12,6 +12,7 @@ interface Commission {
   status: string
   created_at: string
   approve_after: string | null
+  members: { email: string } | null
 }
 
 interface Stats {
@@ -183,7 +184,7 @@ export default function PartnerDashboardPage() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr style={{ background: '#F9F8FF' }}>
-                    {['Дата', 'Тип', 'Оплата', 'Комиссия', 'Статус'].map(h => (
+                    {['Дата', 'Тип', 'Участница', 'Оплата', 'Комиссия', 'Статус'].map(h => (
                       <th key={h} style={{ padding: '10px 16px', textAlign: 'left', color: '#7B6FAA', fontWeight: 700, fontSize: 12, borderBottom: '1px solid #EDE8FF', whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
                   </tr>
@@ -197,6 +198,7 @@ export default function PartnerDashboardPage() {
                         <td style={{ padding: '12px 16px', color: '#2D1F6E', fontWeight: 600 }}>
                           {c.type === 'first' ? '🆕 Первый' : '🔄 Продление'}
                         </td>
+                        <td style={{ padding: '12px 16px', color: '#7B6FAA', fontSize: 12 }}>{c.members?.email ?? '—'}</td>
                         <td style={{ padding: '12px 16px', color: '#2D1F6E' }}>{fmt(c.payment_amount)} ₽</td>
                         <td style={{ padding: '12px 16px', color: '#2D6A4F', fontWeight: 700 }}>{fmt(c.commission_amount)} ₽</td>
                         <td style={{ padding: '12px 16px' }}>
@@ -281,7 +283,7 @@ export default function PartnerDashboardPage() {
                 </div>
               )}
               <div style={{ background: '#F0EEFF', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#3D2B8A', lineHeight: 1.5 }}>
-                Вопросы по выплатам: <a href="mailto:hello@nata-tomshina.ru" style={{ color: '#7C5CFC', fontWeight: 600, textDecoration: 'none' }}>hello@nata-tomshina.ru</a>
+                Вопросы по выплатам: <a href="mailto:nata.tomshina@gmail.com" style={{ color: '#7C5CFC', fontWeight: 600, textDecoration: 'none' }}>nata.tomshina@gmail.com</a>
               </div>
             </div>
           </div>

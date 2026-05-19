@@ -1,11 +1,6 @@
 'use client'
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import 'driver.js/dist/driver.css'
-
-interface Props {
-  memberId: string
-  tourCompleted: boolean | null | undefined
-}
 
 const ALL_STEPS = [
   {
@@ -96,22 +91,26 @@ const ALL_STEPS = [
   },
 ]
 
-export default function OnboardingTour({ tourCompleted }: Props) {
+// Загружаем статус тура сами на клиенте — не полагаемся на серверный проп.
+// undefined = ещё загружаем, true = тур уже был, false = показать тур.
+export default function OnboardingTour() {
+  const [tourCompleted, setTourCompleted] = useState<boolean | undefined>(undefined)
+
   useEffect(() => {
-    console.log('[OnboardingTour] useEffect triggered, tourCompleted=', tourCompleted)
+    fetch('/api/member/me')
+      .then(r => r.json())
+      .then((data: { member?: { tour_completed?: boolean | null } }) => {
+        // treat null / undefined / false → show tour; true → skip
+        setTourCompleted(data.member?.tour_completed === true)
+      })
+      .catch(() => setTourCompleted(true)) // при ошибке не мешаем пользователю
+  }, [])
 
-    // Ждём пока данные участницы точно загружены
-    if (tourCompleted === undefined) {
-      console.log('[OnboardingTour] waiting for data...')
-      return
-    }
-    // Ловим и false, и null — у существующих участниц может быть null
-    if (tourCompleted) {
-      console.log('[OnboardingTour] already completed, skip')
-      return
-    }
-
-    console.log('[OnboardingTour] starting tour init...')
+  useEffect(() => {
+    // undefined → данные ещё не загружены, ждём
+    if (tourCompleted === undefined) return
+    // true → тур уже пройден
+    if (tourCompleted === true) return
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let driverInstance: any = null
@@ -124,7 +123,7 @@ export default function OnboardingTour({ tourCompleted }: Props) {
 
       if (cancelled) return
 
-      // Skip steps whose element is not present in the DOM
+      // Фильтруем шаги: оставляем только те, чьи элементы есть в DOM
       const steps = ALL_STEPS.filter(step => {
         if (!('element' in step)) return true
         return !!document.querySelector(step.element as string)
@@ -150,11 +149,10 @@ export default function OnboardingTour({ tourCompleted }: Props) {
       // 800мс — страница успевает полностью отрендериться и гидрироваться
       setTimeout(() => {
         if (cancelled) return
-        console.log('[OnboardingTour] drive() запускается, steps:', steps.length)
         driverInstance?.drive()
 
-        // Сохраняем флаг только после успешного запуска тура
-        // Закрыла крестиком или прошла до конца — не важно, больше не покажем
+        // Помечаем тур пройденным сразу после запуска
+        // (закрыла крестиком или дошла до конца — больше не показываем)
         setTimeout(async () => {
           if (cancelled) return
           try {

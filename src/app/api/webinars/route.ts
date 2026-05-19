@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { getMonthsInClub, getStatusLabel, getWebinarQuota, getWebinarState } from '@/lib/webinars'
+import { getEffectiveMonths, getStatusLabel, getWebinarQuota, getWebinarState } from '@/lib/webinars'
 import type { WebinarRow, WebinarAccess, WebinarSelection } from '@/types/webinars'
 
 export async function GET() {
@@ -18,7 +18,7 @@ export async function GET() {
       .order('sort_order', { ascending: true }),
     admin
       .from('members')
-      .select('created_at')
+      .select('created_at, subscription_started_at, subscription_plan')
       .eq('id', user.id)
       .single(),
     admin
@@ -27,30 +27,31 @@ export async function GET() {
       .eq('member_id', user.id),
     admin
       .from('webinar_selections')
-      .select('id,member_id,webinar_id,status,selected_at')
+      .select('id,member_id,webinar_id,status,is_paid,selected_at')
       .eq('member_id', user.id),
   ])
 
   const webinars = (webinarsRes.data ?? []) as WebinarRow[]
-  const createdAt = memberRes.data?.created_at ?? new Date().toISOString()
+  const createdAt = memberRes.data?.subscription_started_at ?? memberRes.data?.created_at ?? new Date().toISOString()
+  const subscription_plan = memberRes.data?.subscription_plan ?? null
   const access = (accessRes.data ?? []) as WebinarAccess[]
   const selections = (selectionsRes.data ?? []) as WebinarSelection[]
 
-  const months = getMonthsInClub(createdAt)
+  const months = getEffectiveMonths(createdAt, subscription_plan)
   const quota = getWebinarQuota(months)
-  const quotaUsed = selections.filter(s => s.status === 'pending' || s.status === 'granted').length
-  const quotaLeft = quota === Infinity ? Infinity : Math.max(0, quota - quotaUsed)
+  const quotaUsed = selections.filter(s => s.status === 'granted' && s.is_paid === false).length
+  const quotaLeft = quota === 999 ? 999 : Math.max(0, quota - quotaUsed)
 
-  const webinarsWithState = webinars.map(w => ({
+const webinarsWithState = webinars.map(w => ({
     ...w,
     state: getWebinarState(w, months, access, selections),
   }))
 
   return NextResponse.json({
     webinars: webinarsWithState,
-    quota_total: quota === Infinity ? 'all' : quota,
+    quota_total: quota === 999 ? 'all' : quota,
     quota_used: quotaUsed,
-    quota_left: quotaLeft === Infinity ? 'all' : quotaLeft,
+    quota_left: quotaLeft === 999 ? 'all' : quotaLeft,
     months_in_club: months,
     status_label: getStatusLabel(months),
   })

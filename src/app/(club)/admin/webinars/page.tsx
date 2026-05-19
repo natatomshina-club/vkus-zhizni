@@ -9,7 +9,7 @@ export default async function AdminWebinarsPage() {
   const [webinarsRes, selectionsRes] = await Promise.all([
     admin
       .from('webinars')
-      .select('id,slug,title,short_desc,full_desc,price,emoji,color_from,color_to,video_id,sort_order,is_published,content_type,created_at')
+      .select('id,slug,title,short_desc,full_desc,price,emoji,color_from,color_to,video_id,sort_order,is_published,content_type,created_at,html_url')
       .order('sort_order', { ascending: true }),
     admin
       .from('webinar_selections')

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { getMonthsInClub, getWebinarQuota, canSelectType } from '@/lib/webinars'
+import { getEffectiveMonths, getWebinarQuota, canSelectType } from '@/lib/webinars'
 import type { WebinarAccess, WebinarSelection } from '@/types/webinars'
 
 export async function POST(
@@ -27,13 +27,13 @@ export async function POST(
   // Get member info
   const { data: member } = await admin
     .from('members')
-    .select('created_at, full_name, email')
+    .select('created_at, subscription_started_at, subscription_plan, full_name, email')
     .eq('id', user.id)
     .single()
 
   if (!member) return NextResponse.json({ error: 'Участница не найдена' }, { status: 404 })
 
-  const months = getMonthsInClub(member.created_at)
+  const months = getEffectiveMonths(member.subscription_started_at ?? member.created_at, member.subscription_plan)
 
   // Check type eligibility
   if (!canSelectType(webinar as unknown as import('@/types/webinars').WebinarRow, months)) {
@@ -63,14 +63,14 @@ export async function POST(
   const quota = getWebinarQuota(months)
 
   // Check quota (non-Бриллиант)
-  if (quota !== Infinity) {
+  if (quota !== 999) {
     const { data: selections } = await admin
       .from('webinar_selections')
-      .select('id')
+      .select('id,is_paid')
       .eq('member_id', user.id)
       .in('status', ['pending', 'granted']) as { data: WebinarSelection[] | null }
 
-    const used = selections?.length ?? 0
+    const used = (selections ?? []).filter(s => !s.is_paid).length
     if (used >= quota) {
       return NextResponse.json({ error: 'Квота исчерпана' }, { status: 403 })
     }
@@ -86,7 +86,7 @@ export async function POST(
     .limit(1)
     .single()
 
-  if (quota === Infinity) {
+  if (quota === 999) {
     // Бриллиант — auto-grant
     await admin.from('webinar_access').insert({
       member_id: user.id,
@@ -96,11 +96,12 @@ export async function POST(
     return NextResponse.json({ state: 'has_access' })
   }
 
-  // Create pending selection
+  // Create pending selection (free choice — counts against quota)
   await admin.from('webinar_selections').insert({
     member_id: user.id,
     webinar_id: webinar.id,
     status: 'pending',
+    is_paid: false,
   })
 
   // Notify admin via private message

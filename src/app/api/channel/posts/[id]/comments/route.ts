@@ -15,7 +15,7 @@ export async function GET(
 
     const { data: comments, error } = await admin
       .from('channel_posts')
-      .select('id, member_id, text, media_url, is_ai_reply, likes_count, created_at, member:members(name, full_name, role, avatar_url)')
+      .select('id, member_id, text, media_url, media_urls, is_ai_reply, likes_count, created_at, member:members(name, full_name, role, avatar_url)')
       .eq('parent_id', id)
       .order('created_at', { ascending: true })
       .limit(100)
@@ -49,30 +49,31 @@ export async function POST(
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const admin = createServiceClient()
 
     const { id: parent_id } = await params
 
     const { data: parent } = await supabase
-      .from('channel_posts').select('id, channel').eq('id', parent_id).maybeSingle()
+      .from('channel_posts').select('id, channel, member_id').eq('id', parent_id).maybeSingle()
     if (!parent) return NextResponse.json({ error: 'Post not found' }, { status: 404 })
 
     const body = await request.json().catch(() => null)
     const text = typeof body?.text === 'string' ? body.text.trim() : ''
-    const media_url: string | null = typeof body?.media_url === 'string' ? body.media_url.trim() || null : null
+    const rawUrls: string[] = Array.isArray(body?.media_urls) ? body.media_urls.slice(0, 3) : []
 
-    if (media_url) {
+    const supabaseHost = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://invalid').hostname
+    const media_urls: string[] = []
+    for (const url of rawUrls) {
+      if (typeof url !== 'string') continue
       try {
-        const parsedMedia = new URL(media_url)
-        const parsedSupabase = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://invalid')
-        if (parsedMedia.hostname !== parsedSupabase.hostname) {
-          return NextResponse.json({ error: 'Invalid media domain' }, { status: 400 })
-        }
+        if (new URL(url).hostname !== supabaseHost) return NextResponse.json({ error: 'Invalid media domain' }, { status: 400 })
+        media_urls.push(url)
       } catch {
         return NextResponse.json({ error: 'Invalid media domain' }, { status: 400 })
       }
     }
 
-    if (!text && !media_url) return NextResponse.json({ error: 'text или фото обязательны' }, { status: 400 })
+    if (!text && media_urls.length === 0) return NextResponse.json({ error: 'text или фото обязательны' }, { status: 400 })
     if (text.length > 1000) return NextResponse.json({ error: 'max 1000 символов' }, { status: 400 })
 
     const { data, error } = await supabase
@@ -81,15 +82,30 @@ export async function POST(
         member_id: user.id,
         channel: parent.channel,
         text: text || null,
-        media_url,
+        media_url: media_urls[0] ?? null,
+        media_urls: media_urls.length > 0 ? media_urls : null,
         parent_id,
         is_pinned: false,
         is_ai_reply: false,
       })
-      .select('id, member_id, text, media_url, is_ai_reply, likes_count, created_at')
+      .select('id, member_id, text, media_url, media_urls, is_ai_reply, likes_count, created_at')
       .single()
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    // Notify post author if they're not the one commenting
+    if (parent.member_id && parent.member_id !== user.id) {
+      console.log('[notifications] creating reply for member:', parent.member_id)
+      const { error: notifErr } = await admin.from('notifications').insert({
+        member_id: parent.member_id,
+        type: 'reply',
+        text: '💬 Кто-то ответил на ваш пост',
+        link: `/dashboard/channel?ch=${parent.channel}&post=${parent_id}`,
+        is_read: false,
+      })
+      if (notifErr) console.error('[notifications] insert error:', notifErr)
+      else console.log('[notifications] created OK for member:', parent.member_id)
+    }
 
     return NextResponse.json({
       comment: { ...data, liked_by_me: false, comments_count: 0, member: null },

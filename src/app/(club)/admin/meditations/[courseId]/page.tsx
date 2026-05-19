@@ -56,6 +56,7 @@ export default function AdminCourseMeditationsPage({ params }: { params: Promise
   const [saveErr, setSaveErr] = useState('')
   const [uploadingId, setUploadingId] = useState<string | null>(null)
   const [uploadMsg, setUploadMsg] = useState<Record<string, string>>({})
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
   const [toggling, setToggling] = useState<string | null>(null)
 
   const load = useCallback(async () => {
@@ -136,33 +137,64 @@ export default function AdminCourseMeditationsPage({ params }: { params: Promise
   }
 
   async function handleUpload(medId: string, file: File) {
-    if (file.size > 200 * 1024 * 1024) {
-      setUploadMsg(prev => ({ ...prev, [medId]: 'Ошибка: файл слишком большой (максимум 200 МБ)' }))
+    if (file.size > 500 * 1024 * 1024) {
+      setUploadMsg(prev => ({ ...prev, [medId]: 'Ошибка: файл слишком большой (максимум 500 МБ)' }))
       return
     }
     setUploadingId(medId)
     setUploadMsg(prev => ({ ...prev, [medId]: '' }))
+    setUploadProgress(prev => ({ ...prev, [medId]: 0 }))
+
     try {
-      const fd = new FormData()
-      fd.append('file', file)
-      const res = await fetch(`/api/admin/meditations/${medId}/upload`, { method: 'POST', body: fd })
-      const text = await res.text()
-      let d: { url?: string; error?: string } = {}
-      try { d = JSON.parse(text) } catch { d = { error: text || `HTTP ${res.status}` } }
-      setUploadingId(null)
-      if (!res.ok) {
-        const msg = d.error ?? `HTTP ${res.status}`
-        console.error('[upload] error:', medId, msg, text)
-        setUploadMsg(prev => ({ ...prev, [medId]: `Ошибка: ${msg}` }))
-      } else {
-        setUploadMsg(prev => ({ ...prev, [medId]: '✅ Загружено' }))
-        load()
+      // Step 1: get presigned URL (bypasses Nginx completely)
+      const urlRes = await fetch(`/api/admin/meditations/${medId}/upload-url`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: file.name, contentType: file.type }),
+      })
+      const urlData = await urlRes.json() as { signedUrl?: string; publicUrl?: string; error?: string }
+      if (!urlRes.ok || !urlData.signedUrl) {
+        throw new Error(urlData.error ?? 'Не удалось получить URL для загрузки')
       }
+
+      // Step 2: upload directly to Supabase Storage (no Nginx in the path)
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            setUploadProgress(prev => ({ ...prev, [medId]: Math.round(e.loaded / e.total * 100) }))
+          }
+        }
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) resolve()
+          else reject(new Error(`Storage upload failed: ${xhr.status} ${xhr.responseText}`))
+        }
+        xhr.onerror = () => reject(new Error('Сетевая ошибка при загрузке файла'))
+        xhr.open('PUT', urlData.signedUrl!)
+        xhr.setRequestHeader('Content-Type', file.type || 'audio/mpeg')
+        xhr.send(file)
+      })
+
+      // Step 3: save audio_url to DB
+      const patchRes = await fetch(`/api/admin/meditations/${medId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ audio_url: urlData.publicUrl }),
+      })
+      if (!patchRes.ok) {
+        const pd = await patchRes.json().catch(() => ({})) as { error?: string }
+        throw new Error(pd.error ?? 'Ошибка сохранения URL в базе')
+      }
+
+      setUploadMsg(prev => ({ ...prev, [medId]: '✅ Загружено' }))
+      load()
     } catch (err) {
-      setUploadingId(null)
       const msg = err instanceof Error ? err.message : String(err)
-      console.error('[upload] exception:', medId, err)
+      console.error('[upload] error:', medId, err)
       setUploadMsg(prev => ({ ...prev, [medId]: `Ошибка: ${msg}` }))
+    } finally {
+      setUploadingId(null)
+      setUploadProgress(prev => ({ ...prev, [medId]: 0 }))
     }
   }
 
@@ -394,6 +426,21 @@ export default function AdminCourseMeditationsPage({ params }: { params: Promise
                       </span>
                     )}
                   </div>
+                  {uploadingId === m.id && (
+                    <div style={{ marginTop: 8 }}>
+                      <div style={{ width: '100%', background: '#EDE8FF', borderRadius: 99, height: 6, overflow: 'hidden' }}>
+                        <div style={{
+                          height: '100%', borderRadius: 99,
+                          background: 'var(--pur)',
+                          width: `${uploadProgress[m.id] ?? 0}%`,
+                          transition: 'width 0.2s ease',
+                        }} />
+                      </div>
+                      <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>
+                        {uploadProgress[m.id] ?? 0}% — загружается напрямую в хранилище…
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

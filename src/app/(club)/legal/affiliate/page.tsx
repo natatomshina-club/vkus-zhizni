@@ -85,7 +85,7 @@ export default function AffiliateTermsPage() {
               <h2 style={{ fontFamily: 'var(--font-unbounded)', fontSize: 15, fontWeight: 700, color: '#3D2B8A', margin: '0 0 10px' }}>8. Контакты</h2>
               <p style={{ margin: 0 }}>
                 По всем вопросам партнёрской программы:{' '}
-                <a href="mailto:hello@nata-tomshina.ru" style={{ color: '#7C5CFC', fontWeight: 600, textDecoration: 'none' }}>hello@nata-tomshina.ru</a>
+                <a href="mailto:nata.tomshina@gmail.com" style={{ color: '#7C5CFC', fontWeight: 600, textDecoration: 'none' }}>nata.tomshina@gmail.com</a>
               </p>
             </section>
 

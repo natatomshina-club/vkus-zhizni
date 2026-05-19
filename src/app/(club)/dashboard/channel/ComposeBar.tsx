@@ -15,6 +15,7 @@ interface Props {
   isAdmin: boolean
   memberName: string
   memberFullName: string | null
+  memberAvatarUrl: string | null
   onPostCreated: (post: PostWithMeta) => void
   onFocusInput?: () => void
 }
@@ -42,17 +43,17 @@ function compressImage(file: File): Promise<Blob> {
       canvas.width = width
       canvas.height = height
       ctx.drawImage(img, 0, 0, width, height)
-      canvas.toBlob((blob) => resolve(blob!), 'image/jpeg', 0.85)
+      canvas.toBlob((blob) => resolve(blob!), 'image/jpeg', 0.8)
     }
 
     img.src = URL.createObjectURL(file)
   })
 }
 
-export default function ComposeBar({ channel, memberId, isAdmin, memberName, memberFullName, onPostCreated, onFocusInput }: Props) {
+export default function ComposeBar({ channel, memberId, isAdmin, memberName, memberFullName, memberAvatarUrl, onPostCreated, onFocusInput }: Props) {
   const [text, setText] = useState('')
-  const [mediaFile, setMediaFile] = useState<File | null>(null)
-  const [mediaPreview, setMediaPreview] = useState<string | null>(null)
+  const [mediaFiles, setMediaFiles] = useState<File[]>([])
+  const [mediaPreviews, setMediaPreviews] = useState<string[]>([])
   const [mealTag, setMealTag] = useState<string | null>(null)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
@@ -61,7 +62,7 @@ export default function ComposeBar({ channel, memberId, isAdmin, memberName, mem
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const isPlates  = channel === 'plates'
   const hasPhoto  = channel !== 'faq' && channel !== 'direct'
-  const canSend = (text.trim().length > 0 || mediaFile !== null) && !sending
+  const canSend = (text.trim().length > 0 || mediaFiles.length > 0) && !sending
   const charsLeft = 1000 - text.length
 
   // iOS: сдвигаем панель вверх когда открывается клавиатура
@@ -83,33 +84,42 @@ export default function ComposeBar({ channel, memberId, isAdmin, memberName, mem
 
   function adjustTextareaHeight(el: HTMLTextAreaElement) {
     el.style.height = 'auto'
-    el.style.height = Math.min(el.scrollHeight, 96) + 'px'
+    el.style.height = Math.min(el.scrollHeight, 140) + 'px'
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSubmit(e as unknown as React.FormEvent)
+    }
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0] ?? null
-    if (!file) { setMediaFile(null); setMediaPreview(null); return }
-
-    if (!file.type.startsWith('image/')) {
-      setError('Можно загружать только фото')
-      if (fileRef.current) fileRef.current.value = ''
-      return
+    const newFiles = Array.from(e.target.files ?? [])
+    if (newFiles.length === 0) return
+    const remaining = 3 - mediaFiles.length
+    if (remaining <= 0) { setError('Максимум 3 фото'); if (fileRef.current) fileRef.current.value = ''; return }
+    const toAdd = newFiles.slice(0, remaining)
+    for (const file of toAdd) {
+      if (!file.type.startsWith('image/')) { setError('Можно загружать только фото'); if (fileRef.current) fileRef.current.value = ''; return }
+      if (file.size > 10 * 1024 * 1024) { setError('Файл слишком большой. Максимум 10 МБ'); if (fileRef.current) fileRef.current.value = ''; return }
     }
-    if (file.size > 10 * 1024 * 1024) {
-      setError('Файл слишком большой. Максимум 10 МБ')
-      if (fileRef.current) fileRef.current.value = ''
-      return
-    }
-
     setError('')
-    setMediaFile(file)
-    setMediaPreview(URL.createObjectURL(file))
+    setMediaFiles(prev => [...prev, ...toAdd])
+    setMediaPreviews(prev => [...prev, ...toAdd.map(f => URL.createObjectURL(f))])
+    if (fileRef.current) fileRef.current.value = ''
   }
 
-  function removeMedia() {
-    setMediaFile(null)
-    setMediaPreview(null)
-    setMealTag(null)
+  function removeMedia(index?: number) {
+    if (index === undefined) {
+      setMediaFiles([])
+      setMediaPreviews([])
+      setMealTag(null)
+    } else {
+      setMediaFiles(prev => prev.filter((_, i) => i !== index))
+      setMediaPreviews(prev => prev.filter((_, i) => i !== index))
+      if (mediaFiles.length <= 1) setMealTag(null)
+    }
     if (fileRef.current) fileRef.current.value = ''
   }
 
@@ -120,9 +130,9 @@ export default function ComposeBar({ channel, memberId, isAdmin, memberName, mem
     setSending(true)
 
     try {
-      let media_url: string | null = null
+      const media_urls: string[] = []
 
-      if (mediaFile) {
+      for (const mediaFile of mediaFiles) {
         const isGif = mediaFile.type === 'image/gif'
         const uploadBlob = isGif ? mediaFile : await compressImage(mediaFile)
         const uploadName = isGif ? mediaFile.name : mediaFile.name.replace(/\.[^.]+$/, '.jpg')
@@ -131,27 +141,16 @@ export default function ComposeBar({ channel, memberId, isAdmin, memberName, mem
         const urlRes = await fetch('/api/channel/upload-url', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            channel,
-            filename: uploadName,
-            content_type: uploadType,
-            size: uploadBlob.size,
-          }),
+          body: JSON.stringify({ channel, filename: uploadName, content_type: uploadType, size: uploadBlob.size }),
         })
         if (!urlRes.ok) {
           const err = await urlRes.json().catch(() => ({})) as { error?: string }
           throw new Error(err.error ?? 'Ошибка загрузки фото')
         }
         const { signedUrl, publicUrl } = await urlRes.json() as { signedUrl: string; path: string; publicUrl: string }
-
-        const uploadRes = await fetch(signedUrl, {
-          method: 'PUT',
-          headers: { 'Content-Type': uploadType },
-          body: uploadBlob,
-        })
+        const uploadRes = await fetch(signedUrl, { method: 'PUT', headers: { 'Content-Type': uploadType }, body: uploadBlob })
         if (!uploadRes.ok) throw new Error('Ошибка загрузки фото на сервер')
-
-        media_url = publicUrl
+        media_urls.push(publicUrl)
       }
 
       const res = await fetch('/api/channel/posts', {
@@ -160,7 +159,7 @@ export default function ComposeBar({ channel, memberId, isAdmin, memberName, mem
         body: JSON.stringify({
           channel,
           text: text.trim() || '',
-          media_url: media_url ?? undefined,
+          media_urls: media_urls.length > 0 ? media_urls : undefined,
           meal_tag: isPlates ? mealTag : undefined,
         }),
       })
@@ -177,11 +176,12 @@ export default function ComposeBar({ channel, memberId, isAdmin, memberName, mem
           name: memberName,
           full_name: memberFullName,
           role: isAdmin ? 'admin' : 'user',
+          avatar_url: memberAvatarUrl,
         },
       })
       setText('')
       removeMedia()
-      if (textareaRef.current) textareaRef.current.style.height = 'auto'
+      if (textareaRef.current) textareaRef.current.style.height = '48px'
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка отправки')
     } finally {
@@ -206,7 +206,7 @@ export default function ComposeBar({ channel, memberId, isAdmin, memberName, mem
       )}
 
       {/* Meal tags (только Тарелочки, когда фото выбрано) */}
-      {isPlates && mediaPreview && (
+      {isPlates && mediaPreviews.length > 0 && (
         <div className="flex gap-1.5 flex-wrap">
           {MEAL_TAGS.map(t => (
             <button
@@ -227,43 +227,60 @@ export default function ComposeBar({ channel, memberId, isAdmin, memberName, mem
         </div>
       )}
 
-      {/* Основная строка: [thumbnail или 📷] [textarea] [→] */}
-      <div className="flex items-end gap-2">
-
-        {/* Фото: thumbnail если выбрано, иначе кнопка 📷 */}
-        {hasPhoto && (
-          <>
-            {mediaPreview ? (
-              <div className="relative shrink-0" style={{ width: 48, height: 48 }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={mediaPreview}
-                  alt="preview"
-                  style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 10, display: 'block' }}
-                />
-                <button
-                  type="button"
-                  onClick={removeMedia}
-                  className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
-                  style={{ background: 'rgba(0,0,0,0.6)', color: '#fff', lineHeight: 1 }}
-                >
-                  ✕
-                </button>
-              </div>
-            ) : (
+      {/* Полоса превью (отдельный блок над строкой ввода) */}
+      {hasPhoto && mediaPreviews.length > 0 && (
+        <div className="flex gap-2 pb-2" style={{ overflowX: 'auto', flexWrap: 'nowrap' }}>
+          {mediaPreviews.map((src, idx) => (
+            <div key={idx} className="relative shrink-0" style={{ width: 56, height: 56 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={src}
+                alt="preview"
+                style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 10, display: 'block' }}
+              />
               <button
                 type="button"
-                onClick={() => fileRef.current?.click()}
-                className="shrink-0 rounded-xl flex items-center justify-center text-xl"
-                style={{ minHeight: 48, minWidth: 48, background: 'var(--bg)', border: '1px solid var(--border)' }}
+                onClick={() => removeMedia(idx)}
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center font-bold"
+                style={{ background: 'rgba(0,0,0,0.65)', color: '#fff', fontSize: 9, lineHeight: 1 }}
               >
-                📷
+                ✕
               </button>
-            )}
+            </div>
+          ))}
+          {mediaPreviews.length < 3 && (
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="shrink-0 rounded-xl flex items-center justify-center text-lg"
+              style={{ width: 56, height: 56, background: 'var(--bg)', border: '1px dashed var(--border)', color: 'var(--muted)' }}
+            >
+              +
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Основная строка: [📷] [запись / превью / textarea] [🎤 / →] */}
+      <div className="flex items-end gap-2">
+
+        {/* Кнопка фото */}
+        {hasPhoto && (
+          <>
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={mediaPreviews.length >= 3}
+              className="shrink-0 rounded-xl flex items-center justify-center text-xl disabled:opacity-40"
+              style={{ minHeight: 48, minWidth: 48, background: 'var(--bg)', border: '1px solid var(--border)' }}
+            >
+              📷
+            </button>
             <input
               ref={fileRef}
               type="file"
               accept="image/jpeg,image/png,image/webp,image/heic,image/heif,image/gif"
+              multiple
               className="hidden"
               onChange={handleFileChange}
             />
@@ -271,52 +288,53 @@ export default function ComposeBar({ channel, memberId, isAdmin, memberName, mem
         )}
 
         {/* Textarea */}
-        <div className="flex-1 relative" style={{ alignSelf: 'stretch', display: 'flex', flexDirection: 'column' }}>
-          <textarea
-            ref={textareaRef}
-            value={text}
-            onChange={e => {
-              setText(e.target.value.slice(0, 1000))
-              adjustTextareaHeight(e.target)
-            }}
-            placeholder={isPlates ? 'Подпись к фото (необязательно)...' : 'Написать сообщение...'}
-            autoComplete="off"
-            autoCorrect="on"
-            autoCapitalize="sentences"
-            spellCheck={true}
-            rows={1}
-            className="w-full px-3 py-2.5 rounded-xl border text-sm outline-none resize-none transition-all"
-            style={{
-              fontFamily: 'var(--font-nunito)',
-              color: 'var(--text)',
-              borderColor: 'var(--border)',
-              background: 'var(--bg)',
-              minHeight: 48,
-              overflow: 'hidden',
-              flex: 1,
-            }}
-            onFocus={e => {
-              onFocusInput?.()
-              e.target.style.borderColor = 'var(--pur)'
-            }}
-            onBlur={e => (e.target.style.borderColor = 'var(--border)')}
-          />
-          {text.length > 900 && (
-            <p className="absolute right-2 bottom-1 text-[10px]"
-              style={{ color: charsLeft < 50 ? '#C0392B' : 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
-              {charsLeft}
-            </p>
-          )}
-        </div>
+        <div className="flex-1 relative">
+            <textarea
+              ref={textareaRef}
+              value={text}
+              onChange={e => {
+                setText(e.target.value.slice(0, 1000))
+                adjustTextareaHeight(e.target)
+              }}
+              onKeyDown={handleKeyDown}
+              placeholder={isPlates ? 'Подпись к фото (необязательно)...' : 'Написать сообщение...'}
+              autoComplete="off"
+              autoCorrect="on"
+              autoCapitalize="sentences"
+              spellCheck={true}
+              rows={1}
+              className="w-full px-3 py-2.5 rounded-xl border outline-none resize-none"
+              style={{
+                fontFamily: 'var(--font-nunito)',
+                fontSize: 16,
+                color: 'var(--text)',
+                borderColor: 'var(--border)',
+                background: 'var(--bg)',
+                minHeight: 48,
+                overflowY: 'auto',
+                display: 'block',
+              }}
+              onFocus={e => {
+                onFocusInput?.()
+                e.target.style.borderColor = 'var(--pur)'
+              }}
+              onBlur={e => (e.target.style.borderColor = 'var(--border)')}
+            />
+            {text.length > 900 && (
+              <p className="absolute right-2 bottom-1 text-[10px]"
+                style={{ color: charsLeft < 50 ? '#C0392B' : 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
+                {charsLeft}
+              </p>
+            )}
+          </div>
 
-        {/* Кнопка отправки */}
+        {/* → — отправить */}
         <button
           type="submit"
           disabled={!canSend}
           className="shrink-0 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-40"
           style={{
-            minHeight: 48,
-            minWidth: 56,
+            minHeight: 48, minWidth: 56,
             background: 'var(--pur)',
             fontFamily: 'var(--font-nunito)',
             touchAction: 'manipulation',

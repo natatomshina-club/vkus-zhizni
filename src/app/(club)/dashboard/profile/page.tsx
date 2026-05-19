@@ -10,10 +10,11 @@ export default async function ProfilePage() {
   const { data: member } = await createServiceClient()
     .from('members')
     .select(`
-      id, email, name, full_name, age, weight, height, goal_weight, initial_weight,
+      id, email, name, full_name, first_name, age, weight, height, goal_weight, initial_weight,
       activity_level, activity_coef, health_conditions, allergies,
       status, subscription_status, subscription_plan, subscription_ends_at, trial_ends_at, created_at,
       kbju_calories, kbju_protein, kbju_fat, kbju_carbs,
+      kbju_protein_system, kbju_carbs_system, kbju_manual,
       avatar_url, birth_date
     `)
     .eq('email', user.email)

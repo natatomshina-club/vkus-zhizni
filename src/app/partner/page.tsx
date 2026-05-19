@@ -257,7 +257,7 @@ export default function PartnerPage() {
 
           <p style={{ textAlign: 'center', fontSize: 13, color: '#9B8FCC', marginTop: 20 }}>
             Уже участник программы?{' '}
-            <Link href="/auth" style={{ color: '#7C5CFC', fontWeight: 600, textDecoration: 'none' }}>Войти в кабинет →</Link>
+            <Link href="/partner/login" style={{ color: '#7C5CFC', fontWeight: 600, textDecoration: 'none' }}>Войти в кабинет →</Link>
           </p>
         </div>
       </section>

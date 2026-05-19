@@ -22,28 +22,28 @@ export async function POST(
 
   if (!webinar) return NextResponse.json({ error: 'Вебинар не найден' }, { status: 404 })
 
-  // Get member name
+  // Get member by email (not user.id!)
   const { data: member } = await admin
     .from('members')
-    .select('full_name, email')
-    .eq('id', user.id)
+    .select('id, full_name, email')
+    .eq('email', user.email!)
     .single()
 
-  const name = member?.full_name ?? member?.email ?? 'Участница'
+  if (!member) return NextResponse.json({ error: 'Участница не найдена' }, { status: 404 })
 
-  // Find admin user
-  const { data: adminMember } = await admin
-    .from('members')
-    .select('id')
-    .eq('role', 'admin')
-    .limit(1)
-    .single()
-
-  if (!adminMember) return NextResponse.json({ error: 'Ошибка конфигурации' }, { status: 500 })
+  // Insert into webinar_selections (pending queue), skip if already exists
+  await admin.from('webinar_selections').upsert(
+    {
+      member_id: member.id,
+      webinar_id: webinar.id,
+      status: 'pending',
+    },
+    { onConflict: 'member_id,webinar_id', ignoreDuplicates: true }
+  )
 
   // Send message from member to admin
   await admin.from('private_messages').insert({
-    member_id: user.id,
+    member_id: member.id,
     text: `Наташа, хочу купить вебинар «${webinar.title}» — ${webinar.price} ₽`,
     from_admin: false,
     is_read: false,

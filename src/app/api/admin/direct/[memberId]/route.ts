@@ -33,7 +33,7 @@ export async function GET(
       .order('created_at', { ascending: true }),
     admin
       .from('members')
-      .select('id, name, full_name, email, status, created_at')
+      .select('id, name, full_name, email, subscription_status, tariff, created_at')
       .eq('id', memberId)
       .single(),
     admin
@@ -109,6 +109,18 @@ export async function POST(
     .single()
 
   if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 })
+
+  // Notify the member about the new DM
+  console.log('[notifications] creating for member:', memberId)
+  const { error: notifErr } = await admin.from('notifications').insert({
+    member_id: memberId,
+    type: 'private_message',
+    text: '💌 Новое личное сообщение от Наташи',
+    link: '/dashboard/channel?ch=direct',
+    is_read: false,
+  })
+  if (notifErr) console.error('[notifications] insert error:', notifErr)
+  else console.log('[notifications] created OK for member:', memberId)
 
   return NextResponse.json({ message: data }, { status: 201 })
 }

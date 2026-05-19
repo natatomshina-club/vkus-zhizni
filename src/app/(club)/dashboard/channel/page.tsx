@@ -54,13 +54,6 @@ export default async function ChannelPage({
       mediaExpiresHours: 72,
     },
     {
-      slug: 'faq',
-      label: 'FAQ',
-      icon: '📚',
-      type: 'faq',
-      description: 'Вопросы и ответы от Натальи',
-    },
-    {
       slug: 'direct',
       label: 'Наташе',
       icon: '✉️',

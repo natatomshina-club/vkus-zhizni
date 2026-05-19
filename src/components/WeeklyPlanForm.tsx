@@ -24,6 +24,7 @@ export default function WeeklyPlanForm({ kbjuCalories, kbjuProtein, kbjuFat, kbj
   const [noResults,    setNoResults]    = useState(false)
   const [status,       setStatus]       = useState<'idle' | 'loading' | 'success'>('idle')
   const [error,        setError]        = useState<string | null>(null)
+  const [showInfo,     setShowInfo]     = useState(false)
   const debRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const searchProducts = useCallback((query: string) => {
@@ -37,6 +38,7 @@ export default function WeeklyPlanForm({ kbjuCalories, kbjuProtein, kbjuFat, kbj
         .from('nutrition')
         .select('id, name')
         .ilike('name', `%${query}%`)
+        .neq('id', 209)  // фарш говяжий 15% — нет рецептов с таким protein_tag
         .limit(8)
       const names = (data ?? []).map((r: { name: string }) => r.name)
       setSuggestions(names)
@@ -127,6 +129,93 @@ export default function WeeklyPlanForm({ kbjuCalories, kbjuProtein, kbjuFat, kbj
 
   return (
     <div className="flex flex-col gap-5 max-w-xl mx-auto">
+
+      {/* Блок 0: Как работает рацион — первый, чтобы пользователь прочёл до ввода */}
+      <div className="rounded-2xl overflow-hidden"
+        style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+        <button
+          type="button"
+          onClick={() => setShowInfo(v => !v)}
+          className="w-full flex items-center justify-between px-4 py-4"
+        >
+          <span className="text-sm font-bold"
+            style={{ color: 'var(--text)', fontFamily: 'var(--font-nunito)' }}>
+            📋 Как работает рацион на неделю
+          </span>
+          <span style={{ color: 'var(--muted)', fontSize: 12, fontFamily: 'var(--font-nunito)' }}>
+            {showInfo ? '▲' : '▼'}
+          </span>
+        </button>
+        {showInfo && (
+          <div className="px-4 pb-4 flex flex-col gap-0"
+            style={{ borderTop: '1px solid var(--border)' }}>
+            {[
+              {
+                emoji: '🍽', title: 'Режим питания',
+                items: [
+                  '2-разовое: завтрак + обед/ужин',
+                  '3-разовое: завтрак + обед + ужин (приёмы 2 и 3 — одинаковый рецепт, кроме особых дней с белковым салатом — там обед и ужин разные)',
+                ],
+              },
+              {
+                emoji: '🥗', title: 'Салаты (если включены)',
+                items: [
+                  'При 2-разовом: 3 дня — овощной салат как добавка к обеду, 2 дня — белковый салат вместо обеда, 2 дня — без салатов',
+                  'При 3-разовом: 2 дня — белковый салат на обед (ужин в эти дни — отдельный рецепт), 3 дня — овощной салат как добавка, 2 дня — без салатов',
+                ],
+              },
+              {
+                emoji: '🥩', title: 'Чередование белков',
+                items: [
+                  'Если вы указали несколько белковых продуктов, мы чередуем их по дням — никакой белок не повторяется 3 дня подряд',
+                  'При 3-разовом завтрак и обед/ужин могут быть из разных белков',
+                  'Свежая рыба (если указана) появляется 2 раза в неделю',
+                  'Копчёная/солёная рыба идёт без нагрева — на завтрак или в салат',
+                ],
+              },
+              {
+                emoji: '🥦', title: 'Разнообразие овощей',
+                items: [
+                  'Все овощи из вашего списка появляются в рационе хотя бы раз за неделю',
+                  'В один день обед и ужин не дублируют один и тот же главный овощ',
+                  'Овощи взаимозаменяемы: любой овощ в рецепте можно заменить на другой из вашего списка — алгоритм подбирает рецепты с учётом ваших предпочтений, но в готовке вы свободно меняете',
+                  'Зелень в салатах: салат, шпинат, руккола, айсберг — взаимозаменяемы, можно заменять друг на друга или делать микс из нескольких видов',
+                ],
+              },
+              {
+                emoji: '⏱', title: 'Готовка на несколько дней',
+                items: [
+                  'Базовый рацион рассчитан на готовку каждый день (1 порция на приём)',
+                  'Если хотите готовить заранее — приготовьте любой рецепт сразу на 2–3 дня: умножьте граммовку всех ингредиентов на 2 или 3. Готовое блюдо храните в холодильнике до 3 дней.',
+                ],
+              },
+              {
+                emoji: '🎯', title: 'Расчёт КБЖУ',
+                items: [
+                  'Каждый рецепт автоматически масштабируется под ваши индивидуальные цели по белкам, жирам и углеводам',
+                  'Если итоговые углеводы превышают норму — мы автоматически уменьшаем граммовку «объёмных» овощей (капуста, кабачок, фасоль и т.п.)',
+                ],
+              },
+            ].map(({ emoji, title, items }) => (
+              <div key={title} className="pt-3">
+                <p className="text-xs font-bold mb-1.5"
+                  style={{ color: '#E8845A', fontFamily: 'var(--font-nunito)' }}>
+                  {emoji} {title}
+                </p>
+                <ul className="flex flex-col gap-1">
+                  {items.map((item, i) => (
+                    <li key={i} className="text-xs leading-relaxed flex gap-1.5"
+                      style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>
+                      <span style={{ flexShrink: 0 }}>—</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Блок 1: КБЖУ */}
       <div className="rounded-2xl px-4 py-4"

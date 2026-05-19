@@ -12,10 +12,27 @@ async function requireAdmin() {
   return { user, error: null, status: 200 as const }
 }
 
+function getFileConfig(id: string, type: string) {
+  if (type === 'shopping') {
+    return {
+      fileName: `${id}/shopping-list.pdf`,
+      dbField: 'shopping_list_pdf_url',
+    }
+  }
+  return {
+    fileName: `marathon-${id}-ration.pdf`,
+    dbField: 'ration_pdf_url',
+  }
+}
+
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const { user, error, status } = await requireAdmin()
   if (!user) return NextResponse.json({ error }, { status })
+
+  const url = new URL(req.url)
+  const type = url.searchParams.get('type') ?? 'ration'
+  const { fileName, dbField } = getFileConfig(id, type)
 
   const formData = await req.formData().catch(() => null)
   if (!formData) return NextResponse.json({ error: 'Нет файла' }, { status: 400 })
@@ -25,7 +42,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const arrayBuffer = await file.arrayBuffer()
   const buffer = new Uint8Array(arrayBuffer)
-  const fileName = `marathon-${id}-ration.pdf`
 
   const admin = createServiceClient()
   const { error: uploadErr } = await admin.storage
@@ -41,22 +57,23 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     .from('marathon-files')
     .getPublicUrl(fileName)
 
-  // Save to marathon record
-  await admin.from('marathons').update({ ration_pdf_url: publicUrl }).eq('id', id)
+  await admin.from('marathons').update({ [dbField]: publicUrl }).eq('id', id)
 
   return NextResponse.json({ url: publicUrl })
 }
 
-export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const { user, error, status } = await requireAdmin()
   if (!user) return NextResponse.json({ error }, { status })
 
-  const admin = createServiceClient()
-  const fileName = `marathon-${id}-ration.pdf`
+  const url = new URL(req.url)
+  const type = url.searchParams.get('type') ?? 'ration'
+  const { fileName, dbField } = getFileConfig(id, type)
 
+  const admin = createServiceClient()
   await admin.storage.from('marathon-files').remove([fileName])
-  await admin.from('marathons').update({ ration_pdf_url: null }).eq('id', id)
+  await admin.from('marathons').update({ [dbField]: null }).eq('id', id)
 
   return NextResponse.json({ ok: true })
 }

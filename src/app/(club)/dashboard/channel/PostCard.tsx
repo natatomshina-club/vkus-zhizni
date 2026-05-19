@@ -1,12 +1,23 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { PostWithMeta } from '@/types/channel'
 import Avatar from '@/components/Avatar'
+import { FAQ_CATEGORIES, FAQ_CATEGORY_LABELS } from '@/types/channel'
+import type { FaqCategory } from '@/types/channel'
 
 function getDisplayName(name: string | null, fullName: string | null): string {
   return fullName ?? name ?? 'Участница'
+}
+
+function renderTextWithLinks(text: string): React.ReactNode[] {
+  const parts = text.split(/(https?:\/\/[^\s<>"']+)/)
+  return parts.map((part, i) =>
+    i % 2 === 1
+      ? <a key={i} href={part} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--pur)', textDecoration: 'underline', wordBreak: 'break-all' }}>{part}</a>
+      : part
+  )
 }
 
 function formatTime(iso: string): string {
@@ -55,9 +66,11 @@ interface Props {
   memberName: string
   memberFullName: string | null
   onDelete: (id: string) => void
+  isHighlighted?: boolean
+  onHighlightDismiss?: () => void
 }
 
-export default function PostCard({ post, currentMemberId, isAdmin, isCurator, memberName, memberFullName, onDelete }: Props) {
+export default function PostCard({ post, currentMemberId, isAdmin, isCurator, memberName, memberFullName, onDelete, isHighlighted, onHighlightDismiss }: Props) {
   const [liked, setLiked] = useState(post.liked_by_me)
   const [likesCount, setLikesCount] = useState(post.likes_count)
   const [showComments, setShowComments] = useState(false)
@@ -66,7 +79,7 @@ export default function PostCard({ post, currentMemberId, isAdmin, isCurator, me
   const [showFaqForm, setShowFaqForm] = useState(false)
   const [faqQuestion, setFaqQuestion] = useState('')
   const [faqAnswer, setFaqAnswer] = useState(post.text ?? '')
-  const [faqCategory, setFaqCategory] = useState('')
+  const [faqCategory, setFaqCategory] = useState<FaqCategory | ''>('')
   const [savingFaq, setSavingFaq] = useState(false)
   const [faqSaved, setFaqSaved] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -84,9 +97,15 @@ export default function PostCard({ post, currentMemberId, isAdmin, isCurator, me
   // Comment input
   const [commentText, setCommentText] = useState('')
   const [sendingComment, setSendingComment] = useState(false)
-  const [commentMediaFile, setCommentMediaFile] = useState<File | null>(null)
-  const [commentMediaPreview, setCommentMediaPreview] = useState<string | null>(null)
+  const [commentMediaFiles, setCommentMediaFiles] = useState<File[]>([])
+  const [commentMediaPreviews, setCommentMediaPreviews] = useState<string[]>([])
   const commentFileRef = useRef<HTMLInputElement>(null)
+  const commentInputRef = useRef<HTMLTextAreaElement>(null)
+
+  function adjustCommentHeight(el: HTMLTextAreaElement) {
+    el.style.height = 'auto'
+    el.style.height = Math.min(el.scrollHeight, 140) + 'px'
+  }
 
   // Comment actions
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
@@ -102,11 +121,11 @@ export default function PostCard({ post, currentMemberId, isAdmin, isCurator, me
 
   const isOwn = post.member_id === currentMemberId
   const isMediaExpired =
-    !post.media_url &&
+    !post.media_url && !(post.media_urls && post.media_urls.length > 0) &&
     post.media_expires_at !== null &&
     new Date(post.media_expires_at) < new Date()
 
-  const canSendComment = (commentText.trim().length > 0 || commentMediaFile !== null) && !sendingComment
+  const canSendComment = (commentText.trim().length > 0 || commentMediaFiles.length > 0) && !sendingComment
 
   const cardStyle = post.is_pinned
     ? { background: 'var(--card)', border: '2px solid var(--pur)' }
@@ -134,27 +153,29 @@ export default function PostCard({ post, currentMemberId, isAdmin, isCurator, me
   }
 
   function handleCommentFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0] ?? null
-    if (!file) { setCommentMediaFile(null); setCommentMediaPreview(null); return }
-    if (!file.type.startsWith('image/')) return
-    if (file.size > 10 * 1024 * 1024) return
-    setCommentMediaFile(file)
-    setCommentMediaPreview(URL.createObjectURL(file))
+    const newFiles = Array.from(e.target.files ?? [])
+    if (newFiles.length === 0) return
+    const remaining = 3 - commentMediaFiles.length
+    if (remaining <= 0) { if (commentFileRef.current) commentFileRef.current.value = ''; return }
+    const toAdd = newFiles.slice(0, remaining).filter(f => f.type.startsWith('image/') && f.size <= 10 * 1024 * 1024)
+    if (toAdd.length === 0) { if (commentFileRef.current) commentFileRef.current.value = ''; return }
+    setCommentMediaFiles(prev => [...prev, ...toAdd])
+    setCommentMediaPreviews(prev => [...prev, ...toAdd.map(f => URL.createObjectURL(f))])
+    if (commentFileRef.current) commentFileRef.current.value = ''
   }
 
-  function removeCommentMedia() {
-    setCommentMediaFile(null)
-    setCommentMediaPreview(null)
-    if (commentFileRef.current) commentFileRef.current.value = ''
+  function removeCommentMedia(index: number) {
+    setCommentMediaFiles(prev => prev.filter((_, i) => i !== index))
+    setCommentMediaPreviews(prev => prev.filter((_, i) => i !== index))
   }
 
   async function handleSendComment() {
     if (!canSendComment) return
     setSendingComment(true)
     try {
-      let media_url: string | null = null
+      const media_urls: string[] = []
 
-      if (commentMediaFile) {
+      for (const commentMediaFile of commentMediaFiles) {
         const isGif = commentMediaFile.type === 'image/gif'
         const uploadBlob = isGif ? commentMediaFile : await compressImage(commentMediaFile)
         const uploadName = isGif ? commentMediaFile.name : commentMediaFile.name.replace(/\.[^.]+$/, '.jpg')
@@ -169,14 +190,14 @@ export default function PostCard({ post, currentMemberId, isAdmin, isCurator, me
         const { signedUrl, publicUrl } = await urlRes.json() as { signedUrl: string; path: string; publicUrl: string }
         const uploadRes = await fetch(signedUrl, { method: 'PUT', headers: { 'Content-Type': uploadType }, body: uploadBlob })
         if (!uploadRes.ok) throw new Error('Ошибка загрузки фото')
-        media_url = publicUrl
+        media_urls.push(publicUrl)
       }
 
       const trimmed = commentText.trim()
       const res = await fetch(`/api/channel/posts/${post.id}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: trimmed || undefined, media_url: media_url ?? undefined }),
+        body: JSON.stringify({ text: trimmed || undefined, media_urls: media_urls.length > 0 ? media_urls : undefined }),
       })
       const data = await res.json() as { comment?: PostWithMeta }
       if (data.comment) {
@@ -185,7 +206,9 @@ export default function PostCard({ post, currentMemberId, isAdmin, isCurator, me
           member: { name: memberName, full_name: memberFullName, role: isAdmin ? 'admin' : 'user' },
         }])
         setCommentText('')
-        removeCommentMedia()
+        if (commentInputRef.current) commentInputRef.current.style.height = '36px'
+        setCommentMediaFiles([])
+        setCommentMediaPreviews([])
       }
     } finally {
       setSendingComment(false)
@@ -215,7 +238,6 @@ export default function PostCard({ post, currentMemberId, isAdmin, isCurator, me
     setSavingEdit(true)
     setEditError('')
     const id = editingCommentId
-    console.log('[handleSaveEdit] start, commentId:', id, 'text:', editText.trim())
     try {
       const res = await fetch(`/api/channel/posts/${id}`, {
         method: 'PATCH',
@@ -223,7 +245,6 @@ export default function PostCard({ post, currentMemberId, isAdmin, isCurator, me
         body: JSON.stringify({ text: editText.trim() }),
       })
       const data = await res.json() as { post?: { text: string }; error?: string }
-      console.log('[handleSaveEdit] response status:', res.status, 'data:', data)
       if (!res.ok) {
         setEditError(data.error ?? 'Ошибка сохранения')
         return
@@ -231,7 +252,6 @@ export default function PostCard({ post, currentMemberId, isAdmin, isCurator, me
       setComments(prev => prev.map(c => c.id === id ? { ...c, text: editText.trim() } : c))
       setEditedCommentIds(prev => new Set([...prev, id]))
       setEditingCommentId(null)
-      console.log('[handleSaveEdit] done, updated comment', id)
     } finally {
       setSavingEdit(false)
     }
@@ -270,7 +290,7 @@ export default function PostCard({ post, currentMemberId, isAdmin, isCurator, me
   }
 
   async function handleSaveFaq() {
-    if (!faqQuestion.trim() || !faqAnswer.trim() || !faqCategory.trim()) return
+    if (!faqQuestion.trim() || !faqAnswer.trim() || !faqCategory) return
     setSavingFaq(true)
     try {
       const res = await fetch(`/api/channel/posts/${post.id}/save-to-faq`, {
@@ -327,7 +347,16 @@ export default function PostCard({ post, currentMemberId, isAdmin, isCurator, me
   const isAuthorCurator = (memberData as { role?: string } | null)?.role === 'curator'
 
   return (
-    <div className="rounded-2xl overflow-hidden shrink-0" style={cardStyle}>
+    <div
+      id={`post-${post.id}`}
+      className="rounded-2xl overflow-hidden shrink-0"
+      onClick={() => { if (isHighlighted) onHighlightDismiss?.() }}
+      style={{
+        ...cardStyle,
+        boxShadow: isHighlighted ? '0 0 0 3px #FBBF24' : undefined,
+        transition: 'box-shadow 0.4s ease',
+      }}
+    >
       {post.is_pinned && (
         <div className="px-4 py-1 text-xs font-semibold" style={{ background: 'var(--pur)', color: '#fff', fontFamily: 'var(--font-nunito)' }}>
           📌 Закреплено
@@ -420,7 +449,12 @@ export default function PostCard({ post, currentMemberId, isAdmin, isCurator, me
           <div className="rounded-xl p-3 mb-3 flex flex-col gap-2" style={{ background: 'var(--pur-lt)', border: '1px solid var(--pur-br)' }}>
             <input placeholder="Вопрос" value={faqQuestion} onChange={e => setFaqQuestion(e.target.value)} className="w-full px-2.5 py-1.5 rounded-lg text-xs border outline-none" style={{ fontFamily: 'var(--font-nunito)', borderColor: 'var(--pur-br)', background: '#fff', color: 'var(--text)' }} />
             <textarea placeholder="Ответ" value={faqAnswer} onChange={e => setFaqAnswer(e.target.value)} rows={3} className="w-full px-2.5 py-1.5 rounded-lg text-xs border outline-none resize-none" style={{ fontFamily: 'var(--font-nunito)', borderColor: 'var(--pur-br)', background: '#fff', color: 'var(--text)' }} />
-            <input placeholder="Категория (например: Питание)" value={faqCategory} onChange={e => setFaqCategory(e.target.value)} className="w-full px-2.5 py-1.5 rounded-lg text-xs border outline-none" style={{ fontFamily: 'var(--font-nunito)', borderColor: 'var(--pur-br)', background: '#fff', color: 'var(--text)' }} />
+            <select value={faqCategory} onChange={e => setFaqCategory(e.target.value as FaqCategory)} className="w-full px-2.5 py-1.5 rounded-lg text-xs border outline-none" style={{ fontFamily: 'var(--font-nunito)', borderColor: 'var(--pur-br)', background: '#fff', color: faqCategory ? 'var(--text)' : 'var(--muted)' }}>
+              <option value="">— Выбери категорию —</option>
+              {FAQ_CATEGORIES.map(cat => (
+                <option key={cat} value={cat}>{FAQ_CATEGORY_LABELS[cat]}</option>
+              ))}
+            </select>
             <div className="flex gap-2">
               <button type="button" onClick={handleSaveFaq} disabled={savingFaq} className="flex-1 py-1.5 rounded-lg text-xs font-bold text-white disabled:opacity-50" style={{ background: 'var(--pur)', fontFamily: 'var(--font-nunito)' }}>
                 {savingFaq ? 'Сохраняю...' : 'Сохранить в FAQ'}
@@ -460,18 +494,18 @@ export default function PostCard({ post, currentMemberId, isAdmin, isCurator, me
           </div>
         ) : (postText || post.text) ? (
           <p className="text-sm leading-relaxed mb-3" style={{ color: 'var(--text)', fontFamily: 'var(--font-nunito)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-            {postText ?? post.text}
+            {renderTextWithLinks(postText ?? post.text ?? '')}
             {postEdited && <span style={{ color: 'var(--pale)', fontSize: 11 }}> · изменено</span>}
           </p>
         ) : null}
 
         {/* Post media */}
-        {post.media_url && (
-          <div className="mb-3">
+        {(post.media_urls && post.media_urls.length > 0 ? post.media_urls : post.media_url ? [post.media_url] : []).map((url, idx) => (
+          <div key={idx} className="mb-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={post.media_url} alt="фото" style={{ width: '100%', height: 'auto', minHeight: '200px', maxHeight: '400px', objectFit: 'contain', borderRadius: '12px', display: 'block', backgroundColor: '#F0EEFF' }} onLoad={(e) => { (e.target as HTMLImageElement).style.minHeight = '0' }} />
+            <img src={url} alt="фото" style={{ width: '100%', height: 'auto', minHeight: '200px', maxHeight: '400px', objectFit: 'contain', borderRadius: '12px', display: 'block', backgroundColor: '#F0EEFF' }} onLoad={(e) => { (e.target as HTMLImageElement).style.minHeight = '0' }} />
           </div>
-        )}
+        ))}
         {isMediaExpired && (
           <div className="mb-3 rounded-xl flex items-center justify-center py-6 text-sm gap-2" style={{ background: 'var(--bg)', color: 'var(--muted)', border: '1px dashed var(--border)', fontFamily: 'var(--font-nunito)' }}>
             📷 Фото удалено (72ч)
@@ -611,14 +645,14 @@ export default function PostCard({ post, currentMemberId, isAdmin, isCurator, me
                   ) : (
                     <>
                       {c.text && (
-                        <p className="text-xs leading-relaxed" style={{ color: 'var(--text)', fontFamily: 'var(--font-nunito)', whiteSpace: 'pre-wrap' }}>{c.text}</p>
+                        <p className="text-xs leading-relaxed" style={{ color: 'var(--text)', fontFamily: 'var(--font-nunito)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{renderTextWithLinks(c.text)}</p>
                       )}
-                      {c.media_url && (
-                        <div className="mt-1.5">
+                      {(c.media_urls && c.media_urls.length > 0 ? c.media_urls : c.media_url ? [c.media_url] : []).map((url, idx) => (
+                        <div key={idx} className="mt-1.5">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={c.media_url} alt="фото" style={{ maxWidth: '100%', maxHeight: 240, objectFit: 'contain', borderRadius: 8, display: 'block', background: '#F0EEFF' }} />
+                          <img src={url} alt="фото" style={{ maxWidth: '100%', maxHeight: 240, objectFit: 'contain', borderRadius: 8, display: 'block', background: '#F0EEFF' }} />
                         </div>
-                      )}
+                      ))}
                     </>
                   )}
                 </div>
@@ -627,22 +661,33 @@ export default function PostCard({ post, currentMemberId, isAdmin, isCurator, me
 
             {/* Compose comment */}
             <div className="mt-1 flex flex-col gap-1.5">
-              {/* Thumbnail above input */}
-              {commentMediaPreview && (
-                <div className="flex items-center gap-2">
-                  <div className="relative shrink-0" style={{ width: 64, height: 64 }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={commentMediaPreview} alt="preview" style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 8, display: 'block' }} />
+              {/* Thumbnails above input */}
+              {commentMediaPreviews.length > 0 && (
+                <div className="flex gap-2" style={{ overflowX: 'auto', flexWrap: 'nowrap' }}>
+                  {commentMediaPreviews.map((src, idx) => (
+                    <div key={idx} className="relative shrink-0" style={{ width: 52, height: 52 }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={src} alt="preview" style={{ width: 52, height: 52, objectFit: 'cover', borderRadius: 8, display: 'block' }} />
+                      <button
+                        type="button"
+                        onClick={() => removeCommentMedia(idx)}
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center font-bold"
+                        style={{ background: 'rgba(0,0,0,0.65)', color: '#fff', fontSize: 9, lineHeight: 1 }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                  {commentMediaPreviews.length < 3 && (
                     <button
                       type="button"
-                      onClick={removeCommentMedia}
-                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
-                      style={{ background: 'rgba(0,0,0,0.6)', color: '#fff' }}
+                      onClick={() => commentFileRef.current?.click()}
+                      className="shrink-0 rounded-lg flex items-center justify-center text-base"
+                      style={{ width: 52, height: 52, background: 'var(--bg)', border: '1px dashed var(--border)', color: 'var(--muted)' }}
                     >
-                      ✕
+                      +
                     </button>
-                  </div>
-                  <span className="text-xs" style={{ color: 'var(--muted)', fontFamily: 'var(--font-nunito)' }}>Фото прикреплено</span>
+                  )}
                 </div>
               )}
 
@@ -651,7 +696,8 @@ export default function PostCard({ post, currentMemberId, isAdmin, isCurator, me
                 <button
                   type="button"
                   onClick={() => commentFileRef.current?.click()}
-                  className="shrink-0 rounded-xl flex items-center justify-center"
+                  disabled={commentMediaFiles.length >= 3}
+                  className="shrink-0 rounded-xl flex items-center justify-center disabled:opacity-40"
                   style={{ minWidth: 36, minHeight: 36, background: 'var(--card)', border: '1px solid var(--border)', fontSize: 16, alignSelf: 'flex-end' }}
                 >
                   📷
@@ -660,18 +706,28 @@ export default function PostCard({ post, currentMemberId, isAdmin, isCurator, me
                   ref={commentFileRef}
                   type="file"
                   accept="image/jpeg,image/png,image/webp,image/heic,image/heif,image/gif"
+                  multiple
                   className="hidden"
                   onChange={handleCommentFileChange}
                 />
-                <input
-                  type="text"
+                <textarea
+                  ref={commentInputRef}
                   value={commentText}
-                  onChange={e => setCommentText(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') handleSendComment() }}
+                  onChange={e => {
+                    setCommentText(e.target.value)
+                    adjustCommentHeight(e.target)
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      handleSendComment()
+                    }
+                  }}
                   placeholder="Написать комментарий..."
                   maxLength={1000}
-                  className="flex-1 px-3 py-2 rounded-xl text-xs border outline-none"
-                  style={{ fontFamily: 'var(--font-nunito)', background: 'var(--bg)', color: 'var(--text)', borderColor: 'var(--border)', minHeight: 36, alignSelf: 'stretch' }}
+                  rows={1}
+                  className="flex-1 px-3 py-2 rounded-xl border outline-none resize-none"
+                  style={{ fontFamily: 'var(--font-nunito)', fontSize: 16, background: 'var(--bg)', color: 'var(--text)', borderColor: 'var(--border)', minHeight: 36, maxHeight: 140, overflow: 'hidden', overflowY: 'auto', alignSelf: 'stretch' }}
                   onFocus={e => (e.target.style.borderColor = 'var(--pur)')}
                   onBlur={e => (e.target.style.borderColor = 'var(--border)')}
                 />

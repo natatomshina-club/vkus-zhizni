@@ -1,18 +1,10 @@
 import { NextResponse } from 'next/server'
-import { createClient, createServiceClient } from '@/lib/supabase/server'
-
-async function requireAdmin() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const { data: member } = await supabase.from('members').select('role').eq('id', user.id).single()
-  if (member?.role !== 'admin') return null
-  return user
-}
+import { createServiceClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/auth/requireAdmin'
 
 export async function GET(request: Request) {
-  const user = await requireAdmin()
-  if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const auth = await requireAdmin()
+  if (!auth.ok) return auth.response
 
   const PAGE_SIZE = 100
   const page = Math.max(0, parseInt(new URL(request.url).searchParams.get('page') ?? '0', 10) || 0)
@@ -22,7 +14,7 @@ export async function GET(request: Request) {
   const supabase = createServiceClient()
   const { data, error, count } = await supabase
     .from('blog_posts')
-    .select('id, slug, title, excerpt, content, cover_image_url, is_published, published_at, meta_title, meta_description, category, widget_type, created_at', { count: 'exact' })
+    .select('id, slug, title, excerpt, content, cover_image_url, is_published, published_at, meta_title, meta_description, category, subcategory, widget_type, created_at', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range(from, to)
 
@@ -31,8 +23,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const user = await requireAdmin()
-  if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const auth = await requireAdmin()
+  if (!auth.ok) return auth.response
 
   const body = await request.json()
   const supabase = createServiceClient()
@@ -51,7 +43,10 @@ export async function POST(request: Request) {
       is_published: body.is_published ?? false,
       published_at: body.is_published ? now : null,
       category: body.category || null,
+      subcategory: body.subcategory || null,
       widget_type: body.widget_type || null,
+      main_keyword: body.main_keyword || null,
+      cluster_name: body.cluster_name || null,
       updated_at: now,
     })
     .select()

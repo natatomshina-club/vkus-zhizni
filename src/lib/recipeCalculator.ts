@@ -3,7 +3,7 @@
 // Динамический подбор граммовок под КБЖУ участницы
 // ============================================================
 
-import { getInputProteins, normalizeRu, OFFAL_KEYWORDS } from './productUtils'
+import { getInputProteins, normalizeRu, getOffalGroup } from './productUtils'
 
 export interface NutritionRow {
   id: number
@@ -272,17 +272,23 @@ export function selectRecipes(
   // Пункт 1: жёсткий фильтр по белку — строгое равенство через normalizeRu
   let candidateRecipes = recipes.filter(r => r.category === category && !excludeIds.includes(r.id))
 
+  // Пункт 3: лимит субпродуктов — применяем безусловно ДО белкового фильтра,
+  // иначе при пустом proteinFiltered fallback на candidateRecipes возвращает печень.
+  if (offalUsage) {
+    candidateRecipes = candidateRecipes.filter(r => {
+      const ptNorm = r.protein_tag ? normalizeRu(r.protein_tag) : null
+      if (!ptNorm) return true
+      const group = getOffalGroup(ptNorm)
+      return !group || (offalUsage.get(group) ?? 0) < 2
+    })
+  }
+
   if (userRaw && userRaw.length > 0) {
     const inputProteins = getInputProteins(userRaw)
     if (inputProteins.length > 0) {
       const ipNorm = inputProteins.map(p => normalizeRu(p))
       const proteinFiltered = candidateRecipes.filter(r => {
         const ptNorm = r.protein_tag ? normalizeRu(r.protein_tag) : null
-
-        // Пункт 3: лимит субпродуктов
-        if (ptNorm && offalUsage && OFFAL_KEYWORDS.has(ptNorm)) {
-          if ((offalUsage.get(ptNorm) ?? 0) >= 2) return false
-        }
 
         // Точное совпадение protein_tag
         if (ptNorm && ipNorm.some(p => ptNorm === p)) return true

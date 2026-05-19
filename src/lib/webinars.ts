@@ -5,6 +5,13 @@ export function getMonthsInClub(createdAt: string): number {
   return Math.floor(ms / (1000 * 60 * 60 * 24 * 30))
 }
 
+/** Real months + 6 bonus for halfyear members (added permanently, not capped) */
+export function getEffectiveMonths(createdAt: string, plan?: string | null): number {
+  const real = Math.floor((Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30))
+  const bonus = (plan === 'halfyear' || plan === 'Полгода') ? 6 : 0
+  return real + bonus
+}
+
 export function getStatusLabel(months: number): string {
   if (months >= 12) return '💎 Бриллиант'
   if (months >= 9)  return '💚 Легенда'
@@ -18,7 +25,7 @@ export function getStatusLabel(months: number): string {
  * Returns total number allowed (not delta).
  */
 export function getWebinarQuota(months: number): number {
-  if (months >= 12) return Infinity // Бриллиант — всё бесплатно
+  if (months >= 12) return 999      // Бриллиант — всё бесплатно
   if (months >= 9)  return 7        // Легенда: 2+3+2
   if (months >= 6)  return 5        // Уже своя: 2+3
   if (months >= 3)  return 2        // Вошла во вкус: 2
@@ -52,13 +59,13 @@ export function getWebinarState(
   const quota = getWebinarQuota(months)
 
   // Бриллиант — can_select immediately (will auto-grant)
-  if (quota === Infinity && canSelectType(webinar, months)) return 'can_select'
+  if (quota === 999 && canSelectType(webinar, months)) return 'can_select'
 
   // Check type eligibility
   if (!canSelectType(webinar, months)) return 'locked'
 
-  // Check remaining quota
-  const used = selections.filter(s => s.status === 'pending' || s.status === 'granted').length
+  // Check remaining quota — paid selections don't count against quota
+  const used = selections.filter(s => (s.status === 'pending' || s.status === 'granted') && !s.is_paid).length
   if (used < quota) return 'can_select'
 
   return 'locked'

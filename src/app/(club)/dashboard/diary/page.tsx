@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import DiaryClient from '@/components/DiaryClient'
 
 export default async function DiaryPage() {
@@ -12,43 +12,49 @@ export default async function DiaryPage() {
   const monthStr = String(month).padStart(2, '0')
 
   const dateFrom = `${year}-${monthStr}-01`
-  const dateTo   = `${year}-${monthStr}-31`
+  const lastDay  = new Date(year, month, 0).getDate()
+  const dateTo   = `${year}-${monthStr}-${String(lastDay).padStart(2, '0')}`
+
+  // Service client + email lookup — bypasses RLS, uses correct members.id
+  const supabaseAdmin = createServiceClient()
+  const { data: member } = await supabaseAdmin
+    .from('members')
+    .select('id, kbju_calories, kbju_protein, kbju_fat, kbju_carbs')
+    .eq('email', user.email!)
+    .single()
+
+  const memberId = member?.id ?? user.id
 
   const [
-    { data: member },
     { data: entries },
     { data: water },
     { data: markedRaw },
-    { data: noteToday },
-    { data: noteMonthRaw },
+    { data: feelingsToday },
+    { data: feelingsMonthRaw },
   ] = await Promise.all([
-    supabase.from('members')
-      .select('kbju_calories, kbju_protein, kbju_fat, kbju_carbs')
-      .eq('id', user.id)
-      .single(),
-    supabase.from('diary_entries')
+    supabaseAdmin.from('diary_entries')
       .select('id, meal_type, title, calories, protein, fat, carbs, source, servings')
-      .eq('member_id', user.id)
+      .eq('member_id', memberId)
       .eq('date', today)
       .order('created_at', { ascending: true }),
-    supabase.from('diary_water')
+    supabaseAdmin.from('diary_water')
       .select('glasses_count')
-      .eq('member_id', user.id)
+      .eq('member_id', memberId)
       .eq('date', today)
       .maybeSingle(),
-    supabase.from('diary_entries')
+    supabaseAdmin.from('diary_entries')
       .select('date')
-      .eq('member_id', user.id)
+      .eq('member_id', memberId)
       .gte('date', dateFrom)
       .lte('date', dateTo),
-    supabase.from('diary_notes')
-      .select('tags, note')
-      .eq('member_id', user.id)
+    supabaseAdmin.from('diary_feelings')
+      .select('mood, digestion, energy, note')
+      .eq('member_id', memberId)
       .eq('date', today)
       .maybeSingle(),
-    supabase.from('diary_notes')
+    supabaseAdmin.from('diary_feelings')
       .select('date')
-      .eq('member_id', user.id)
+      .eq('member_id', memberId)
       .gte('date', dateFrom)
       .lte('date', dateTo),
   ])
@@ -57,7 +63,7 @@ export default async function DiaryPage() {
     ...new Set((markedRaw ?? []).map((d: { date: string }) => parseInt(d.date.split('-')[2])))
   ]
   const initialNoteDays = [
-    ...new Set((noteMonthRaw ?? []).map((d: { date: string }) => parseInt(d.date.split('-')[2])))
+    ...new Set((feelingsMonthRaw ?? []).map((d: { date: string }) => parseInt(d.date.split('-')[2])))
   ]
 
   return (
@@ -74,7 +80,7 @@ export default async function DiaryPage() {
       </header>
 
       <DiaryClient
-        userId={user.id}
+        userId={memberId}
         today={today}
         kbju={{
           calories: member?.kbju_calories ?? null,
@@ -87,7 +93,12 @@ export default async function DiaryPage() {
         initialMarkedDays={markedDays}
         initialYear={year}
         initialMonth={month}
-        initialNote={{ tags: (noteToday?.tags ?? []) as string[], note: noteToday?.note ?? '' }}
+        initialFeelings={{
+          mood:      (feelingsToday as { mood?: string } | null)?.mood      ?? '',
+          digestion: (feelingsToday as { digestion?: string[] } | null)?.digestion ?? [],
+          energy:    (feelingsToday as { energy?: string[] } | null)?.energy    ?? [],
+          note:      (feelingsToday as { note?: string } | null)?.note      ?? '',
+        }}
         initialNoteDays={initialNoteDays}
       />
     </div>

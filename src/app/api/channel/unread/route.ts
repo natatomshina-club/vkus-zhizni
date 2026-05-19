@@ -10,22 +10,35 @@ export async function GET() {
 
     const admin = createServiceClient()
 
+    // Get member id and subscription_started_at for cutoff
+    const { data: member } = await admin
+      .from('members')
+      .select('id, subscription_started_at')
+      .eq('email', user.email!)
+      .single()
+
     // Get last_seen_at per channel for this user
     const { data: seenRows } = await admin
       .from('channel_last_seen')
       .select('channel, last_seen_at')
-      .eq('member_id', user.id)
+      .eq('member_id', member?.id ?? user.id)
 
     const seenMap: Record<string, string> = {}
     for (const row of seenRows ?? []) {
       seenMap[row.channel] = row.last_seen_at
     }
 
-    // Get all top-level posts grouped by channel
-    const { data: posts } = await admin
+    // Get top-level posts since member joined (never count history before subscription)
+    let postsQuery = admin
       .from('channel_posts')
       .select('channel, created_at')
       .is('parent_id', null)
+
+    if (member?.subscription_started_at) {
+      postsQuery = postsQuery.gte('created_at', member.subscription_started_at)
+    }
+
+    const { data: posts } = await postsQuery
 
     // Count unread per channel
     const counts: Record<string, number> = {}

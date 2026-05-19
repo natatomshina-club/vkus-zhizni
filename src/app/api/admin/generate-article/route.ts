@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
-import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/auth/requireAdmin'
 
 // Default prompt template — used when seo_settings has no custom prompt
 // Placeholders: {main_keyword}, {keywords_list}
@@ -24,7 +25,7 @@ const DEFAULT_ARTICLE_PROMPT = `Напиши SEO-статью для блога 
 Итого: ~1300 слов. Стоп. Больше не писать.
 Каждый раздел раскрывает ТОЛЬКО свою тему — не смешивай темы между разделами.
 1-2 маркированных или нумерованных списка в любом из разделов.
-Заключение заканчивается: «Хотите больше? Присоединяйтесь к Клубу Вкус Жизни → https://club.nata-tomshina.ru/join»
+Заключение заканчивается: «Хотите больше? Присоединяйтесь к Клубу Вкус Жизни → https://nata-tomshina.ru/join»
 
 Голос автора:
 - Пишешь от лица Натальи: «я», «мои клиентки», «в моей практике»
@@ -49,14 +50,6 @@ const DEFAULT_ARTICLE_PROMPT = `Напиши SEO-статью для блога 
 весь HTML контент статьи здесь
 </content>`
 
-async function requireAdmin() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const { data: member } = await supabase.from('members').select('role').eq('id', user.id).single()
-  if (member?.role !== 'admin') return null
-  return user
-}
 
 type ImageSpec = {
   position: 'cover' | 'after_intro' | 'mid_article' | 'conclusion'
@@ -81,8 +74,8 @@ type ArticleResult = ArticleBaseFields & {
 }
 
 export async function POST(request: Request) {
-  const user = await requireAdmin()
-  if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const auth = await requireAdmin()
+  if (!auth.ok) return auth.response
 
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return NextResponse.json({ error: 'ANTHROPIC_API_KEY не настроен' }, { status: 500 })
@@ -148,7 +141,6 @@ export async function POST(request: Request) {
   console.log('keywords_list:', keywordsList)
 
   const anthropic = new Anthropic({ apiKey })
-  const falKey = process.env.FAL_KEY ?? null
 
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
@@ -203,27 +195,24 @@ export async function POST(request: Request) {
         const h2Titles = extractH2Titles(parsed.content)
         console.log('[generate-article] H2 titles for image prompts:', h2Titles)
 
-        const imageSpecPrompt = `На основе этой статьи создай промпты для 4 иллюстраций.
+        const imageSpecPrompt = `На основе этой статьи создай промпты для 3 иллюстраций.
 Статья: ${parsed.title}
 Разделы H2: ${h2Titles.join(' | ')}
 
 Для каждой картинки промпт должен отражать КОНКРЕТНОЕ содержание раздела.
 
-Стиль картинок — НЕ реалистичные фото еды на столе. Используй разные стили:
-- flat design иллюстрации с женскими силуэтами
-- minimalist line art
-- watercolor style
-- editorial illustration style
-Можно изображать: женские силуэты без лиц, абстрактные тела, символические сцены
-Избегай: реалистичные фото еды, stock photo стиль, одинаковые столы с тарелками
-Каждая картинка должна быть визуально отличной от остальных в статье.
+Стиль: Polished Cartoon — яркие, дружелюбные иллюстрации с женскими силуэтами,
+тёплая цветовая палитра (зелёный #4CAF78, фиолетовый #7C5CFC, кремовый #FAF8FF).
+Без реалистичных фото еды. Без текста на картинке.
+Горизонтальный формат 16:9 для after_intro и mid_article, квадрат для cover.
+
+Каждый prompt_en начинается с: "Polished cartoon illustration, warm colors, "
 
 Верни JSON массив (только JSON, никакого текста вокруг):
 [
-  {"position": "cover", "prompt_en": "...", "alt": "alt на русском"},
-  {"position": "after_intro", "prompt_en": "...", "alt": "..."},
-  {"position": "mid_article", "prompt_en": "...", "alt": "..."},
-  {"position": "conclusion", "prompt_en": "...", "alt": "..."}
+  {"position": "cover", "prompt_en": "Polished cartoon illustration, warm colors, ...", "alt": "alt на русском"},
+  {"position": "after_intro", "prompt_en": "Polished cartoon illustration, warm colors, ...", "alt": "..."},
+  {"position": "mid_article", "prompt_en": "Polished cartoon illustration, warm colors, ...", "alt": "..."}
 ]`
 
         let imageSpecs: ImageSpec[] = []
@@ -245,21 +234,18 @@ export async function POST(request: Request) {
           console.error('[generate-article] Image specs request failed:', e)
         }
 
-        // ── Generate images via fal.ai ───────────────────────────────────────
+        // ── Generate images via Google Gemini ────────────────────────────────
         let generatedImages: GeneratedImage[] = []
-        if (imageSpecs.length > 0 && falKey) {
+        if (imageSpecs.length > 0) {
           enqueue({ progress: `🎨 Создаём ${imageSpecs.length} картинки параллельно...` })
 
           const imagePromises = imageSpecs.map(async (spec) => {
             try {
-              console.log('[generate-article] Requesting fal.ai for:', spec.position, '|', spec.prompt_en)
-              const url = await generateAndUploadImage(spec, parsed.slug, falKey, supabase)
+              const url = await generateAndUploadImage(spec, parsed.slug, supabase)
               if (url) {
-                console.log('[generate-article] fal.ai success for:', spec.position, '| url:', url)
                 enqueue({ imageProgress: { position: spec.position, url } })
                 return { ...spec, url } as GeneratedImage
               }
-              console.warn('[generate-article] fal.ai returned no url for:', spec.position)
               return null
             } catch (e) {
               console.error(`[generate-article] Image ${spec.position} exception:`, e)
@@ -269,9 +255,6 @@ export async function POST(request: Request) {
 
           const results = await Promise.all(imagePromises)
           generatedImages = results.filter(Boolean) as GeneratedImage[]
-          console.log('[generate-article] Generated images total:', generatedImages.length)
-        } else {
-          console.log('[generate-article] Skipping fal.ai — imageSpecs:', imageSpecs.length, '| falKey present:', !!falKey)
         }
 
         // ── Assemble final article ───────────────────────────────────────────
@@ -361,69 +344,45 @@ function parseImageSpecs(text: string): ImageSpec[] {
 async function generateAndUploadImage(
   spec: ImageSpec,
   slug: string,
-  falKey: string,
   supabase: ReturnType<typeof createServiceClient>,
 ): Promise<string | null> {
-  const falBody = {
-    prompt: spec.prompt_en,
-    image_size: spec.position === 'cover' ? 'square_hd' : 'landscape_16_9',
-    num_images: 1,
-  }
-  console.log('[fal.ai] POST https://fal.run/fal-ai/nano-banana-2 body:', JSON.stringify(falBody))
+  const googleApiKey = process.env.GOOGLE_API_KEY
+  if (!googleApiKey) return null
 
-  const falRes = await fetch('https://fal.run/fal-ai/nano-banana-2', {
-    method: 'POST',
-    headers: { 'Authorization': `Key ${falKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(falBody),
-  })
-
-  console.log('[fal.ai] response status:', falRes.status, 'for', spec.position)
-
-  const falRawText = await falRes.text()
-  console.log('[fal.ai] response body:', falRawText.slice(0, 500))
-
-  if (!falRes.ok) {
-    console.error(`[fal.ai] error ${spec.position} HTTP ${falRes.status}:`, falRawText)
-    return null
-  }
-
-  let falData: { images?: Array<{ url: string }> }
   try {
-    falData = JSON.parse(falRawText)
+    const { GoogleGenAI, Modality } = await import('@google/genai')
+    const ai = new GoogleGenAI({ apiKey: googleApiKey })
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash-preview-image-generation',
+      contents: spec.prompt_en,
+      config: {
+        responseModalities: [Modality.TEXT, Modality.IMAGE],
+      },
+    })
+
+    const parts = response.candidates?.[0]?.content?.parts ?? []
+    const imagePart = parts.find((p: { inlineData?: { mimeType?: string; data?: string } }) => p.inlineData?.mimeType?.startsWith('image/'))
+    if (!imagePart?.inlineData?.data) return null
+
+    const buffer = Buffer.from(imagePart.inlineData.data, 'base64')
+    const storagePath = `blog/${slug}/${spec.position}.jpg`
+
+    const { error: uploadError } = await supabase.storage
+      .from('blog-images')
+      .upload(storagePath, buffer, { contentType: 'image/jpeg', upsert: true })
+
+    if (uploadError) return null
+
+    const { data: publicUrlData } = supabase.storage
+      .from('blog-images')
+      .getPublicUrl(storagePath)
+
+    return publicUrlData.publicUrl
   } catch (e) {
-    console.error('[fal.ai] JSON parse failed:', e, '| raw:', falRawText.slice(0, 200))
+    console.error('[generate-article] Gemini image error:', e)
     return null
   }
-
-  const imageUrl = falData.images?.[0]?.url
-  if (!imageUrl) {
-    console.error('[fal.ai] no image url in response for', spec.position, '| parsed:', JSON.stringify(falData))
-    return null
-  }
-
-  console.log('[fal.ai] downloading image from:', imageUrl)
-  const imgRes = await fetch(imageUrl)
-  if (!imgRes.ok) {
-    console.error('[fal.ai] image download failed:', imgRes.status, imageUrl)
-    return null
-  }
-  const imgBuffer = await imgRes.arrayBuffer()
-  console.log('[fal.ai] downloaded', imgBuffer.byteLength, 'bytes for', spec.position)
-
-  const storagePath = `blog/${slug}/${spec.position}.jpg`
-  console.log('[storage] uploading to:', storagePath)
-  const { error: uploadError } = await supabase.storage
-    .from('blog-images')
-    .upload(storagePath, imgBuffer, { contentType: 'image/jpeg', upsert: true })
-
-  if (uploadError) {
-    console.error('[storage] upload error for', spec.position, ':', uploadError.message)
-    return null
-  }
-
-  const { data: publicUrlData } = supabase.storage.from('blog-images').getPublicUrl(storagePath)
-  console.log('[storage] public url:', publicUrlData.publicUrl)
-  return publicUrlData.publicUrl
 }
 
 function insertImagesIntoContent(

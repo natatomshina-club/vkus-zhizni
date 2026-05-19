@@ -25,8 +25,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Можно загружать только фото (jpg, png, webp, heic)' }, { status: 400 })
   }
 
-  if (body.size && body.size > MAX_SIZE) {
-    return NextResponse.json({ error: 'Файл слишком большой. Максимум 10 МБ' }, { status: 400 })
+  if (!body.size || body.size > MAX_SIZE) {
+    return NextResponse.json({ error: 'Размер файла обязателен и не должен превышать 10MB' }, { status: 400 })
   }
 
   const ext = body.filename.split('.').pop()?.replace(/[^a-zA-Z0-9]/g, '') ?? 'jpg'

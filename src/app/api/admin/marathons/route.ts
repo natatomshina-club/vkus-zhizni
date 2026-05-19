@@ -36,11 +36,18 @@ export async function POST(req: Request) {
   const title = typeof body?.title === 'string' ? body.title.trim() : ''
   if (!title) return NextResponse.json({ error: 'title обязателен' }, { status: 400 })
 
+  const slug = title.toLowerCase()
+    .replace(/[^a-zа-яё0-9\s]/gi, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    + '-' + Date.now()
+
   const admin = createServiceClient()
   const { data, error: insErr } = await admin
     .from('marathons')
     .insert({
       title,
+      slug,
       description: body?.description ?? null,
       starts_at: body?.starts_at ?? null,
       ends_at: body?.ends_at ?? null,

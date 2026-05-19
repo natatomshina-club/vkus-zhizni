@@ -31,11 +31,12 @@ export async function POST(request: Request) {
 
     // Track as subscriber
     try {
-      await supabase
+      const normalEmail = email.toLowerCase().trim()
+      const { data: subRow } = await supabase
         .from('subscribers')
         .upsert(
           {
-            email: email.toLowerCase().trim(),
+            email: normalEmail,
             source: 'website_free',
             status: 'active',
             tags: ['free_minicourse'],
@@ -43,6 +44,28 @@ export async function POST(request: Request) {
           },
           { onConflict: 'email', ignoreDuplicates: true }
         )
+        .select('id')
+        .maybeSingle()
+
+      // Start welcome_leads sequence for new lead (if subscriber record exists)
+      if (subRow?.id) {
+        const { data: existingProgress } = await supabase
+          .from('subscriber_sequence_progress')
+          .select('id')
+          .eq('subscriber_id', subRow.id)
+          .eq('series', 'welcome_leads')
+          .maybeSingle()
+
+        if (!existingProgress) {
+          await supabase.from('subscriber_sequence_progress').insert({
+            subscriber_id: subRow.id,
+            series: 'welcome_leads',
+            current_step: 0,
+            next_send_at: new Date().toISOString(),
+            completed: false,
+          })
+        }
+      }
     } catch (e) {
       console.warn('subscribers upsert warning:', e)
     }

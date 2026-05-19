@@ -40,6 +40,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const fields = [
     'title', 'description', 'starts_at', 'ends_at', 'duration_days', 'status',
     'month_label', 'chat_channel_slug', 'ration_pdf_url', 'ration_html', 'shopping_list',
+    'shopping_list_pdf_url',
     'announce_title', 'announce_features', 'announce_prepare_text', 'emoji', 'is_active', 'next_date',
   ]
   for (const f of fields) {

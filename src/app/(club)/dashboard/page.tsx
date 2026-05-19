@@ -9,6 +9,9 @@ import DashboardGreeting from '@/components/DashboardGreeting'
 import BirthdayBanner from '@/components/BirthdayBanner'
 import SeasonalBanner from '@/components/SeasonalBanner'
 import OnboardingTour from '@/components/OnboardingTour'
+import NotificationsBlock from '@/components/NotificationsBlock'
+import { getEffectiveMonths } from '@/lib/webinars'
+import FavoritesStat from '@/components/FavoritesStat'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -17,16 +20,17 @@ export default async function DashboardPage() {
 
   const adminDb = createServiceClient()
 
-  const [{ data: member }, { count: savedCount }, { data: announcement }] = await Promise.all([
+  const { data: member } = await adminDb
+    .from('members')
+    .select('id, name, full_name, status, subscription_status, tariff, subscription_plan, created_at, subscription_started_at, age, weight, start_weight, height, goal_weight, activity_level, kbju_calories, kbju_protein, kbju_fat, kbju_carbs, segment, birth_date')
+    .eq('email', user.email)
+    .single()
+
+  const [{ count: savedCount }, { data: announcement }] = await Promise.all([
     adminDb
-      .from('members')
-      .select('name, full_name, status, subscription_status, created_at, age, weight, start_weight, height, goal_weight, activity_level, kbju_calories, kbju_protein, kbju_fat, kbju_carbs, segment, birth_date, onboarding_completed, tour_completed')
-      .eq('email', user.email)
-      .single(),
-    supabase
       .from('saved_recipes')
       .select('id', { count: 'exact', head: true })
-      .eq('member_id', user.id),
+      .eq('member_id', member?.id ?? ''),
     supabase
       .from('announcements')
       .select('text')
@@ -39,9 +43,9 @@ export default async function DashboardPage() {
   const effectiveStatus = member?.subscription_status || member?.status
   const isTrial = effectiveStatus === 'trial' || !effectiveStatus
 
-  // Club rank by months
+  // Club rank by months (halfyear members get +6 bonus months)
   const monthsInClub = member?.created_at
-    ? (Date.now() - new Date(member.created_at).getTime()) / (1000 * 60 * 60 * 24 * 30)
+    ? getEffectiveMonths((member as { subscription_started_at?: string | null }).subscription_started_at ?? member.created_at, (member as { subscription_plan?: string | null }).subscription_plan)
     : 0
   const clubRank = !isTrial
     ? monthsInClub < 3  ? { label: 'Новенькая',     icon: '🌸', bg: '#FFE4F0', color: '#9B1B5A' }
@@ -96,7 +100,6 @@ export default async function DashboardPage() {
 
   const stats: { icon: string; value: string; label: string; bg: string; color: string; valueBg: string; href?: string }[] = [
     { icon: '🗓', value: String(daysInClub), label: 'ДЕНЬ В КЛУБЕ', bg: 'var(--pur)', color: '#fff', valueBg: 'rgba(255,255,255,0.2)' },
-    { icon: '🍳', value: String(savedCount ?? 0), label: 'рецептов', bg: 'var(--ora)', color: '#fff', valueBg: 'rgba(255,255,255,0.2)', href: '/dashboard/favorites' },
     { icon: '⚖️', value: lostKg != null && lostKg > 0 ? `−${lostKg} кг` : '—', label: 'МИНУС КГ', bg: 'var(--yel)', color: 'var(--text)', valueBg: 'rgba(45,31,110,0.1)' },
     { icon: clubRank ? clubRank.icon : '✨', value: isTrial ? 'Триал' : (clubRank?.label ?? 'Клуб'), label: 'твой статус', bg: clubRank ? clubRank.bg : 'var(--grn)', color: clubRank ? clubRank.color : '#1A5C3A', valueBg: 'rgba(26,92,58,0.1)' },
   ]
@@ -107,19 +110,17 @@ export default async function DashboardPage() {
     { href: '/dashboard/diary',      icon: '📓', title: 'Дневник',            desc: 'Питание за день',          bg: 'var(--ora)',                                              color: '#fff',       tour: 'dashboard-diary' },
     { href: '/dashboard/tracker',    icon: '📏', title: 'Трекер',             desc: 'Замеры и прогресс',        bg: 'var(--yel)',                                              color: 'var(--text)', tour: 'dashboard-tracker' },
     { href: '/dashboard/channel',    icon: '💬', title: 'Чаты клуба',         desc: 'Общение и поддержка',      bg: 'linear-gradient(135deg, #3D2B8A 0%, #7C5CFC 100%)',       color: '#fff',       tour: 'dashboard-channel' },
-    { href: '/dashboard/courses',    icon: '🌿', title: 'Я и моё тело',       desc: 'Метод Натальи',            bg: 'var(--grn)',                                              color: '#1A5C3A',    tour: 'dashboard-courses' },
+    { href: '/dashboard/courses',    icon: '🌿', title: 'Я и моё тело',       desc: 'Памятки, Чек-листы',            bg: 'var(--grn)',                                              color: '#1A5C3A',    tour: 'dashboard-courses' },
     { href: '/dashboard/webinars',   icon: '🎥', title: 'Вебинары',           desc: 'Вебинары от Натальи',      bg: '#5B8DEF',                                                color: '#fff',       tour: 'dashboard-webinars' },
     { href: '/dashboard/meditations', icon:'🧘', title: 'Медитации',          desc: 'Спокойствие и баланс',     bg: 'linear-gradient(135deg, #C4B5FD 0%, #EDE9FF 100%)',       color: '#4C1D95',    tour: 'dashboard-meditations' },
     { href: '/dashboard/marathon',   icon: '🏃', title: 'Марафон',            desc: 'Вызов себе',               bg: 'linear-gradient(135deg, #FF6B35 0%, #F7C59F 100%)',       color: '#7A1F00',    tour: 'dashboard-marathon' },
     { href: '/dashboard/profile',    icon: '👤', title: 'Профиль',            desc: 'Мои данные',               bg: 'linear-gradient(135deg, #F0EEFF 0%, #DDD5FF 100%)',       color: '#3D2B8A',    tour: 'dashboard-profile' },
+    { href: '/dashboard/help',       icon: '🗺', title: 'Карта помощи',       desc: 'Инструкции и ответы',       bg: 'linear-gradient(135deg, #E0F7FA 0%, #B2EBF2 100%)',       color: '#006064',    tour: 'dashboard-help' },
   ]
-
-  const tourCompleted = (member as { tour_completed?: boolean | null } | null)?.tour_completed ?? null
-  console.log('[Dashboard] member.tour_completed=', (member as { tour_completed?: boolean | null } | null)?.tour_completed)
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
-      <OnboardingTour memberId={user.id} tourCompleted={tourCompleted} />
+      <OnboardingTour />
 
       {/* ── Mobile header ── */}
       <header
@@ -263,6 +264,7 @@ export default async function DashboardPage() {
 
         {/* ── Stats 2×2 ── */}
         <div className="grid grid-cols-2 gap-3">
+          <FavoritesStat dbCount={savedCount ?? 0} />
           {stats.map(({ icon, value, label, bg, color, valueBg, href }) => {
             const inner = (
               <>
@@ -320,6 +322,9 @@ export default async function DashboardPage() {
           </div>
         )}
 
+        {/* ── Уведомления ── */}
+        <NotificationsBlock />
+
         {/* ── «С чего начать» кнопка ── */}
         <Link
           href="/dashboard/about"
@@ -356,28 +361,6 @@ export default async function DashboardPage() {
               </Link>
             ))}
           </div>
-        </div>
-
-        {/* ── Вводный курс ── */}
-        <div
-          className="rounded-2xl p-5 flex items-center justify-between gap-3 flex-wrap"
-          style={{ background: 'linear-gradient(135deg, #FF9F43 0%, #FFBF69 100%)' }}
-        >
-          <div className="min-w-0">
-            <p className="text-base font-bold text-white leading-snug" style={{ fontFamily: 'var(--font-unbounded)' }}>
-              Стройность без голода
-            </p>
-            <p className="text-xs text-white/80 mt-1" style={{ fontFamily: 'var(--font-nunito)' }}>
-              Вводный курс · 6 уроков
-            </p>
-          </div>
-          <Link
-            href="/dashboard/courses/intro"
-            className="shrink-0 flex items-center gap-1.5 text-xs font-bold px-4 py-2.5 rounded-xl whitespace-nowrap"
-            style={{ background: '#fff', color: '#C96A00', fontFamily: 'var(--font-nunito)' }}
-          >
-            ▶ Смотреть урок
-          </Link>
         </div>
 
         {/* ── Маленькие победы ── */}

@@ -10,6 +10,7 @@ type DayForm = {
   coach_comment: string
   ration_text: string
   open: boolean
+  is_active: boolean
 }
 
 const inputStyle: React.CSSProperties = {
@@ -29,6 +30,7 @@ export default function AdminMarathonDaysPage({ params }: { params: Promise<{ id
   const [saving, setSaving] = useState(false)
   const [saveOk, setSaveOk] = useState(false)
   const [saveErr, setSaveErr] = useState('')
+  const [activatingDay, setActivatingDay] = useState<number | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -46,9 +48,9 @@ export default function AdminMarathonDaysPage({ params }: { params: Promise<{ id
 
     // Get existing days
     const dRes = await fetch(`/api/admin/marathons/${id}/days`)
-    let existingDays: Record<number, { task_title?: string; task_text?: string; coach_comment?: string; ration_text?: string }> = {}
+    let existingDays: Record<number, { task_title?: string; task_text?: string; coach_comment?: string; ration_text?: string; is_active?: boolean }> = {}
     if (dRes.ok) {
-      const { days: d } = await dRes.json() as { days: { day_number: number; task_title?: string; task_text?: string; coach_comment?: string; ration_text?: string }[] }
+      const { days: d } = await dRes.json() as { days: { day_number: number; task_title?: string; task_text?: string; coach_comment?: string; ration_text?: string; is_active?: boolean }[] }
       for (const day of (d ?? [])) {
         existingDays[day.day_number] = day
       }
@@ -65,6 +67,7 @@ export default function AdminMarathonDaysPage({ params }: { params: Promise<{ id
         coach_comment: ex?.coach_comment ?? '',
         ration_text: ex?.ration_text ?? '',
         open: false,
+        is_active: ex?.is_active ?? false,
       }
     })
     setDays(forms)
@@ -86,6 +89,21 @@ export default function AdminMarathonDaysPage({ params }: { params: Promise<{ id
   }
   function closeAll() {
     setDays(prev => prev.map(d => ({ ...d, open: false })))
+  }
+
+  async function handleActivate(dayNumber: number) {
+    setActivatingDay(dayNumber)
+    try {
+      const res = await fetch(`/api/admin/marathons/${id}/days/${dayNumber}/activate`, { method: 'PATCH' })
+      if (res.ok) {
+        setDays(prev => prev.map(d => d.day_number === dayNumber ? { ...d, is_active: true } : d))
+      } else {
+        const d = await res.json().catch(() => ({})) as { error?: string }
+        alert('Ошибка: ' + (d.error ?? 'попробуйте ещё раз'))
+      }
+    } finally {
+      setActivatingDay(null)
+    }
   }
 
   async function handleSave() {
@@ -196,6 +214,27 @@ export default function AdminMarathonDaysPage({ params }: { params: Promise<{ id
                     }}>
                       Заполнен
                     </span>
+                  )}
+                  {day.is_active ? (
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, color: '#fff', background: '#FF6B35',
+                      borderRadius: 6, padding: '2px 7px',
+                    }}>
+                      🔥 Активен
+                    </span>
+                  ) : (
+                    <button
+                      onClick={e => { e.stopPropagation(); handleActivate(day.day_number) }}
+                      disabled={activatingDay === day.day_number}
+                      style={{
+                        fontSize: 10, fontWeight: 700, color: '#fff',
+                        background: activatingDay === day.day_number ? '#9B9B9B' : '#2D6A4F',
+                        border: 'none', borderRadius: 6, padding: '3px 8px', cursor: 'pointer',
+                        opacity: activatingDay === day.day_number ? 0.7 : 1,
+                      }}
+                    >
+                      {activatingDay === day.day_number ? '…' : '▶ Открыть день'}
+                    </button>
                   )}
                   <span style={{ fontSize: 12, color: 'var(--muted)', transition: 'transform 0.2s', display: 'block', transform: day.open ? 'rotate(180deg)' : 'none' }}>
                     ▼

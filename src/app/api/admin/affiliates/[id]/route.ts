@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { Resend } from 'resend'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+import { sendEmail } from '@/lib/mailer'
 
 async function assertAdmin() {
   const supabase = await createClient()
@@ -49,8 +47,8 @@ export async function PATCH(
     const dashUrl = 'https://www.nata-tomshina.ru/partner/login'
     const firstName = (affiliate.name as string).split(' ')[0]
 
-    await resend.emails.send({
-      from: 'Наталья Томшина <hello@nata-tomshina.ru>',
+    await sendEmail({
+      from: 'Наталья Томшина <noreply@nata-tomshina.ru>',
       to: affiliate.email,
       subject: 'Добро пожаловать в партнёрскую программу «Вкус Жизни»! 🎉',
       html: `
@@ -78,7 +76,7 @@ export async function PATCH(
           <p style="font-size:13px;color:#9B8FCC;margin:0;">Вопросы: <a href="mailto:hello@nata-tomshina.ru" style="color:#7C5CFC;">hello@nata-tomshina.ru</a></p>
         </div>
       `,
-    }).catch(e => console.error('[admin/affiliates] approval email error:', e))
+    }).catch(() => {})
   }
 
   return NextResponse.json({ ok: true })

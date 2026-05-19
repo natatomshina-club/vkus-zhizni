@@ -96,6 +96,7 @@ function PdfUploadForm({
   async function handleUpload() {
     const file = fileRef.current?.files?.[0]
     if (!file) { setErr('Выберите файл'); return }
+    if (file.size > 10 * 1024 * 1024) { setErr('Файл слишком большой. Максимум 10 МБ'); return }
     if (!title.trim()) { setErr('Введите название'); return }
 
     setUploading(true)
@@ -188,6 +189,7 @@ function DirectPdfUpload({
   async function handleUpload() {
     const file = fileRef.current?.files?.[0]
     if (!file) { setErr('Выберите файл'); return }
+    if (file.size > 10 * 1024 * 1024) { setErr('Файл слишком большой. Максимум 10 МБ'); return }
     if (!title.trim()) { setErr('Введите название'); return }
     if (file.type !== 'application/pdf') { setErr('Только PDF файлы'); return }
 
@@ -544,6 +546,34 @@ function WebinarCard({
   const [loadingMaterials, setLoadingMaterials] = useState(false)
   const [showPdfUpload, setShowPdfUpload] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [editHtmlUrl, setEditHtmlUrl] = useState<string | null>(webinar.html_url ?? null)
+  const [htmlUploading, setHtmlUploading] = useState(false)
+  const [htmlDeleting, setHtmlDeleting] = useState(false)
+  const [htmlErr, setHtmlErr] = useState('')
+  const htmlFileRef = useRef<HTMLInputElement>(null)
+
+  async function handleHtmlUpload(file: File) {
+    setHtmlErr('')
+    setHtmlUploading(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    try {
+      const res = await fetch(`/api/admin/webinars/${webinar.id}/upload-html`, { method: 'POST', body: fd })
+      const data = await res.json() as { html_url?: string; error?: string }
+      if (!res.ok) { setHtmlErr(data.error ?? 'Ошибка загрузки'); return }
+      setEditHtmlUrl(data.html_url ?? null)
+      showToast('✅ Презентация загружена')
+    } catch { setHtmlErr('Ошибка сети') } finally { setHtmlUploading(false) }
+  }
+
+  async function handleHtmlDelete() {
+    setHtmlDeleting(true)
+    try {
+      await fetch(`/api/admin/webinars/${webinar.id}/upload-html`, { method: 'DELETE' })
+      setEditHtmlUrl(null)
+      showToast('Презентация удалена')
+    } finally { setHtmlDeleting(false) }
+  }
 
   async function loadLessons() {
     if (lessons.length > 0) return
@@ -791,6 +821,29 @@ function WebinarCard({
                   onCancel={() => setShowPdfUpload(false)}
                 />
               )}
+            </div>
+
+            {/* HTML presentation */}
+            <div style={{ borderTop: '1px solid #EDE8FF', paddingTop: 12 }}>
+              <p style={{ ...LABEL_STYLE, marginBottom: 8 }}>🖥 HTML-презентация</p>
+              <input ref={htmlFileRef} type="file" accept=".html" style={{ display: 'none' }}
+                onChange={e => { const f = e.target.files?.[0]; if (f) { handleHtmlUpload(f); e.target.value = '' } }} />
+              {editHtmlUrl ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: '#fff', border: '1px solid #EDE8FF', marginBottom: 6 }}>
+                  <span style={{ fontSize: 14 }}>🖥</span>
+                  <a href={editHtmlUrl} target="_blank" rel="noopener noreferrer" style={{ flex: 1, fontSize: 13, color: '#7C5CFC', textDecoration: 'none' }}>presentation.html</a>
+                  <button onClick={handleHtmlDelete} disabled={htmlDeleting}
+                    style={{ background: 'none', border: 'none', cursor: htmlDeleting ? 'not-allowed' : 'pointer', fontSize: 14, color: '#C0392B', padding: '2px 6px' }}>
+                    {htmlDeleting ? '...' : '✕'}
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => htmlFileRef.current?.click()} disabled={htmlUploading}
+                  style={{ fontSize: 12, color: '#7C5CFC', background: 'none', border: 'none', cursor: htmlUploading ? 'not-allowed' : 'pointer', padding: '4px 0', fontWeight: 600 }}>
+                  {htmlUploading ? 'Загружаю...' : '🖥 Прикрепить HTML'}
+                </button>
+              )}
+              {htmlErr && <p style={{ fontSize: 12, color: '#C0392B', margin: '4px 0 0' }}>{htmlErr}</p>}
             </div>
 
             {/* Save / Cancel */}

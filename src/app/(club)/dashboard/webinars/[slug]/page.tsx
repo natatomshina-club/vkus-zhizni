@@ -14,7 +14,7 @@ export default async function WebinarPage({ params }: { params: Promise<{ slug: 
   // Get webinar
   const { data: webinar } = await admin
     .from('webinars')
-    .select('id,slug,title,short_desc,full_desc,price,emoji,color_from,color_to,video_id,sort_order,is_published,content_type,created_at')
+    .select('id,slug,title,short_desc,full_desc,price,emoji,color_from,color_to,video_id,sort_order,is_published,content_type,created_at,html_url')
     .eq('slug', slug)
     .eq('is_published', true)
     .single()

@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import KitchenClient from '@/components/KitchenClient'
 
@@ -7,17 +8,37 @@ export default async function KitchenPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth')
 
-  const { data: member } = await createServiceClient()
-    .from('members')
-    .select('subscription_status, kbju_calories, kbju_protein, kbju_fat, kbju_carbs, kitchen_requests_today, kitchen_date')
-    .eq('email', user.email)
-    .single()
+  const headersList = await headers()
+  const ua = headersList.get('user-agent') ?? ''
+  const isMobile = /mobile|android|iphone|ipad/i.test(ua)
+  const device = isMobile ? 'mobile' : 'desktop'
+
+  const admin = createServiceClient()
+
+  const [{ data: member }, { data: helpRows }] = await Promise.all([
+    admin
+      .from('members')
+      .select('id, subscription_status, kbju_calories, kbju_protein, kbju_fat, kbju_carbs, kitchen_requests_today, kitchen_date')
+      .eq('email', user.email!)
+      .single(),
+    admin
+      .from('onboarding_content')
+      .select('video_url, description, cover_url')
+      .eq('section', 'kitchen')
+      .eq('screen', 'main')
+      .eq('device', device)
+      .maybeSingle(),
+  ])
 
   const isTrial = member?.subscription_status !== 'active'
   const maxRequests = isTrial ? 3 : 10
   const today = new Date().toISOString().split('T')[0]
   const initialRequestsToday =
     member?.kitchen_date === today ? (member?.kitchen_requests_today ?? 0) : 0
+
+  const helpDescription = helpRows?.description ?? null
+  const helpVideoId = helpRows?.video_url ?? null
+  const helpCoverUrl = helpRows?.cover_url ?? null
 
   return (
     <div className="min-h-screen" style={{ background: '#F0EEFF' }}>
@@ -43,7 +64,7 @@ export default async function KitchenPage() {
         </div>
 
         <KitchenClient
-          userId={user.id}
+          userId={member?.id ?? user.id}
           isTrial={isTrial}
           maxRequests={maxRequests}
           initialRequestsToday={initialRequestsToday}
@@ -51,6 +72,9 @@ export default async function KitchenPage() {
           kbjuProtein={member?.kbju_protein ?? null}
           kbjuFat={member?.kbju_fat ?? null}
           kbjuCarbs={member?.kbju_carbs ?? null}
+          helpDescription={helpDescription}
+          helpVideoId={helpVideoId}
+          helpCoverUrl={helpCoverUrl}
         />
 
         <div className="h-8" />

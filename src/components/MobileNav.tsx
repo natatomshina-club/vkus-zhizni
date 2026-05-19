@@ -83,10 +83,20 @@ export default function MobileNav() {
   useEffect(() => {
     async function fetchUnread() {
       try {
-        const res = await fetch('/api/channel/notifications/unread')
-        if (!res.ok) return
-        const data = await res.json() as { unread_count: number }
-        setUnread(data.unread_count ?? 0)
+        const [dmRes, notifRes] = await Promise.all([
+          fetch('/api/channel/notifications/unread'),
+          fetch('/api/notifications'),
+        ])
+        let total = 0
+        if (dmRes.ok) {
+          const dm = await dmRes.json() as { unread_count?: number }
+          total += dm.unread_count ?? 0
+        }
+        if (notifRes.ok) {
+          const notif = await notifRes.json() as { unread_count?: number }
+          total += notif.unread_count ?? 0
+        }
+        setUnread(total)
       } catch { /* silent */ }
     }
     fetchUnread()
@@ -122,9 +132,20 @@ export default function MobileNav() {
               <Icon />
               {showDot && (
                 <span
-                  className="absolute -top-0.5 -right-0.5 rounded-full border-2 border-white"
-                  style={{ width: 10, height: 10, background: '#E53E3E' }}
-                />
+                  className="absolute -top-1 -right-1.5 rounded-full border-2 border-white flex items-center justify-center"
+                  style={{
+                    minWidth: 16, height: 16,
+                    padding: '0 3px',
+                    background: '#E53E3E',
+                    fontSize: 9,
+                    fontWeight: 700,
+                    color: '#fff',
+                    fontFamily: 'var(--font-nunito)',
+                    lineHeight: 1,
+                  }}
+                >
+                  {unread > 99 ? '99+' : unread}
+                </span>
               )}
             </span>
             <span
