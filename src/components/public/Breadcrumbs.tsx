@@ -27,13 +27,13 @@ export function Breadcrumbs({ items, dark }: { items: BreadcrumbItem[]; dark?: b
         <ol style={{ display: 'flex', alignItems: 'center', gap: 6, listStyle: 'none', margin: 0, padding: 0, flexWrap: 'wrap' }}>
           {items.map((item, i) => (
             <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              {i > 0 && <span style={{ color: dark ? 'rgba(255,255,255,.35)' : '#B0A8D4', fontSize: 12 }}>›</span>}
+              {i > 0 && <span style={{ color: dark ? 'rgba(255,255,255,.35)' : 'var(--color-text-tertiary)', fontSize: 12 }}>›</span>}
               {item.href ? (
-                <Link href={item.href} style={{ fontSize: 13, color: dark ? 'rgba(255,255,255,.55)' : '#7B6FAA', textDecoration: 'none' }}>
+                <Link href={item.href} style={{ fontSize: 13, color: dark ? 'rgba(255,255,255,.55)' : 'var(--color-text-secondary)', textDecoration: 'none' }}>
                   {item.label}
                 </Link>
               ) : (
-                <span style={{ fontSize: 13, color: dark ? 'rgba(255,255,255,.8)' : '#3D2B8A', fontWeight: 600,
+                <span style={{ fontSize: 13, color: dark ? 'rgba(255,255,255,.8)' : 'var(--color-text-primary)', fontWeight: 600,
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '260px' }}>
                   {item.label}
                 </span>

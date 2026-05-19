@@ -2,7 +2,14 @@
 import Link from 'next/link'
 import { useState } from 'react'
 
+declare global {
+  interface Window {
+    ym?: (id: number, action: string, goal: string) => void
+  }
+}
+
 const NAV_LINKS = [
+  { href: '/free', label: 'Бесплатный курс', highlight: true },
   { href: '/about', label: 'О методе' },
   { href: '/results', label: 'Результаты' },
   { href: '/marathon', label: 'Марафон' },
@@ -43,9 +50,44 @@ export default function PublicNav({ currentPage }: { currentPage?: string }) {
 
       {/* Desktop links */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }} className="pub-nav-links">
-        {NAV_LINKS.map(({ href, label }) => {
+        {NAV_LINKS.map(({ href, label, highlight }) => {
           const isActive = currentPage === href
           const isHovered = hoveredHref === href
+
+          if (highlight) {
+            return (
+              <Link
+                key={href}
+                href={href}
+                onMouseEnter={() => setHoveredHref(href)}
+                onMouseLeave={() => setHoveredHref(null)}
+                onClick={() => window.ym?.(108262096, 'reachGoal', 'nav_free_click')}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: isActive ? '#fff' : 'var(--color-green-dark)',
+                  textDecoration: 'none',
+                  padding: '6px 14px',
+                  borderRadius: 'var(--radius-full)',
+                  background: isActive
+                    ? 'var(--color-green)'
+                    : isHovered
+                      ? 'linear-gradient(135deg, #C2DEC4, #A5CEAA)'
+                      : 'var(--grad-green-pill)',
+                  transition: 'background 0.2s ease, color 0.2s ease',
+                  border: 'none',
+                }}
+              >
+                <span style={{ fontSize: 14, lineHeight: 1 }}>🎁</span>
+                {label}
+              </Link>
+            )
+          }
+
           return (
             <Link
               key={href}
@@ -127,16 +169,32 @@ export default function PublicNav({ currentPage }: { currentPage?: string }) {
           display: 'flex', flexDirection: 'column', gap: 8,
           zIndex: 200,
         }} className="pub-nav-mobile">
-          {NAV_LINKS.map(({ href, label }) => (
-            <Link key={href} href={href} onClick={() => setMenuOpen(false)} style={{
-              fontFamily: 'var(--font-serif-display)',
-              fontSize: 17,
-              fontWeight: 400,
-              color: currentPage === href ? 'var(--color-accent)' : 'var(--color-text-primary)',
-              textDecoration: 'none',
-              padding: '10px 12px',
-              borderBottom: '1px solid var(--color-accent-border)',
-            }}>
+          {NAV_LINKS.map(({ href, label, highlight }) => (
+            <Link
+              key={href}
+              href={href}
+              onClick={() => {
+                setMenuOpen(false)
+                if (highlight) window.ym?.(108262096, 'reachGoal', 'nav_free_click')
+              }}
+              style={{
+                fontFamily: 'var(--font-serif-display)',
+                fontSize: 17,
+                fontWeight: highlight ? 700 : 400,
+                color: highlight
+                  ? 'var(--color-green-dark)'
+                  : currentPage === href
+                    ? 'var(--color-accent)'
+                    : 'var(--color-text-primary)',
+                textDecoration: 'none',
+                padding: '10px 12px',
+                borderBottom: '1px solid var(--color-accent-border)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: highlight ? 8 : 0,
+              }}
+            >
+              {highlight && <span style={{ fontSize: 16, lineHeight: 1 }}>🎁</span>}
               {label}
             </Link>
           ))}

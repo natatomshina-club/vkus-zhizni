@@ -3,7 +3,7 @@ import Link from 'next/link'
 export default function PublicFooter() {
   return (
     <footer style={{
-      background: '#1A0E4E',
+      background: 'var(--color-hero-bg)',
       padding: '32px 6%',
       display: 'flex',
       alignItems: 'center',
@@ -11,30 +11,32 @@ export default function PublicFooter() {
       flexWrap: 'wrap',
       gap: 16,
     }}>
-      <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', margin: 0 }}>
+      <p style={{ fontSize: 12, color: 'rgba(var(--color-white-rgb),0.3)', margin: 0 }}>
         © 2026 Наталья Томшина · Клуб «Вкус Жизни»
       </p>
       <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', justifyContent: 'center' }}>
         {[
-          { href: '/about', label: 'Об авторе' },
-          { href: '/blog', label: 'Блог' },
+          { href: '/about', label: 'О методе' },
           { href: '/results', label: 'Результаты' },
+          { href: '/menyu', label: 'Рационы' },
+          { href: '/recipes', label: 'Рецепты' },
+          { href: '/blog', label: 'Блог' },
           { href: '/marathon', label: 'Марафон' },
           { href: '/club', label: 'О клубе' },
-          { href: '/partner', label: '✦ Партнёрка', highlight: true },
+          { href: '/partner', label: '✦ Заработай', highlight: true },
           { href: 'https://club.nata-tomshina.ru/legal/privacy', label: 'Конфиденциальность', external: true },
           { href: 'https://nata-tomshina.ru/legal', label: 'Документы', external: true },
         ].map(({ href, label, external, highlight }) =>
           external ? (
             <a key={href} href={href} target="_blank" rel="noopener noreferrer" style={{
-              color: 'rgba(255,255,255,0.5)', textDecoration: 'none',
+              color: 'rgba(var(--color-white-rgb),0.5)', textDecoration: 'none',
               fontSize: 12, fontWeight: 600,
             }}>
               {label}
             </a>
           ) : highlight ? (
             <Link key={href} href={href} style={{
-              background: '#FFD93D', color: '#5C4200',
+              background: 'var(--color-highlight-bg)', color: 'var(--color-highlight-text)',
               textDecoration: 'none', fontSize: 12, fontWeight: 700,
               padding: '3px 10px', borderRadius: 10,
             }}>
@@ -42,7 +44,7 @@ export default function PublicFooter() {
             </Link>
           ) : (
             <Link key={href} href={href} style={{
-              color: 'rgba(255,255,255,0.5)', textDecoration: 'none',
+              color: 'rgba(var(--color-white-rgb),0.5)', textDecoration: 'none',
               fontSize: 12, fontWeight: 600,
             }}>
               {label}

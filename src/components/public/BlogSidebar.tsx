@@ -36,18 +36,18 @@ function LeadMagnetBanner() {
     finally { setLoading(false) }
   }
 
-  const inp: React.CSSProperties = { width: '100%', border: '1.5px solid #EDE8FF', borderRadius: 10, padding: '10px 14px', fontFamily: 'var(--font-nunito)', fontSize: 14, color: '#1A1230', background: '#FAF8FF', outline: 'none' }
-  const btn: React.CSSProperties = { display: 'block', width: '100%', background: '#3D2B8A', color: '#fff', fontFamily: 'var(--font-unbounded)', fontSize: 12, fontWeight: 700, padding: 11, borderRadius: 10, textAlign: 'center', border: 'none', cursor: 'pointer', opacity: loading ? 0.7 : 1 }
+  const inp: React.CSSProperties = { width: '100%', border: '1.5px solid var(--color-accent-border)', borderRadius: 10, padding: '10px 14px', fontFamily: 'var(--font-nunito)', fontSize: 14, color: 'var(--color-text-primary)', background: 'var(--color-bg-page)', outline: 'none' }
+  const btn: React.CSSProperties = { display: 'block', width: '100%', background: 'var(--color-bg-dark)', color: 'var(--color-hero-text)', fontFamily: 'var(--font-unbounded)', fontSize: 12, fontWeight: 700, padding: 11, borderRadius: 10, textAlign: 'center', border: 'none', cursor: 'pointer', opacity: loading ? 0.7 : 1 }
 
   return (
-    <div style={{ background: '#fff', border: '1.5px solid #EDE8FF', borderRadius: 16, padding: '22px 20px' }}>
+    <div style={{ background: 'var(--color-bg-surface)', border: '1.5px solid var(--color-accent-border)', borderRadius: 16, padding: '22px 20px' }}>
       <span style={{ fontSize: 28, marginBottom: 10, display: 'block' }}>🎁</span>
-      <div style={{ fontFamily: 'var(--font-unbounded)', fontSize: 15, fontWeight: 700, color: '#3D2B8A', lineHeight: 1.3, marginBottom: 8 }}>Бесплатный мини-курс</div>
-      <div style={{ fontSize: 13, color: '#7B6FAA', lineHeight: 1.55, marginBottom: 14 }}>«Волшебный пендель» — 7 уроков о том, почему диеты не работают и что делать прямо завтра</div>
+      <div style={{ fontFamily: 'var(--font-unbounded)', fontSize: 15, fontWeight: 700, color: 'var(--color-text-primary)', lineHeight: 1.3, marginBottom: 8 }}>Бесплатный мини-курс</div>
+      <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', lineHeight: 1.55, marginBottom: 14 }}>«Волшебный пендель» — 7 уроков о том, почему диеты не работают и что делать прямо завтра</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
         {['Объяснение про инсулин и грелин', 'Волшебный завтрак — рецепт', 'Пример рациона на неделю'].map(item => (
-          <div key={item} style={{ fontSize: 12, color: '#1A1230', display: 'flex', alignItems: 'flex-start', gap: 7 }}>
-            <span style={{ color: '#4CAF78', fontWeight: 700, flexShrink: 0 }}>✓</span>{item}
+          <div key={item} style={{ fontSize: 12, color: 'var(--color-text-primary)', display: 'flex', alignItems: 'flex-start', gap: 7 }}>
+            <span style={{ color: 'var(--color-cta-bg)', fontWeight: 700, flexShrink: 0 }}>✓</span>{item}
           </div>
         ))}
       </div>
@@ -55,25 +55,25 @@ function LeadMagnetBanner() {
       {step === 'email' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <input type="email" style={inp} placeholder="Ваш email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && submitEmail()} />
-          {error && <div style={{ fontSize: 12, color: '#A32D2D' }}>{error}</div>}
+          {error && <div style={{ fontSize: 12, color: 'var(--color-error-text)' }}>{error}</div>}
           <button style={btn} onClick={submitEmail} disabled={loading}>{loading ? 'Отправляем...' : 'Получить бесплатно →'}</button>
-          <div style={{ fontSize: 11, color: '#7B6FAA', textAlign: 'center' }}>Без спама · Отписка в 1 клик</div>
+          <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', textAlign: 'center' }}>Без спама · Отписка в 1 клик</div>
         </div>
       )}
       {step === 'otp' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ fontSize: 13, color: '#7B6FAA' }}>Код отправлен на <strong style={{ color: '#3D2B8A' }}>{email}</strong></div>
+          <div style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>Код отправлен на <strong style={{ color: 'var(--color-text-primary)' }}>{email}</strong></div>
           <input type="text" style={{ ...inp, letterSpacing: 8, fontSize: 20, textAlign: 'center' }} placeholder="_ _ _ _ _ _" value={otp} maxLength={6} onChange={e => setOtp(e.target.value.replace(/\D/g, ''))} onKeyDown={e => e.key === 'Enter' && submitOtp()} />
-          {error && <div style={{ fontSize: 12, color: '#A32D2D' }}>{error}</div>}
+          {error && <div style={{ fontSize: 12, color: 'var(--color-error-text)' }}>{error}</div>}
           <button style={btn} onClick={submitOtp} disabled={loading}>{loading ? 'Проверяем...' : 'Получить доступ →'}</button>
-          <button style={{ background: 'none', border: 'none', color: '#7B6FAA', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }} onClick={() => { setStep('email'); setError('') }}>Изменить email</button>
+          <button style={{ background: 'none', border: 'none', color: 'var(--color-text-secondary)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }} onClick={() => { setStep('email'); setError('') }}>Изменить email</button>
         </div>
       )}
       {step === 'success' && (
         <div style={{ textAlign: 'center', padding: '8px 0' }}>
           <div style={{ fontSize: 36, marginBottom: 8 }}>🎉</div>
-          <div style={{ fontFamily: 'var(--font-unbounded)', fontSize: 14, fontWeight: 700, color: '#3D2B8A', marginBottom: 8 }}>Доступ открыт!</div>
-          <a href="/free" style={{ display: 'block', background: '#4CAF78', color: '#fff', fontFamily: 'var(--font-unbounded)', fontSize: 12, fontWeight: 700, padding: 11, borderRadius: 10, textDecoration: 'none', textAlign: 'center' }}>Перейти к урокам →</a>
+          <div style={{ fontFamily: 'var(--font-unbounded)', fontSize: 14, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 8 }}>Доступ открыт!</div>
+          <a href="/free" style={{ display: 'block', background: 'var(--color-cta-bg)', color: 'var(--color-hero-text)', fontFamily: 'var(--font-unbounded)', fontSize: 12, fontWeight: 700, padding: 11, borderRadius: 10, textDecoration: 'none', textAlign: 'center' }}>Перейти к урокам →</a>
         </div>
       )}
     </div>
@@ -82,12 +82,12 @@ function LeadMagnetBanner() {
 
 function MarathonBanner() {
   return (
-    <div style={{ background: 'linear-gradient(135deg, #2D6A4F 0%, #4CAF78 100%)', borderRadius: 16, padding: '20px 20px' }}>
+    <div style={{ background: 'linear-gradient(135deg, var(--color-accent-forest) 0%, var(--color-cta-bg) 100%)', borderRadius: 16, padding: '20px 20px' }}>
       <div style={{ fontSize: 24, marginBottom: 8 }}>🏃</div>
-      <div style={{ fontFamily: 'var(--font-unbounded)', fontSize: 14, fontWeight: 700, color: '#fff', lineHeight: 1.25, marginBottom: 4 }}>Марафон апреля</div>
-      <div style={{ fontFamily: 'var(--font-unbounded)', fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,.85)', lineHeight: 1.3, marginBottom: 8 }}>«Снижаем инсулин»</div>
-      <div style={{ fontSize: 12, color: 'rgba(255,255,255,.7)', marginBottom: 16 }}>Старт: 1 апреля · 14 дней</div>
-      <Link href="/marathon" style={{ display: 'block', background: '#fff', color: '#2D6A4F', fontFamily: 'var(--font-unbounded)', fontSize: 12, fontWeight: 700, padding: '10px', borderRadius: 10, textDecoration: 'none', textAlign: 'center' }}>
+      <div style={{ fontFamily: 'var(--font-unbounded)', fontSize: 14, fontWeight: 700, color: 'var(--color-hero-text)', lineHeight: 1.25, marginBottom: 4 }}>Марафон апреля</div>
+      <div style={{ fontFamily: 'var(--font-unbounded)', fontSize: 12, fontWeight: 600, color: 'rgba(var(--color-white-rgb),.85)', lineHeight: 1.3, marginBottom: 8 }}>«Снижаем инсулин»</div>
+      <div style={{ fontSize: 12, color: 'rgba(var(--color-white-rgb),.7)', marginBottom: 16 }}>Старт: 1 апреля · 14 дней</div>
+      <Link href="/marathon" style={{ display: 'block', background: 'var(--color-bg-surface)', color: 'var(--color-accent-forest)', fontFamily: 'var(--font-unbounded)', fontSize: 12, fontWeight: 700, padding: '10px', borderRadius: 10, textDecoration: 'none', textAlign: 'center' }}>
         Узнать подробнее →
       </Link>
     </div>
@@ -113,8 +113,8 @@ export default function BlogSidebar({ categoryCounts = [], activeCategory }: Blo
       {banners}
 
       {/* Rubricator */}
-      <div style={{ background: '#fff', border: '1.5px solid #EDE8FF', borderRadius: 16, padding: '20px' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: '#7B6FAA', marginBottom: 14 }}>Рубрики</div>
+      <div style={{ background: 'var(--color-bg-surface)', border: '1.5px solid var(--color-accent-border)', borderRadius: 16, padding: '20px' }}>
+        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--color-text-secondary)', marginBottom: 14 }}>Рубрики</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {BLOG_CATEGORIES.map(({ value, label }) => {
             const count = categoryCounts.find(c => c.category === value)?.count ?? 0
@@ -123,10 +123,10 @@ export default function BlogSidebar({ categoryCounts = [], activeCategory }: Blo
               <Link
                 key={value}
                 href={`/blog?category=${value}`}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', borderRadius: 10, textDecoration: 'none', background: isActive ? '#EDE8FF' : 'transparent', transition: '.15s' }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', borderRadius: 10, textDecoration: 'none', background: isActive ? 'var(--color-accent-border)' : 'transparent', transition: '.15s' }}
               >
-                <span style={{ fontSize: 13, fontWeight: isActive ? 700 : 500, color: isActive ? '#3D2B8A' : '#7B6FAA' }}>{label}</span>
-                {count > 0 && <span style={{ fontSize: 11, fontWeight: 600, color: isActive ? '#7C5CFC' : '#B0A8D4' }}>{count}</span>}
+                <span style={{ fontSize: 13, fontWeight: isActive ? 700 : 500, color: isActive ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>{label}</span>
+                {count > 0 && <span style={{ fontSize: 11, fontWeight: 600, color: isActive ? 'var(--color-accent)' : 'var(--color-text-tertiary)' }}>{count}</span>}
               </Link>
             )
           })}
