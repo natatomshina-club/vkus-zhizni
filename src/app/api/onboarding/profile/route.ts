@@ -17,7 +17,9 @@ export async function POST(req: NextRequest) {
   const { error } = await admin
     .from('members')
     .update({
-      full_name:               body.name,
+      full_name:               body.full_name ?? body.name,
+      name:                    body.name,
+      first_name:              body.first_name ?? null,
       age:                     body.age,
       weight:                  body.weight,
       start_weight:            body.start_weight,
@@ -30,6 +32,9 @@ export async function POST(req: NextRequest) {
       kbju_protein:            body.kbju_protein,
       kbju_fat:                body.kbju_fat,
       kbju_carbs:              body.kbju_carbs,
+      kbju_protein_system:     body.kbju_protein,
+      kbju_carbs_system:       body.kbju_carbs,
+      kbju_manual:             false,
       agreed_terms_at:         body.agreed_terms_at,
       agreed_disclaimer_at:    body.agreed_disclaimer_at,
       agreed_personal_data_at: body.agreed_personal_data_at,
