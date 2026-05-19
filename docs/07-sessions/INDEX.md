@@ -7,6 +7,10 @@
 ## 2026
 
 ### Май
+- [[07-sessions/SESSION_2026-05-22_VAULT_HANDOFF|22 мая — R54 закрыт]] — push 14 коммитов на GitHub (прод и репо синхронизированы), Vercel disconnected, раздел «Git-дисциплина» в CLAUDE-RULES.md
+- [[07-sessions/SESSION_2026-05-21_VAULT_HANDOFF|20–21 мая — database и members]] — database.md (72 таблицы), members.md (последний админский модуль), исправлены R55 и R56 (email-баги)
+- [[07-sessions/SESSION_2026-05-20_VAULT_HANDOFF|19 мая (вечер) — операции и email]] — manual-procedures.md, emails.md, email-system.md, копилка `_findings.md`, R55/R56 найдены
+- [[07-sessions/SESSION_2026-05-19_VAULT_HANDOFF|19 мая — инфраструктура и cron-fix]] — server.md, payments.md, marathons.md, subscriptions.md; cron `check-subscriptions` и `subscription-reminders` запущены на проде
 - [[07-sessions/2026-05-18-vault-build|18 мая — сборка Vault]] — Волна 4 (медитации, вебинары), частично Волна 3.5 (кухня); зафиксирована методика «код = первый источник истины»
 - [[07-sessions/2026-05-18-vault-plan|18 мая — план Vault]] — архитектура «мозга проекта», скелет Vault, страховочный архив
 - [[07-sessions/2026-05-17|17 мая — фиксы]] — PDF-превью race condition, заглушка check-subscriptions, исследование Resend, фикс `subscription_plan = 'halfyear'`
