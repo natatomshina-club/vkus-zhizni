@@ -44,3 +44,30 @@ next-env.d.ts
 # deploy exports
 deploy/db-csv-export/
 deploy/*.sql
+
+# deploy scripts with server IP and keys
+deploy.sh
+setup-ssh.sh
+
+# === R54 — added 2026-05-19 ===
+
+# Local design materials and drafts (not part of codebase)
+/club/
+/SEO_AGENTS/
+/CLAUDE-CODE-TZ*.md
+/CLAUDE-CODE-V*.md
+/KITCHEN_PATCH_*.md
+/lending-*.html
+/*.docx
+/natalia*.png
+/natalia*.jpg
+
+# Local Claude Code settings (user-specific)
+.claude/settings.local.json
+
+# Obsidian UI state (user-specific)
+docs/.obsidian/workspace*.json
+docs/.obsidian/workspaces.json
+
+# Vercel local link (project is on Beget, not Vercel)
+.vercel/
