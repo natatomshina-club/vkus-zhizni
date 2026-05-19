@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
-import { Resend } from 'resend'
+import { sendEmail } from '@/lib/mailer'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,7 +15,6 @@ export async function GET(req: Request) {
   }
 
   const admin = createServiceClient()
-  const resend = new Resend()
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -71,10 +70,11 @@ export async function GET(req: Request) {
     const firstName = displayName.split(' ')[0]
     const endsDate = formatDateRu(m.subscription_ends_at!)
 
-    const emailPromise = resend.emails.send({
+    const emailPromise = sendEmail({
       from: 'Вкус Жизни <noreply@nata-tomshina.ru>',
       to: m.email,
       subject: `${firstName}, твой доступ в Клуб «Вкус Жизни» скоро заканчивается`,
+      raw: true,
       html: `<!DOCTYPE html>
 <html lang="ru">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -146,7 +146,7 @@ export async function GET(req: Request) {
 </table>
 </body>
 </html>`,
-    }).catch(e => console.error('[reminder email]', m.email, e))
+    }).catch(() => {})
 
     const pmPromise = adminMember
       ? admin.from('private_messages').insert({
