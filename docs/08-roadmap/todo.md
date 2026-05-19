@@ -118,6 +118,14 @@ WHERE last_payment_amount = 1500 AND subscription_plan IS NULL;
 
 - [ ] **R75** (низкий) — Мёртвый и сломанный компонент `WinsForm.tsx`. `src/components/WinsForm.tsx` (61 строка) нигде не используется (grep нашёл только сам файл). Помимо того что мёртвый — делает `.insert({ text })`, тогда как колонка в БД называется `result`; также не передаёт обязательное поле `week_date`. При подключении упал бы с ошибкой БД. Удалить или переписать. Источник: `src/components/WinsForm.tsx`.
 
+### Публичный сайт — роутинг и стили (разведка 23.05.2026)
+
+- [ ] **R86** (низкий) — Найти настоящий `middleware.ts` — откуда импортируется `proxy()`. `src/proxy.ts` содержит `export async function proxy()` и `export const config`, но не является стандартным Next.js middleware. `.next/server/middleware-manifest.json` пустой. При разведке точка импорта не найдена. Проверить: `grep -rn "from.*proxy\|require.*proxy" src/ --include="*.ts"`. Источник: `src/proxy.ts`.
+
+- [ ] **R87** (низкий) — Задокументировать nginx-блок для `nata-tomshina.ru`. В репо `deploy/nginx.conf` есть только блок для `club.nata-tomshina.ru`. Блок основного домена настроен на сервере вне репо — конфигурация невоспроизводима. Снять с сервера и добавить в `deploy/nginx.conf` или `docs/05-infrastructure/server.md`. Источник: `deploy/nginx.conf`.
+
+- [ ] **R88** (низкий) — Оценить вес CSS публичного сайта. `theme.css` 79 KB + `blog-content.css` 42 KB = 121 KB CSS грузятся на каждой странице публичного сайта без route-based splitting. Проверить реальный impact (gzip даст 20–30 KB), решить нужно ли разбивать. Источник: `src/app/public-site/layout.tsx`.
+
 ### Модуль побед (разведка 23.05.2026)
 
 - [ ] **R81** (низкий) — `wins.is_featured` — заготовка, нигде не используется. Поле `is_featured boolean DEFAULT false` есть в схеме таблицы, но ни читается, ни пишется нигде в коде. Решить: реализовать механизм «избранных побед» или убрать поле. Источник: `src/app/(club)/dashboard/wins/`, `src/app/api/wins/route.ts`.

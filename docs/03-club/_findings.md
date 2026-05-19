@@ -67,3 +67,49 @@ WHERE table_name = 'measurements' AND column_name LIKE '%craving%';
 
 Стоит проверить — нет ли подобных мёртвых роутов в других разделах
 (emails-admin, marathons-admin, profile, ...).
+
+---
+
+## 2026-05-23 из src/app/globals.css (попутно при разведке публичного сайта)
+
+**Дизайн-токены клуба — материал для будущего `03-club/design-system.md`.**
+
+### Палитра клуба
+
+Определена в `src/app/globals.css` в `:root` (глобально, не скоупировано):
+
+```css
+:root {
+  --pur:       #7C5CFC;  /* фиолетовый — акцент, CTA, график трекера */
+  --pur-light: #EDE9FF;
+  --grn:       #A8E6CF;  /* зелёный */
+  --yel:       #FFD93D;  /* жёлтый */
+  --ora:       #FF9F43;  /* оранжевый */
+  --bg:        #FAF8FF;  /* фон страниц */
+  --text:      #2D1F6E;  /* основной текст */
+  --card:      #FFFFFF;
+  --border:    #EDE9FF;
+  --muted:     rgba(45, 31, 110, 0.45);
+}
+```
+
+### Шрифты клуба
+
+Подключены через `next/font/google` в `src/app/layout.tsx`:
+- **Unbounded** (400/600/700) → `--font-unbounded` → h1–h4
+- **Nunito** (400–700) → `--font-nunito` → тело, кнопки
+- Оба: subsets `['latin', 'cyrillic']`
+
+### Tailwind
+
+Тот же подход что и в публичном сайте: Tailwind v4 без конфига,
+`@import "tailwindcss"` в `globals.css`. Нет `tailwind.config.ts`.
+
+### Что писать в будущем модуле 03-club/design-system.md
+
+- Дополнить компонентами клуба (DiaryClient карточки, ProgressBlock,
+  WinFeed, формы трекера)
+- Стили графика Chart.js (фиолетовый `#7C5CFC`, `fill: true`)
+- Стили chips в WinInput и DiaryClient
+- Адаптив (mobile-first или desktop-first?)
+- Сравнить с палитрой публичного сайта — разные «вселенные» (фиолетовая vs зелёная)
