@@ -104,6 +104,20 @@ WHERE last_payment_amount = 1500 AND subscription_plan IS NULL;
 
 - [ ] **R69** — `claude_code_tasks/` на диске: добавить в `.gitignore` навсегда или удалить. Локальная папка с большими ТЗ-файлами (MAIN_STRUCTURE ~40K, TZ_ETAP_3_FINAL ~67K и др.), в репо не нужна.
 
+### Модуль дневника и трекера (разведка 23.05.2026)
+
+- [ ] **R70** (низкий) — Решить судьбу `diary_notes` API. `/api/diary/notes` существует, ни один компонент не вызывает. Либо удалить роут и таблицу, либо подключить к UI. Источник: `src/app/api/diary/notes/route.ts`.
+
+- [ ] **R71** (средний) — Расследовать `member_id` vs `user.id` в diary/tracker/wins роутах. Часть роутов (`entries`, `water`, `notes`, `tracker/measurements`, `wins`) использует `user.id` напрямую, часть (`feelings`, `calendar`) — email lookup в `members`. Если `auth.users.id ≠ members.id` на проде — половина дневника сломается. Проверить: `SELECT u.id, m.id FROM auth.users u JOIN members m ON m.email = u.email WHERE u.id != m.id`. См. `03-club/_findings.md`.
+
+- [ ] **R72** (низкий) — Восстановить миграции для 5 таблиц. `diary_entries`, `diary_water`, `diary_notes`, `measurements`, `wins` — без SQL-миграций (схема выведена только из кода). Снять DDL с боевой БД, записать в `supabase/migrations/`. Повышает воспроизводимость при разворачивании на новой БД. См. `05-infrastructure/_findings.md`.
+
+- [ ] **R73** (средний) — Баг зелёных кружков в календаре дневника + отладочные логи. В сессии 04.04.2026 `/api/diary/calendar` возвращал пустые массивы. В текущем коде `calendar/route.ts` остались 3 отладочных `console.log`. Проверить починен ли баг на проде, убрать логи. Источник: `src/app/api/diary/calendar/route.ts`.
+
+- [ ] **R74** (низкий) — Разобраться с `initial_weight` vs `start_weight` в `members`. `/api/tracker/summary` использует `initial_weight`, `/dashboard/tracker/page.tsx` — `start_weight`. Дублирование или разные смыслы? Документировать в `04-admin/modules/members.md` (или будущем `measurements.md`). См. `04-admin/_findings.md`.
+
+- [ ] **R75** (низкий) — Мёртвый компонент `WinsForm.tsx`. `src/components/WinsForm.tsx` (61 строка) нигде не используется (grep нашёл только сам файл). Удалить или подключить.
+
 ## 📐 Решения по структуре Vault
 
 Архитектурные решения, принятые в ходе сборки Vault. Не задачи, а контекст для будущих сессий, чтобы не пересматривать одно и то же.
