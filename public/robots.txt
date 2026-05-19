@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /blog
+Allow: /recipes
+Allow: /about
+Allow: /club
+Allow: /results
+Disallow: /admin
+Disallow: /api
+Disallow: /dashboard
+Disallow: /partner
+
+Sitemap: https://nata-tomshina.ru/sitemap.xml
