@@ -118,6 +118,18 @@ WHERE last_payment_amount = 1500 AND subscription_plan IS NULL;
 
 - [ ] **R75** (низкий) — Мёртвый компонент `WinsForm.tsx`. `src/components/WinsForm.tsx` (61 строка) нигде не используется (grep нашёл только сам файл). Удалить или подключить.
 
+### Модуль замеров (разведка 23.05.2026)
+
+- [ ] **R76** (высокий) — `craving` vs `sweet_craving` в `measurements`. TRACKER_IMPL.md DDL называет поле `craving`, код (`route.ts`, TypeScript interface) использует `sweet_craving`. Если в боевой БД поле названо `craving` — учёт тяги к сладкому сломан (API возвращает null), достижения «Месяц без тяги» и «Квартал без тяги» никогда не срабатывают. Проверить: `SELECT column_name FROM information_schema.columns WHERE table_name = 'measurements' AND column_name LIKE '%craving%'`. Привести либо БД к коду, либо код к БД. См. `03-club/_findings.md`.
+
+- [ ] **R77** (низкий) — `measurements.note` есть в SELECT и TypeScript interface, нет в форме UI. Поле `note text` существует в схеме и возвращается всеми GET-запросами, но форма его не передаёт при POST. Подключить в форму замера или убрать из SELECT/interface. Источник: `src/app/api/tracker/measurements/route.ts`, `src/components/TrackerClient.tsx`.
+
+- [ ] **R78** (средний) — `kbju_manual: false` сбрасывается при каждом замере веса. POST `/api/tracker/measurements` всегда ставит `kbju_manual: false` и пересчитывает КБЖУ по новому весу. Если участница через `/api/profile/kbju-override` снизила углеводы вручную (`kbju_manual: true`) — её override теряется при следующем замере. Уточнить у Наташи: намеренное поведение или баг?
+
+- [ ] **R79** (низкий) — Достижение «Цель достигнута» в трекере. TRACKER_IMPL.md описывает достижение с иконкой 🎯 (`weight <= goalWeight`). В текущем коде его нет, иконки достижений тоже не совпадают: источник `🎯 ⭐ 🔥 📏 💎 👑`, код `🌱 ⭐ 🏆 💚 🍬 👑`. Решить: добавить «Цель достигнута» и синхронизировать иконки — или обновить TRACKER_IMPL.md как устаревший. Источник: `src/components/TrackerClient.tsx`.
+
+- [ ] **R80** (низкий) — Timezone-уязвимость в `todayStr()` трекера. Функция использует `new Date().toISOString().split('T')[0]` без защиты `setHours(12,0,0,0)`. При UTC+3 в окне 00:00–03:00 дата формы будет вчерашней. Непоследовательно: в дневнике защита есть (`T12:00:00`). Источник: `src/components/TrackerClient.tsx:57`.
+
 ## 📐 Решения по структуре Vault
 
 Архитектурные решения, принятые в ходе сборки Vault. Не задачи, а контекст для будущих сессий, чтобы не пересматривать одно и то же.

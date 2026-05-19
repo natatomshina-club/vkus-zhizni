@@ -22,3 +22,25 @@
 Связано: tracker (`/api/tracker/measurements`), wins (`/api/wins`) —
 тоже используют `user.id` напрямую.
 Статус: не проверено на боевой БД. См. todo R71.
+
+---
+
+## 2026-05-23 из src/app/api/tracker/measurements/route.ts (разведка для measurements.md)
+
+**craving vs sweet_craving — критическое расхождение DDL и кода.**
+
+В TRACKER_IMPL.md (DDL) поле тяги к сладкому называется `craving`.
+В коде (route.ts, TypeScript interface) — `sweet_craving`.
+
+Если в боевой БД поле названо как в DDL (`craving`), то весь учёт
+тяги к сладкому работает с несуществующим полем — `sweet_craving`
+будет возвращаться как null/undefined, и достижения «Месяц без тяги»
+и «Квартал без тяги» никогда не выполнятся.
+
+Проверка:
+```sql
+SELECT column_name FROM information_schema.columns
+WHERE table_name = 'measurements' AND column_name LIKE '%craving%';
+```
+
+См. todo R76 (высокий).

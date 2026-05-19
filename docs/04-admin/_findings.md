@@ -14,3 +14,16 @@
 
 Семантика неясна: дублирование или разные смыслы?
 Не задокументировано ни в одном из модулей. См. todo R74.
+
+---
+
+## 2026-05-23 из src/app/api/tracker/* (детализация R74)
+
+**initial_weight vs start_weight — точные места использования.**
+
+Уточнение к ранее зафиксированной R74:
+- `initial_weight` читается в `/api/tracker/summary` и в профиле (`/dashboard/profile/page.tsx`)
+- `start_weight` используется в `tracker/page.tsx` и `wins/page.tsx`
+
+Оба поля существуют в `members`. Семантика неясна. POST measurement
+не трогает ни одно из них (трогает только `weight`).
