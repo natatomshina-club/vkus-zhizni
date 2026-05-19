@@ -31,6 +31,9 @@
 - [[03-club/modules/private-messages|Личные сообщения]]
 - [[03-club/modules/notifications|Уведомления]]
 
+### Монетизация
+- [[03-club/modules/affiliate|Партнёрская программа]] — реф-ссылки, комиссии, кабинет партнёра
+
 ## UI
 
 - [[design-system|Дизайн-система клуба]] — CSS-переменные, шрифты (Unbounded + Nunito), компоненты
