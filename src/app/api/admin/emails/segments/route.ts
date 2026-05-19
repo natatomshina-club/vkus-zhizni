@@ -14,15 +14,15 @@ export async function GET() {
 
   const [trialActive, monthlyActive, halfyearActive, expiredTrial, expiredOther, cancelled] = await Promise.all([
     admin.from('members').select('id', { count: 'exact', head: true })
-      .eq('subscription_status', 'active').eq('tariff', 'trial'),
+      .eq('subscription_status', 'trial'),
     admin.from('members').select('id', { count: 'exact', head: true })
-      .eq('subscription_status', 'active').eq('tariff', 'monthly'),
+      .eq('subscription_status', 'active').in('tariff', ['month', 'monthly']),
     admin.from('members').select('id', { count: 'exact', head: true })
       .eq('subscription_status', 'active').eq('tariff', 'halfyear'),
     admin.from('members').select('id', { count: 'exact', head: true })
-      .eq('tariff', 'trial').eq('subscription_status', 'expired'),
+      .eq('subscription_status', 'expired').in('tariff', ['trial', 'Пробный']),
     admin.from('members').select('id', { count: 'exact', head: true })
-      .eq('subscription_status', 'expired').neq('tariff', 'trial'),
+      .eq('subscription_status', 'expired').in('tariff', ['month', 'monthly', 'halfyear']),
     admin.from('members').select('id', { count: 'exact', head: true })
       .eq('subscription_status', 'cancelled'),
   ])

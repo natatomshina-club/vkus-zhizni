@@ -11,6 +11,12 @@ const RichEditor = dynamic(() => import('@/components/RichEditor'), { ssr: false
   </div>
 ) })
 
+const EmailBuilder = dynamic(() => import('@/components/admin/EmailBuilder'), { ssr: false, loading: () => (
+  <div style={{ border: '1.5px solid #EDE8FF', borderRadius: 10, minHeight: 200, background: '#FAF8FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9B8FCC', fontSize: 13 }}>
+    Загрузка редактора...
+  </div>
+) })
+
 // ── Types ────────────────────────────────────────────────────────────
 type Subscriber = {
   id: string
@@ -24,7 +30,24 @@ type Subscriber = {
 
 type MemberSegment = { label: string; value: string; count: number; icon: string }
 
-type Tab = 'subscribers' | 'members'
+type Tab = 'subscribers' | 'members' | 'leads' | 'history'
+
+type SegMember = {
+  id: string
+  email: string
+  full_name: string | null
+  subscription_status: string
+  created_at: string
+}
+
+type CampaignLog = {
+  id: string
+  sent_at: string
+  subject: string
+  segment: string
+  recipients_count: number
+  sent_by: string | null
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────
 function fmt(iso: string) {
@@ -120,7 +143,8 @@ function SendModal({
   const [error, setError] = useState('')
   const [showPreview, setShowPreview] = useState(false)
 
-  const isEmpty = !bodyHtml || bodyHtml === '<p></p>' || bodyHtml.trim() === ''
+  // Consider empty if no emailbuilder blocks or truly empty
+  const isEmpty = !bodyHtml?.trim()
 
   async function handleSend() {
     if (!subject.trim() || isEmpty) { setError('Заполни тему и текст'); return }
@@ -140,12 +164,12 @@ function SendModal({
     }
   }
 
-  const previewHtml = buildEmailHtml(inlineStyles(bodyHtml), '#')
+  const previewHtml = bodyHtml || ''
 
   return (
     <>
       <div style={OVERLAY}>
-        <div style={{ ...MODAL_BOX, maxWidth: 600 }}>
+        <div style={{ ...MODAL_BOX, maxWidth: 960 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
             <h2 style={MODAL_TITLE}>{actionLabel}</h2>
             <button onClick={onClose} style={CLOSE_BTN}>✕</button>
@@ -173,7 +197,7 @@ function SendModal({
               />
 
               <label style={{ ...LABEL, marginTop: 14 }}>Текст письма</label>
-              <RichEditor value={bodyHtml} onChange={setBodyHtml} />
+              <EmailBuilder value={bodyHtml} onChange={setBodyHtml} />
 
               {error && <p style={{ color: '#E53E3E', fontSize: 13, marginTop: 8 }}>{error}</p>}
 
@@ -198,6 +222,22 @@ function SendModal({
       {showPreview && <PreviewModal html={previewHtml} onClose={() => setShowPreview(false)} />}
     </>
   )
+}
+
+const SEGMENT_LABELS: Record<string, string> = {
+  trial: 'Триал',
+  monthly: 'Месяц',
+  halfyear: 'Полгода',
+  expired_trial: 'Бывшие триалки',
+  expired: 'Истёкшие',
+  cold: 'Холодные подписчики',
+  getcourse_club: 'Клубные (Геткурс)',
+  leads: 'Лиды с сайта',
+  custom: 'Список адресов',
+}
+
+function segmentLabel(s: string) {
+  return SEGMENT_LABELS[s] ?? s
 }
 
 function plural(n: number) {
@@ -396,33 +436,31 @@ function ImportModal({ onClose, onSuccess, source = 'getcourse_import' }: { onCl
   )
 }
 
-// ── Push Notification Modal ───────────────────────────────────────────
-function PushModal({
-  segment,
-  onClose,
-}: {
-  segment: MemberSegment | null
-  onClose: () => void
-}) {
-  const [title, setTitle] = useState('')
-  const [body, setBody] = useState('')
+// ── Send Test Modal ───────────────────────────────────────────────────
+function SendTestModal({ onClose }: { onClose: () => void }) {
+  const [emailsRaw, setEmailsRaw] = useState('')
+  const [subject, setSubject] = useState('')
+  const [html, setHtml] = useState('')
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<{ sent: number } | null>(null)
+  const [result, setResult] = useState<{ sent: number; failed: number; errors: string[] } | null>(null)
   const [error, setError] = useState('')
 
   async function handleSend() {
-    if (!title.trim() || !body.trim()) { setError('Заполни заголовок и текст'); return }
+    const emails = emailsRaw.split(/[\n,]+/).map(e => e.trim()).filter(Boolean)
+    if (emails.length === 0) { setError('Введи хотя бы один email'); return }
+    if (!subject.trim()) { setError('Заполни тему письма'); return }
+    if (!html.trim()) { setError('Заполни текст письма'); return }
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/admin/push/send', {
+      const res = await fetch('/api/admin/emails/send-test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, body, segment: segment?.value ?? null }),
+        body: JSON.stringify({ emails, subject, html }),
       })
-      const data = await res.json() as { sent?: number; error?: string }
+      const data = await res.json() as { sent?: number; failed?: number; errors?: string[]; error?: string }
       if (!res.ok) { setError(data.error ?? 'Ошибка'); return }
-      setResult({ sent: data.sent ?? 0 })
+      setResult({ sent: data.sent ?? 0, failed: data.failed ?? 0, errors: data.errors ?? [] })
     } finally {
       setLoading(false)
     }
@@ -430,55 +468,57 @@ function PushModal({
 
   return (
     <div style={OVERLAY}>
-      <div style={{ ...MODAL_BOX, maxWidth: 480 }}>
+      <div style={{ ...MODAL_BOX, maxWidth: 540 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <h2 style={MODAL_TITLE}>📲 Push-уведомление</h2>
+          <h2 style={MODAL_TITLE}>🧪 Тестовая отправка</h2>
           <button onClick={onClose} style={CLOSE_BTN}>✕</button>
         </div>
 
         {result ? (
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
-            <p style={{ fontSize: 16, fontWeight: 700, color: '#1A5C3A', marginBottom: 8 }}>Отправлено!</p>
-            <p style={{ fontSize: 14, color: '#7B6FAA' }}>Доставлено: <strong>{result.sent}</strong></p>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>{result.failed === 0 ? '✅' : '⚠️'}</div>
+            <p style={{ fontSize: 16, fontWeight: 700, color: '#1A5C3A', marginBottom: 8 }}>
+              {result.failed === 0 ? 'Отправлено!' : 'Отправлено с ошибками'}
+            </p>
+            <p style={{ fontSize: 14, color: '#7B6FAA', lineHeight: 1.9 }}>
+              Доставлено: <strong>{result.sent}</strong><br />
+              {result.failed > 0 && <>Ошибок: <strong>{result.failed}</strong></>}
+            </p>
+            {result.errors.length > 0 && (
+              <p style={{ fontSize: 12, color: '#E53E3E', marginTop: 8 }}>
+                Не доставлено: {result.errors.join(', ')}
+              </p>
+            )}
             <button onClick={onClose} style={{ ...BTN_PRIMARY, marginTop: 20 }}>Закрыть</button>
           </div>
         ) : (
           <>
-            {segment && (
-              <div style={{ background: '#F0EEFF', borderRadius: 12, padding: '10px 16px', marginBottom: 18, fontSize: 13, color: '#3D2B8A' }}>
-                {segment.icon} <strong>{segment.label}</strong> — {segment.count} подписчиков
-              </div>
-            )}
-            {!segment && (
-              <div style={{ background: '#FFF3C0', borderRadius: 12, padding: '10px 16px', marginBottom: 18, fontSize: 13, color: '#5C4200' }}>
-                📢 Всем участницам с включёнными уведомлениями
-              </div>
-            )}
-
-            <label style={LABEL}>Заголовок</label>
-            <input
-              value={title}
-              onChange={e => setTitle(e.target.value)}
-              placeholder="Новый урок в клубе!"
-              style={INPUT}
-            />
-
-            <label style={{ ...LABEL, marginTop: 14 }}>Текст уведомления</label>
+            <label style={LABEL}>Email адреса (каждый с новой строки или через запятую)</label>
             <textarea
-              value={body}
-              onChange={e => setBody(e.target.value)}
-              placeholder="Короткий текст уведомления..."
+              value={emailsRaw}
+              onChange={e => setEmailsRaw(e.target.value)}
+              placeholder={'test@example.com\nuser@mail.ru'}
               rows={4}
               style={{ ...INPUT, resize: 'vertical' }}
             />
+
+            <label style={{ ...LABEL, marginTop: 14 }}>Тема письма</label>
+            <input
+              value={subject}
+              onChange={e => setSubject(e.target.value)}
+              placeholder="Тема письма"
+              style={INPUT}
+            />
+
+            <label style={{ ...LABEL, marginTop: 14 }}>Текст письма</label>
+            <RichEditor value={html} onChange={setHtml} />
 
             {error && <p style={{ color: '#E53E3E', fontSize: 13, marginTop: 8 }}>{error}</p>}
 
             <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
               <button onClick={onClose} style={BTN_GHOST}>Отмена</button>
               <button onClick={handleSend} disabled={loading} style={{ ...BTN_PRIMARY, flex: 1, opacity: loading ? 0.6 : 1 }}>
-                {loading ? 'Отправляем...' : '📲 Отправить push'}
+                {loading ? 'Отправляем...' : '📤 Отправить'}
               </button>
             </div>
           </>
@@ -529,7 +569,7 @@ const BTN_GHOST: React.CSSProperties = {
   fontFamily: 'var(--font-nunito)',
 }
 
-type SubStats = { total: number; cold: number; clubCount: number; converted: number; unsubscribed: number }
+type SubStats = { total: number; cold: number; clubCount: number; converted: number; unsubscribed: number; leadsCount: number }
 type SubsResponse = {
   subscribers: Subscriber[]
   total: number
@@ -542,7 +582,12 @@ type SubsResponse = {
 export default function AdminEmailsPage() {
   const [tab, setTab] = useState<Tab>('subscribers')
   const [subscribers, setSubscribers] = useState<Subscriber[]>([])
-  const [stats, setStats] = useState<SubStats>({ total: 0, cold: 0, clubCount: 0, converted: 0, unsubscribed: 0 })
+  const [stats, setStats] = useState<SubStats>({ total: 0, cold: 0, clubCount: 0, converted: 0, unsubscribed: 0, leadsCount: 0 })
+  const [leads, setLeads] = useState<Subscriber[]>([])
+  const [leadsPage, setLeadsPage] = useState(1)
+  const [leadsTotalPages, setLeadsTotalPages] = useState(1)
+  const [loadingLeads, setLoadingLeads] = useState(false)
+  const [leadsSearch, setLeadsSearch] = useState('')
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [segments, setSegments] = useState<MemberSegment[]>([])
@@ -553,7 +598,28 @@ export default function AdminEmailsPage() {
   const [sendTarget, setSendTarget] = useState<MemberSegment | null>(null)
   const [showImport, setShowImport] = useState(false)
   const [showClubImport, setShowClubImport] = useState(false)
-  const [pushTarget, setPushTarget] = useState<MemberSegment | 'all' | null>(null)
+  const [showSendTest, setShowSendTest] = useState(false)
+  const [history, setHistory] = useState<CampaignLog[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
+
+  // Accordion state for segment member lists
+  const [expandedSegs, setExpandedSegs] = useState<Set<string>>(new Set())
+  const [segMembers, setSegMembers] = useState<Record<string, SegMember[]>>({})
+  const [loadingSegMembers, setLoadingSegMembers] = useState<Record<string, boolean>>({})
+  const [segSearch, setSegSearch] = useState<Record<string, string>>({})
+
+  const loadHistory = useCallback(async () => {
+    setLoadingHistory(true)
+    try {
+      const res = await fetch('/api/admin/emails/history')
+      if (res.ok) {
+        const data = await res.json() as { logs: CampaignLog[] }
+        setHistory(data.logs ?? [])
+      }
+    } finally {
+      setLoadingHistory(false)
+    }
+  }, [])
 
   const loadSubscribers = useCallback(async (p: number, q: string) => {
     setLoadingSubs(true)
@@ -588,6 +654,57 @@ export default function AdminEmailsPage() {
     }
   }, [])
 
+  const loadLeads = useCallback(async (p: number, q: string) => {
+    setLoadingLeads(true)
+    try {
+      const params = new URLSearchParams({ page: String(p), limit: '50', leadsOnly: '1' })
+      if (q) params.set('search', q)
+      const res = await fetch(`/api/admin/emails/subscribers?${params}`)
+      const data = await res.json() as SubsResponse & { error?: string }
+      if (!res.ok) return
+      setLeads(data.subscribers ?? [])
+      setLeadsPage(data.page ?? p)
+      setLeadsTotalPages(data.totalPages ?? 1)
+    } finally {
+      setLoadingLeads(false)
+    }
+  }, [])
+
+  async function loadSegmentMembers(segValue: string, search = '') {
+    setLoadingSegMembers(prev => ({ ...prev, [segValue]: true }))
+    try {
+      const params = new URLSearchParams({ segment: segValue, limit: '200' })
+      if (search) params.set('search', search)
+      const res = await fetch(`/api/admin/members?${params}`)
+      if (res.ok) {
+        const data = await res.json() as { members: SegMember[] }
+        setSegMembers(prev => ({ ...prev, [segValue]: data.members ?? [] }))
+      }
+    } finally {
+      setLoadingSegMembers(prev => ({ ...prev, [segValue]: false }))
+    }
+  }
+
+  function toggleSegment(segValue: string) {
+    setExpandedSegs(prev => {
+      const next = new Set(prev)
+      if (next.has(segValue)) {
+        next.delete(segValue)
+      } else {
+        next.add(segValue)
+        if (!segMembers[segValue]) {
+          loadSegmentMembers(segValue, segSearch[segValue] ?? '')
+        }
+      }
+      return next
+    })
+  }
+
+  function handleSegSearch(segValue: string, q: string) {
+    setSegSearch(prev => ({ ...prev, [segValue]: q }))
+    loadSegmentMembers(segValue, q)
+  }
+
   const searchMounted = useRef(false)
 
   useEffect(() => {
@@ -618,7 +735,14 @@ export default function AdminEmailsPage() {
     loadSubscribers(p, search)
   }
 
-  const { total, cold, clubCount, converted, unsubscribed } = stats
+  // Load leads when switching to leads tab
+  useEffect(() => {
+    if (tab === 'leads') loadLeads(1, leadsSearch)
+    if (tab === 'history') loadHistory()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab])
+
+  const { total, cold, clubCount, converted, unsubscribed, leadsCount } = stats
   const filtered = subscribers
 
   return (
@@ -646,11 +770,34 @@ export default function AdminEmailsPage() {
         Управление подписчиками и рассылками клуба
       </p>
 
+      {/* Series navigation block */}
+      <div style={{
+        background: '#F8F5FF', border: '1px solid #EDE8FF', borderRadius: 16,
+        padding: '16px 20px', marginBottom: 24,
+        display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap',
+      }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: '#3D2B8A', marginRight: 4 }}>📧 Серии писем:</span>
+        <Link href="/admin/emails/sequences?source=members" style={{ ...BTN_GHOST, padding: '8px 14px', fontSize: 12, textDecoration: 'none', display: 'inline-block' }}>
+          👋 Для участниц
+        </Link>
+        <Link href="/admin/emails/sequences?source=leads" style={{ ...BTN_GHOST, padding: '8px 14px', fontSize: 12, textDecoration: 'none', display: 'inline-block' }}>
+          🌱 Для лидов
+        </Link>
+        <Link href="/admin/emails/sequences?source=evergreen" style={{ ...BTN_GHOST, padding: '8px 14px', fontSize: 12, textDecoration: 'none', display: 'inline-block' }}>
+          🌲 Вечнозелёная
+        </Link>
+        <Link href="/admin/emails/templates" style={{ ...BTN_GHOST, padding: '8px 14px', fontSize: 12, textDecoration: 'none', display: 'inline-block', marginLeft: 'auto' }}>
+          💾 Шаблоны
+        </Link>
+      </div>
+
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
         {([
           { value: 'subscribers' as Tab, label: '👥 Подписчики' },
           { value: 'members' as Tab, label: '🏠 Участницы клуба' },
+          { value: 'leads' as Tab, label: '🌱 Лиды с сайта' },
+          { value: 'history' as Tab, label: '📋 История' },
         ]).map(t => (
           <button
             key={t.value}
@@ -671,12 +818,13 @@ export default function AdminEmailsPage() {
       {tab === 'subscribers' && (
         <>
           {/* Stats */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 12, marginBottom: 20 }}>
             {[
               { label: 'Всего', value: total, bg: '#F0EEFF', color: '#7C5CFC' },
               { label: 'Холодные', value: cold, bg: '#D0F5E8', color: '#1A5C3A' },
               { label: 'В клубе', value: converted, bg: '#FFF3C0', color: '#5C4200' },
               { label: 'Отписались', value: unsubscribed, bg: '#EBEBEB', color: '#555' },
+              { label: 'Лиды с сайта', value: leadsCount, bg: '#E8F5E8', color: '#2D7A3A' },
             ].map(s => (
               <div key={s.label} style={{ background: s.bg, borderRadius: 14, padding: '14px 16px', textAlign: 'center' }}>
                 <p style={{ fontFamily: 'var(--font-unbounded)', fontSize: 24, fontWeight: 800, color: s.color, margin: '0 0 2px' }}>
@@ -736,10 +884,10 @@ export default function AdminEmailsPage() {
               </button>
             )}
             <button
-              onClick={() => setPushTarget('all')}
-              style={{ ...BTN_GHOST, padding: '10px 18px', background: '#FFF3C0', color: '#5C4200' }}
+              onClick={() => setShowSendTest(true)}
+              style={{ ...BTN_GHOST, padding: '10px 18px', background: '#D0F5E8', color: '#1A5C3A' }}
             >
-              📲 Push всем
+              🧪 Тестовая отправка
             </button>
           </div>
 
@@ -770,6 +918,7 @@ export default function AdminEmailsPage() {
                 {search ? 'Ничего не найдено' : 'Подписчиков пока нет. Импортируй CSV из Геткурса.'}
               </div>
             ) : (
+              <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr style={{ background: '#FAF8FF', borderBottom: '1px solid #EDE8FF' }}>
@@ -807,6 +956,7 @@ export default function AdminEmailsPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
 
@@ -846,57 +996,308 @@ export default function AdminEmailsPage() {
             <div style={{ textAlign: 'center', padding: 32, color: '#9B8FCC' }}>Загрузка...</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {segments.map(seg => (
-                <div
-                  key={seg.value}
-                  style={{
-                    background: '#fff', borderRadius: 16, border: '1px solid #EDE8FF',
-                    padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
-                  }}
-                >
-                  <div>
-                    <p style={{ fontSize: 15, fontWeight: 700, color: '#2D1F6E', margin: '0 0 2px' }}>
-                      {seg.icon} {seg.label}
-                    </p>
-                    <p style={{ fontSize: 13, color: '#9B8FCC', margin: 0 }}>
-                      {seg.count} получательниц
-                    </p>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    {seg.value !== 'cancelled' && (
-                      <button
-                        onClick={() => setSendTarget(seg)}
-                        disabled={seg.count === 0}
-                        style={{
-                          ...(seg.value === 'expired_trial' || seg.value === 'expired' ? BTN_GHOST : BTN_PRIMARY),
-                          opacity: seg.count === 0 ? 0.4 : 1,
-                          cursor: seg.count === 0 ? 'not-allowed' : 'pointer',
-                          whiteSpace: 'nowrap',
-                        }}
+              {segments.map(seg => {
+                const isExpanded = expandedSegs.has(seg.value)
+                const members = segMembers[seg.value] ?? []
+                const isLoading = loadingSegMembers[seg.value] ?? false
+                const search = segSearch[seg.value] ?? ''
+                const filtered = search
+                  ? members.filter(m =>
+                      m.email.toLowerCase().includes(search.toLowerCase()) ||
+                      (m.full_name ?? '').toLowerCase().includes(search.toLowerCase())
+                    )
+                  : members
+
+                return (
+                  <div
+                    key={seg.value}
+                    style={{
+                      background: '#fff', borderRadius: 16, border: '1px solid #EDE8FF',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {/* Card header — clickable to toggle */}
+                    <div
+                      onClick={() => toggleSegment(seg.value)}
+                      style={{
+                        padding: '16px 20px', display: 'flex', alignItems: 'flex-start',
+                        justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
+                        cursor: 'pointer', userSelect: 'none',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ fontSize: 13, color: '#C0B4E8', transition: 'transform 0.2s', display: 'inline-block', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
+                        <div>
+                          <p style={{ fontSize: 15, fontWeight: 700, color: '#2D1F6E', margin: '0 0 2px' }}>
+                            {seg.icon} {seg.label}
+                          </p>
+                          <p style={{ fontSize: 13, color: '#9B8FCC', margin: 0 }}>
+                            {seg.count} получательниц
+                          </p>
+                        </div>
+                      </div>
+                      <div
+                        style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}
+                        onClick={e => e.stopPropagation()}
                       >
-                        📢 Письмо
-                      </button>
-                    )}
-                    {(seg.value === 'trial' || seg.value === 'monthly' || seg.value === 'halfyear') && (
-                      <button
-                        onClick={() => setPushTarget(seg)}
-                        disabled={seg.count === 0}
-                        style={{
-                          ...BTN_GHOST,
-                          background: '#FFF3C0', color: '#5C4200',
-                          opacity: seg.count === 0 ? 0.4 : 1,
-                          cursor: seg.count === 0 ? 'not-allowed' : 'pointer',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        📲 Push
-                      </button>
+                        {seg.value !== 'cancelled' && (
+                          <button
+                            onClick={() => setSendTarget(seg)}
+                            disabled={seg.count === 0}
+                            style={{
+                              ...(seg.value === 'expired_trial' || seg.value === 'expired' ? BTN_GHOST : BTN_PRIMARY),
+                              opacity: seg.count === 0 ? 0.4 : 1,
+                              cursor: seg.count === 0 ? 'not-allowed' : 'pointer',
+                            }}
+                          >
+                            📢 Письмо
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Accordion body */}
+                    {isExpanded && (
+                      <div style={{ borderTop: '1px solid #EDE8FF' }}>
+                        <div style={{ padding: '12px 16px' }}>
+                          <input
+                            type="text"
+                            placeholder="Поиск по email или имени..."
+                            value={search}
+                            onChange={e => handleSegSearch(seg.value, e.target.value)}
+                            onClick={e => e.stopPropagation()}
+                            style={{
+                              width: '100%', padding: '8px 12px', borderRadius: 10,
+                              border: '1.5px solid #EDE8FF', outline: 'none', fontSize: 13,
+                              color: '#2D1F6E', background: '#FAF8FF', boxSizing: 'border-box',
+                              fontFamily: 'var(--font-nunito)',
+                            }}
+                          />
+                        </div>
+
+                        {isLoading ? (
+                          <div style={{ padding: '20px', textAlign: 'center', color: '#9B8FCC', fontSize: 13 }}>Загрузка...</div>
+                        ) : filtered.length === 0 ? (
+                          <div style={{ padding: '20px', textAlign: 'center', color: '#9B8FCC', fontSize: 13 }}>
+                            {search ? 'Ничего не найдено' : 'Нет участниц в этом сегменте'}
+                          </div>
+                        ) : (
+                          <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                              <thead>
+                                <tr style={{ background: '#FAF8FF' }}>
+                                  {['Email', 'Имя', 'Дата вступления', 'Статус'].map(h => (
+                                    <th key={h} style={{ padding: '8px 16px', textAlign: 'left', fontWeight: 700, color: '#7B6FAA', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
+                                      {h}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {filtered.map((m, i) => (
+                                  <tr key={m.id} style={{ borderTop: '1px solid #F5F0FF' }}>
+                                    <td style={{ padding: '8px 16px', color: '#2D1F6E', fontWeight: 600 }}>{m.email}</td>
+                                    <td style={{ padding: '8px 16px', color: '#7B6FAA' }}>{m.full_name ?? '—'}</td>
+                                    <td style={{ padding: '8px 16px', color: '#9B8FCC', fontSize: 12, whiteSpace: 'nowrap' }}>
+                                      {m.created_at ? fmt(m.created_at) : '—'}
+                                    </td>
+                                    <td style={{ padding: '8px 16px' }}>
+                                      <span style={{
+                                        background: m.subscription_status === 'active' ? '#D0F5E8' : m.subscription_status === 'trial' ? '#E8F5E8' : '#EBEBEB',
+                                        color: m.subscription_status === 'active' ? '#1A5C3A' : m.subscription_status === 'trial' ? '#2D7A3A' : '#555',
+                                        padding: '2px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap',
+                                      }}>
+                                        {m.subscription_status === 'active' ? 'Активная' : m.subscription_status === 'trial' ? 'Триал' : m.subscription_status === 'expired' ? 'Истекла' : m.subscription_status}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
+        </>
+      )}
+
+      {/* ── TAB: Leads ── */}
+      {tab === 'leads' && (
+        <>
+          <p style={{ fontSize: 13, color: '#7B6FAA', marginBottom: 16 }}>
+            Подписчики с публичного сайта — бесплатный курс, марафон, блог
+          </p>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+            {leadsCount > 0 && (
+              <button
+                onClick={() => setSendTarget({ value: 'leads', label: 'Лиды с сайта', count: leadsCount, icon: '🌱' })}
+                style={{ ...BTN_GHOST, padding: '10px 18px' }}
+              >
+                📢 Разослать ({leadsCount})
+              </button>
+            )}
+            <Link
+              href="/admin/emails/sequences?source=leads"
+              style={{ ...BTN_GHOST, padding: '10px 18px', textDecoration: 'none', display: 'inline-block' }}
+            >
+              📧 Серия писем
+            </Link>
+          </div>
+          <input
+            type="text"
+            placeholder="Поиск по email или имени..."
+            value={leadsSearch}
+            onChange={e => { setLeadsSearch(e.target.value); loadLeads(1, e.target.value) }}
+            style={{
+              width: '100%', padding: '10px 14px', borderRadius: 12, marginBottom: 12,
+              border: '1.5px solid #EDE8FF', outline: 'none', fontSize: 13,
+              color: '#2D1F6E', background: '#FAF8FF', boxSizing: 'border-box',
+              fontFamily: 'var(--font-nunito)',
+            }}
+          />
+          <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #EDE8FF', overflow: 'hidden' }}>
+            {loadingLeads ? (
+              <div style={{ padding: 32, textAlign: 'center', color: '#9B8FCC' }}>Загрузка...</div>
+            ) : leads.length === 0 ? (
+              <div style={{ padding: 32, textAlign: 'center', color: '#9B8FCC' }}>Лидов пока нет</div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: '#FAF8FF', borderBottom: '1px solid #EDE8FF' }}>
+                      {['Email', 'Имя', 'Источник', 'Дата', 'Конвертирован', ''].map(h => (
+                        <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 700, color: '#7B6FAA', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leads.map((s, i) => (
+                      <tr key={s.id} style={{ borderBottom: i < leads.length - 1 ? '1px solid #F5F0FF' : 'none' }}>
+                        <td style={{ padding: '10px 14px', color: '#2D1F6E', fontWeight: 600 }}>{s.email}</td>
+                        <td style={{ padding: '10px 14px', color: '#7B6FAA' }}>{s.name ?? '—'}</td>
+                        <td style={{ padding: '10px 14px', color: '#9B8FCC', fontSize: 12 }}>
+                          {s.source === 'website_free' ? '🎁 Бесплатный курс'
+                            : s.source === 'marathon' ? '🏃 Марафон'
+                            : s.source === 'blog' ? '📝 Блог'
+                            : s.source ?? '—'}
+                        </td>
+                        <td style={{ padding: '10px 14px', color: '#9B8FCC', fontSize: 12, whiteSpace: 'nowrap' }}>
+                          {s.subscribed_at ? fmt(s.subscribed_at) : '—'}
+                        </td>
+                        <td style={{ padding: '10px 14px' }}>
+                          {s.converted_to_member
+                            ? <span style={{ background: '#D0F5E8', color: '#1A5C3A', padding: '2px 10px', borderRadius: 20, fontSize: 12, fontWeight: 700 }}>В клубе</span>
+                            : <span style={{ background: '#EBEBEB', color: '#555', padding: '2px 10px', borderRadius: 20, fontSize: 12 }}>Нет</span>
+                          }
+                        </td>
+                        <td style={{ padding: '10px 14px', textAlign: 'right' }}>
+                          <button
+                            onClick={() => handleDelete(s.email)}
+                            title="Удалить"
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, opacity: 0.45 }}
+                          >🗑</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+          {leadsTotalPages > 1 && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 16 }}>
+              <button onClick={() => { setLeadsPage(p => p - 1); loadLeads(leadsPage - 1, leadsSearch) }} disabled={leadsPage <= 1 || loadingLeads} style={{ ...BTN_GHOST, padding: '6px 14px', opacity: leadsPage <= 1 ? 0.4 : 1 }}>← Пред</button>
+              <span style={{ fontSize: 13, color: '#7B6FAA' }}>{leadsPage} / {leadsTotalPages}</span>
+              <button onClick={() => { setLeadsPage(p => p + 1); loadLeads(leadsPage + 1, leadsSearch) }} disabled={leadsPage >= leadsTotalPages || loadingLeads} style={{ ...BTN_GHOST, padding: '6px 14px', opacity: leadsPage >= leadsTotalPages ? 0.4 : 1 }}>След →</button>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ── TAB: History ── */}
+      {tab === 'history' && (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <p style={{ fontSize: 13, color: '#7B6FAA', margin: 0 }}>
+              История отправленных рассылок — новые сверху
+            </p>
+            <button
+              onClick={loadHistory}
+              disabled={loadingHistory}
+              style={{ ...BTN_GHOST, padding: '8px 14px', fontSize: 12, opacity: loadingHistory ? 0.5 : 1 }}
+            >
+              🔄 Обновить
+            </button>
+          </div>
+
+          <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #EDE8FF', overflow: 'hidden' }}>
+            {loadingHistory ? (
+              <div style={{ padding: 40, textAlign: 'center', color: '#9B8FCC' }}>Загрузка...</div>
+            ) : history.length === 0 ? (
+              <div style={{ padding: 40, textAlign: 'center', color: '#9B8FCC' }}>
+                <div style={{ fontSize: 36, marginBottom: 10 }}>📭</div>
+                <p style={{ margin: 0 }}>Рассылок пока не было</p>
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: '#FAF8FF', borderBottom: '1px solid #EDE8FF' }}>
+                      {['Дата', 'Тема письма', 'Сегмент', 'Получателей', 'Отправил'].map(h => (
+                        <th key={h} style={{
+                          padding: '10px 16px', textAlign: 'left', fontWeight: 700,
+                          color: '#7B6FAA', fontSize: 11, textTransform: 'uppercase',
+                          letterSpacing: '0.05em', whiteSpace: 'nowrap',
+                        }}>
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {history.map((log, i) => (
+                      <tr key={log.id} style={{ borderBottom: i < history.length - 1 ? '1px solid #F5F0FF' : 'none' }}>
+                        <td style={{ padding: '10px 16px', color: '#9B8FCC', fontSize: 12, whiteSpace: 'nowrap' }}>
+                          {new Date(log.sent_at).toLocaleString('ru-RU', {
+                            day: 'numeric', month: 'short', year: 'numeric',
+                            hour: '2-digit', minute: '2-digit',
+                          })}
+                        </td>
+                        <td style={{ padding: '10px 16px', color: '#2D1F6E', fontWeight: 600, maxWidth: 320 }}>
+                          {log.subject}
+                        </td>
+                        <td style={{ padding: '10px 16px' }}>
+                          <span style={{
+                            background: '#F0EEFF', color: '#7C5CFC',
+                            padding: '3px 10px', borderRadius: 20,
+                            fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap',
+                          }}>
+                            {segmentLabel(log.segment)}
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px 16px' }}>
+                          <span style={{
+                            fontFamily: 'var(--font-unbounded)', fontSize: 16,
+                            fontWeight: 800, color: '#3D2B8A',
+                          }}>
+                            {log.recipients_count}
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px 16px', color: '#9B8FCC', fontSize: 12 }}>
+                          {log.sent_by ?? '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </>
       )}
 
@@ -920,11 +1321,8 @@ export default function AdminEmailsPage() {
           source="getcourse_club"
         />
       )}
-      {pushTarget !== null && (
-        <PushModal
-          segment={pushTarget === 'all' ? null : pushTarget}
-          onClose={() => setPushTarget(null)}
-        />
+      {showSendTest && (
+        <SendTestModal onClose={() => setShowSendTest(false)} />
       )}
     </div>
   )

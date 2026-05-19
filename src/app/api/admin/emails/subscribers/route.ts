@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
+const LEAD_SOURCES = ['website_free', 'marathon', 'blog']
+
 export async function GET(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -13,9 +15,10 @@ export async function GET(req: NextRequest) {
   if (member?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const sp = req.nextUrl.searchParams
-  const page  = Math.max(1, parseInt(sp.get('page')  ?? '1',  10))
-  const limit = Math.min(200, Math.max(1, parseInt(sp.get('limit') ?? '50', 10)))
+  const page   = Math.max(1, parseInt(sp.get('page')  ?? '1',  10))
+  const limit  = Math.min(200, Math.max(1, parseInt(sp.get('limit') ?? '50', 10)))
   const search = sp.get('search')?.trim() ?? ''
+  const leadsOnly = sp.get('leadsOnly') === '1'
 
   const from = (page - 1) * limit
   const to   = from + limit - 1
@@ -25,6 +28,10 @@ export async function GET(req: NextRequest) {
     .from('subscribers')
     .select('id, email, name, source, status, converted_to_member, subscribed_at', { count: 'exact' })
     .order('subscribed_at', { ascending: false })
+
+  if (leadsOnly) {
+    query = query.in('source', LEAD_SOURCES)
+  }
 
   if (search) {
     query = query.or(`email.ilike.%${search}%,name.ilike.%${search}%`)
@@ -40,7 +47,7 @@ export async function GET(req: NextRequest) {
   const totalPages = Math.max(1, Math.ceil(total / limit))
 
   // ── Stats (always full base, independent of search/page) ──────────
-  const [sTotal, sCold, sClub, sConverted, sUnsub] = await Promise.all([
+  const [sTotal, sCold, sClub, sConverted, sUnsub, sLeads] = await Promise.all([
     admin.from('subscribers').select('*', { count: 'exact', head: true }),
     admin.from('subscribers').select('*', { count: 'exact', head: true })
       .eq('status', 'active').eq('converted_to_member', false),
@@ -48,8 +55,9 @@ export async function GET(req: NextRequest) {
       .eq('source', 'getcourse_club').eq('status', 'active'),
     admin.from('subscribers').select('*', { count: 'exact', head: true })
       .eq('converted_to_member', true),
+    admin.from('cancellations').select('*', { count: 'exact', head: true }),
     admin.from('subscribers').select('*', { count: 'exact', head: true })
-      .eq('status', 'unsubscribed'),
+      .in('source', LEAD_SOURCES),
   ])
 
   return NextResponse.json({
@@ -58,11 +66,12 @@ export async function GET(req: NextRequest) {
     page,
     totalPages,
     stats: {
-      total:       sTotal.count     ?? 0,
-      cold:        sCold.count      ?? 0,
-      clubCount:   sClub.count      ?? 0,
-      converted:   sConverted.count ?? 0,
-      unsubscribed: sUnsub.count    ?? 0,
+      total:        sTotal.count     ?? 0,
+      cold:         sCold.count      ?? 0,
+      clubCount:    sClub.count      ?? 0,
+      converted:    sConverted.count ?? 0,
+      unsubscribed: sUnsub.count     ?? 0,
+      leadsCount:   sLeads.count     ?? 0,
     },
   })
 }
