@@ -116,7 +116,19 @@ WHERE last_payment_amount = 1500 AND subscription_plan IS NULL;
 
 - [ ] **R74** (низкий) — Разобраться с `initial_weight` vs `start_weight` в `members`. `/api/tracker/summary` использует `initial_weight`, `/dashboard/tracker/page.tsx` — `start_weight`. Дублирование или разные смыслы? Документировать в `04-admin/modules/members.md` (или будущем `measurements.md`). См. `04-admin/_findings.md`.
 
-- [ ] **R75** (низкий) — Мёртвый компонент `WinsForm.tsx`. `src/components/WinsForm.tsx` (61 строка) нигде не используется (grep нашёл только сам файл). Удалить или подключить.
+- [ ] **R75** (низкий) — Мёртвый и сломанный компонент `WinsForm.tsx`. `src/components/WinsForm.tsx` (61 строка) нигде не используется (grep нашёл только сам файл). Помимо того что мёртвый — делает `.insert({ text })`, тогда как колонка в БД называется `result`; также не передаёт обязательное поле `week_date`. При подключении упал бы с ошибкой БД. Удалить или переписать. Источник: `src/components/WinsForm.tsx`.
+
+### Модуль побед (разведка 23.05.2026)
+
+- [ ] **R81** (низкий) — `wins.is_featured` — заготовка, нигде не используется. Поле `is_featured boolean DEFAULT false` есть в схеме таблицы, но ни читается, ни пишется нигде в коде. Решить: реализовать механизм «избранных побед» или убрать поле. Источник: `src/app/(club)/dashboard/wins/`, `src/app/api/wins/route.ts`.
+
+- [ ] **R82** (низкий) — Мёртвый роут `/api/wins/count`. Файл `src/app/api/wins/count/route.ts` существует и регистрируется Next.js роутингом, но ни один клиентский компонент его не вызывает. Паттерн аналогичен `/api/diary/notes` (R70). Удалить или подключить. Источник: `src/app/api/wins/count/route.ts`.
+
+- [ ] **R83** (средний) — Расхождение стартового веса в прогресс-блоке победм и в трекере. `wins/page.tsx` берёт стартовый вес как `measurements[0].weight` (первый замер по дате), тогда как `/api/tracker/summary` использует `members.initial_weight`. Если значения расходятся — участница видит разный прогресс на `/dashboard/wins` и `/dashboard/tracker`. Унифицировать источник стартового веса. Связано с R74. Источник: `src/app/(club)/dashboard/wins/page.tsx`, `src/app/api/tracker/summary/route.ts`.
+
+- [ ] **R84** (низкий) — `wins.week_date` семантически не используется. Поле NOT NULL, при POST пишется текущая дата UTC, при чтении не фильтруется, в UI не отображается — фактически дублирует `created_at`. Агрегация по неделям планировалась, но не реализована. Решить: удалить поле или реализовать недельную агрегацию. Источник: `src/app/api/wins/route.ts`.
+
+- [ ] **R85** (низкий) — `totalCount` не синхронизируется между виджетом дашборда и страницей побед. Если победа добавлена через виджет `/dashboard` (`source: 'dashboard'`), счётчик «N записей» на `/dashboard/wins` обновится только при следующем server render. Оптимистичный `setTotalCount` работает только внутри той же страницы. Источник: `src/app/(club)/dashboard/wins/WinsClient.tsx`.
 
 ### Модуль замеров (разведка 23.05.2026)
 
