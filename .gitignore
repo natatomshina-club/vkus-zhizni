@@ -71,3 +71,9 @@ docs/.obsidian/workspaces.json
 
 # Vercel local link (project is on Beget, not Vercel)
 .vercel/
+
+# === R54/commit-10 — SEO/blog (separate universe per project handoff) ===
+/src/app/api/admin/blog-hubs/
+/src/app/api/admin/blog-subcategory-hubs/
+/src/app/api/admin/yandex-parser/
+/src/app/api/yandex-parser/
