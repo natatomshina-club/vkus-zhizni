@@ -33,7 +33,7 @@
 
 ## UI
 
-- [[03-club/ui/theme|Тема и палитра]] — клубная фиолетово-зелёная
+- [[design-system|Дизайн-система клуба]] — CSS-переменные, шрифты (Unbounded + Nunito), компоненты
 - [[03-club/ui/sidebar|Sidebar]]
 - [[03-club/ui/mobile-pwa|Мобильный PWA]]
 
