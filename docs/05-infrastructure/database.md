@@ -392,9 +392,8 @@ CMS-контент страниц (предположительно редакт
 Источник: `src/app/api/admin/page-content/route.ts`.
 
 ### `seasonal_themes`
-> [!warning] Не задокументирована.
-Сезонные цветовые темы клуба (переключаются вручную через админку).
-Источник: `src/app/api/admin/themes/route.ts`, `supabase/migrations/seasonal_themes.sql`.
+Сезонные темы оформления клуба. Поля: `slug, title, emoji, particle_type, accent_color, accent_light, start_date (MM-DD), end_date (MM-DD), is_forced, is_system`. Активация: `is_forced=true` (ручная) или по дате. Компоненты `SeasonalThemeApplier` и `SeasonalParticles` монтируются в `(club)/layout.tsx` и применяют тему через CSS-переменные и DOM-анимацию. Кэш на клиенте: sessionStorage TTL 2 мин.
+→ [decoration-admin](../04-admin/modules/decoration-admin.md)
 
 ---
 

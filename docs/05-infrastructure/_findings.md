@@ -5,6 +5,31 @@
 
 ---
 
+## май 2026 из src/lib/club-mode.ts (разведка для decoration-admin)
+
+**NEXT_PUBLIC_CLUB_MODE — назначение раскрыто.**
+
+Переменная висела как открытый вопрос с 19 мая 2026 (SESSION_2026-05-19_VAULT_HANDOFF.md, «назначение неизвестно»).
+
+**Назначение:** переключатель режима лендинга клуба (`nata-tomshina.ru/club`).
+
+| Значение | Что показывает лендинг `/club` |
+|---|---|
+| `'pricing'` | Секция с ценами (`<Pricing />`) + стандартный CTA (`<FinalCta />`) |
+| `'diagnostic'` | Диагностическая анкета (`<DiagnosticSection />`) + `<FinalCtaDiagnostic />`; убирает пункт «Стоимость» из навигации |
+
+**Текущее на проде:** `diagnostic` (выставлено в `deploy.sh`).
+**Дефолт в Dockerfile:** `pricing`.
+
+Затрагивает только `src/app/public-site/club/` — Header, Hero, Faq, ClubPage.
+**Никак не влияет на сам клуб** (`club.nata-tomshina.ru`) и на сезонное оформление.
+
+Реализация: `src/lib/club-mode.ts` — функция `getClubMode()`. Переменная — build-time (`NEXT_PUBLIC_*`), вшивается в бандл при сборке Docker-образа.
+
+Связано: `docs/05-infrastructure/server.md:88`.
+
+---
+
 ## 2026-05-23 из supabase/migrations/ (разведка для diary)
 
 **Пропущенные миграции — общая проблема, не только дневника.**

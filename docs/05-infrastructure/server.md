@@ -85,7 +85,7 @@ cd ~/Desktop/vkus-zhizni && bash deploy.sh
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `NEXT_PUBLIC_SITE_URL`
 - `NEXT_PUBLIC_CLOUDPAYMENTS_PUBLIC_ID`
-- `NEXT_PUBLIC_CLUB_MODE` — в `deploy.sh` значение `"diagnostic"`; дефолт в Dockerfile: `"pricing"`
+- `NEXT_PUBLIC_CLUB_MODE` — в `deploy.sh` значение `"diagnostic"`; дефолт в Dockerfile: `"pricing"`. `diagnostic` = диагностическая анкета вместо цен на `/club`; `pricing` = стандартный лендинг с ценами. Подробнее: [[05-infrastructure/_findings]].
 
 Runtime-переменные (без `NEXT_PUBLIC_`) читаются из `/home/deploy/app/.env.production.local` напрямую при старте контейнера.
 

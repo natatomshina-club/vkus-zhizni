@@ -31,7 +31,7 @@
 - [[04-admin/modules/cms|Страницы сайта (CMS)]] — главная, блог, клуб
 - [[04-admin/modules/stories-admin|Истории]] — результаты и преображения (`results_stories`, `result_cases`)
 - [[04-admin/modules/partners|Партнёры]] — заявки, комиссии, выплаты
-- [[04-admin/modules/seasonal-themes|Оформление]] — сезонные темы и частицы
+- [[04-admin/modules/decoration-admin|Оформление]] — сезонные темы, частицы, праздничный баннер
 - [[04-admin/modules/content-materials|Обучающие материалы]] — тексты и видео для участниц
 
 ## Связано
