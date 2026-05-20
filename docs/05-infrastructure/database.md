@@ -238,14 +238,12 @@ Push-уведомления для участниц (OneSignal). Хранит и
 → [meal-plans](../03-club/modules/meal-plans.md)
 
 ### `saved_recipes`
-> [!warning] Не задокументирована.
-Избранные рецепты участниц.
-Источник: `src/app/api/member-recipes/route.ts` или `saved_recipes` endpoint.
+Рецепты из Умной кухни и Недельного плана, сохранённые участницей. Поля: `id, member_id, title, description, meal_type, ingredients (jsonb), steps (text[]), time_minutes, kbju_calories, kbju_protein, kbju_fat, kbju_carbs, created_at`. INSERT/DELETE — клиентом напрямую (anon-ключ), без API-роута. Лимит 50 на UI, серверно не защищён (R89).
+→ [recipes](../03-club/modules/recipes.md)
 
 ### `member_recipes`
-> [!warning] Не задокументирована.
-Рецепты, добавленные участницами вручную (пользовательский контент).
-Источник: `src/app/api/member-recipes/route.ts`.
+Собственные рецепты участниц из Калькулятора кухни. Поля: `id, member_id, name, ingredients (jsonb), total_calories, total_protein, total_fat, total_carbs, servings_count, created_at`. API: GET/POST `/api/member-recipes`, DELETE `/api/member-recipes/[id]`.
+→ [recipes](../03-club/modules/recipes.md)
 
 ### `cooking_tips`
 > [!warning] Не задокументирована.

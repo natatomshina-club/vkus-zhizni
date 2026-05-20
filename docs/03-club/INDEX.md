@@ -19,7 +19,7 @@
 
 ### Питание
 - [[03-club/modules/smart-kitchen|Умная кухня]]
-- [[03-club/modules/recipes|Рецепты]]
+- [[03-club/modules/recipes|Избранные рецепты]] — saved_recipes, member_recipes, saved_sauces (localStorage), `/dashboard/favorites`
 - [[03-club/modules/meal-plans|Рацион / план питания]]
 - [[03-club/modules/diary|Дневник питания]]
 
