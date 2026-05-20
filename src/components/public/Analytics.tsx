@@ -6,6 +6,7 @@ export function Analytics() {
   const pathname = usePathname()
 
   useEffect(() => {
+    if (pathname.startsWith('/dashboard') || pathname.startsWith('/admin')) return
     fetch('/api/public/track', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

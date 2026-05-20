@@ -74,7 +74,18 @@
 
 ## 6. Клуб vs публичный сайт
 
-Разделения нет. `<Analytics />` и Яндекс.Метрика встроены в единый `src/app/layout.tsx` — трекают всё включая `/dashboard/*`.
+Клуб закрыт от поисковиков и аналитики на четырёх уровнях:
+
+| Защита | Источник | Статус |
+|---|---|---|
+| `robots.txt: Disallow /dashboard` | `public/robots.txt` | ✅ |
+| `<meta robots noindex,nofollow>` на всех клубных страницах | `src/app/(club)/layout.tsx:8–13` | ✅ |
+| Клубные URL отсутствуют в sitemap | `src/app/public-site/sitemap.ts` | ✅ |
+| Auth redirect для незалогиненных | `src/app/(club)/dashboard/layout.tsx:16` | ✅ |
+| Яндекс.Метрика не трекает `/dashboard` и `/admin` | `src/components/public/YandexMetrika.tsx` | ✅ |
+| `page_views` не пишет клубные страницы | `src/components/public/Analytics.tsx` | ✅ |
+
+`YandexMetrika.tsx` — Client Component с `usePathname()`, возвращает `null` на `/dashboard/*` и `/admin/*`. Подключён в `src/app/layout.tsx` вместо inline `<Script id="yandex-metrika">`.
 
 Клуб-специфичное: `/admin/analytics/page.tsx` — дашборд чтения из `page_views` для Наташи.
 
