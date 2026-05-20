@@ -356,14 +356,14 @@ Push-уведомления для участниц (OneSignal). Хранит и
 Источник: `src/app/api/public/club-diagnostic-submit/route.ts`.
 
 ### `results_stories`
-> [!warning] Не задокументирована.
-Истории результатов участниц для публичного раздела `/results`.
-Источник: `src/app/public-site/results/page.tsx`, `supabase/migrations/create_results_stories.sql`.
+Истории преображения для публичного сайта. Поля: `slug, name, age, age_label, tag_label, tag_filter[], before_kg, after_kg, metric_main, metric_label, summary_quote, check_items[], content_html, content_source, seo_title, seo_description, order_index, published, photo_before_url, photo_after_url`. Фото в bucket `results-photos`, путь `{id}/{type}.{ext}`. Читают: `nata-tomshina.ru/results` (список `published=true`) и `/results/[slug]` (полная страница).
+Пишет: только админ через `/api/admin/results-stories`.
+→ [stories-admin](../04-admin/modules/stories-admin.md)
 
 ### `result_cases`
-> [!warning] Не задокументирована.
-Кейсы (детальные истории) отдельных участниц (`/results/[slug]`).
-Источник: `src/app/public-site/results/[slug]/page.tsx`.
+> [!warning] Мёртвый модуль. Публичный сайт эту таблицу не читает (описание было ошибочным — `/results/[slug]` использует `results_stories`).
+Более старая структура историй с другим набором полей (`name, tag_badge, kg, kg_color, stripe, before_text, after_text, quote, extras[], tags[], video_url, is_published, featured, sort_order, photo_before_url, photo_after_url`). Фото в bucket `result-photos`. API-роуты `/api/admin/result-cases/*` существуют, но нет ни admin UI, ни вызывающих компонентов. Auth нарушает Rule #11. Решить: удалить или задокументировать как legacy. См. R95.
+→ [stories-admin](../04-admin/modules/stories-admin.md)
 
 ---
 
