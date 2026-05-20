@@ -27,8 +27,7 @@
 - [[03-club/modules/measurements|Замеры]]
 
 ### Коммуникация
-- [[03-club/modules/channels|Чаты клуба]]
-- [[03-club/modules/private-messages|Личные сообщения]]
+- [[03-club/modules/channel|Канал (чаты, личные сообщения, объявления)]]
 - [[03-club/modules/notifications|Уведомления]]
 
 ### Монетизация
