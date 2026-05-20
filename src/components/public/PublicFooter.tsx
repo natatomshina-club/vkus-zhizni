@@ -23,7 +23,7 @@ export default function PublicFooter() {
           { href: '/club', label: 'О клубе' },
           { href: 'https://club.nata-tomshina.ru/legal/privacy', label: 'Конфиденциальность', external: true },
           { href: 'https://nata-tomshina.ru/legal', label: 'Документы', external: true },
-        ].map(({ href, label, external, highlight }) =>
+        ].map(({ href, label, external }) =>
           external ? (
             <a key={href} href={href} target="_blank" rel="noopener noreferrer" style={{
               color: 'rgba(var(--color-white-rgb),0.5)', textDecoration: 'none',
@@ -31,14 +31,6 @@ export default function PublicFooter() {
             }}>
               {label}
             </a>
-          ) : highlight ? (
-            <Link key={href} href={href} style={{
-              background: 'var(--color-highlight-bg)', color: 'var(--color-highlight-text)',
-              textDecoration: 'none', fontSize: 12, fontWeight: 700,
-              padding: '3px 10px', borderRadius: 10,
-            }}>
-              {label}
-            </Link>
           ) : (
             <Link key={href} href={href} style={{
               color: 'rgba(var(--color-white-rgb),0.5)', textDecoration: 'none',
