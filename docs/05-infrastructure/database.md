@@ -58,8 +58,8 @@
 → [payments](payments.md)
 
 ### `cancellations`
-Журнал отмен рекуррентных платежей. Статус `cancelled` в `members` коррелирует с этой таблицей.
-→ [payments](payments.md) · упоминается: [emails](../04-admin/modules/emails.md)
+Журнал ручных отмен пробного периода. Пишет: `POST /api/subscription/cancel` (только при `subscription_status = 'trial'`). Поля: `member_id, email, plan`. Читается только как `count(*)` для виджета «Подписчицы» в админке — в рассылках не участвует. Не содержит отмен CloudPayments-рекуррентов.
+→ [emails](../04-admin/modules/emails.md) · [profile](../03-club/modules/profile.md)
 
 ### `pending_refs`
 Временное хранилище реф-кодов партнёров при регистрации (до завершения оплаты). TTL-чистка отдельным процессом.

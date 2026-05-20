@@ -91,6 +91,18 @@ WHERE table_name = 'measurements' AND column_name LIKE '%craving%';
 
 ---
 
+## май 2026 из src/app/api/member/me и src/app/api/onboarding/profile (разведка для profile.md)
+
+**Debug console.log в двух API-роутах профиля.**
+
+В `/api/member/me/route.ts` — `console.log` при каждом чтении профиля.
+В `/api/onboarding/profile/route.ts` — два `console.log`: email и результат UPDATE.
+
+Оба роута в продакшне. Логи замусоривают серверный вывод и могут засветить email участниц.
+Статус: техдолг. Убрать в рамках R93.
+
+---
+
 ## 2026-05-23 из src/app/globals.css (попутно при разведке публичного сайта)
 
 **Дизайн-токены клуба — материал для будущего `03-club/design-system.md`.**
