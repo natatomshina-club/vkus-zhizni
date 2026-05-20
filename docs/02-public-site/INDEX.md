@@ -5,6 +5,7 @@
 ## Архитектура
 
 - [[02-public-site/architecture|Архитектура]] — как устроен публичный сайт, изоляция от клуба
+- [[02-public-site/seo-structure|SEO и индексация]] — карта URL, sitemap, robots, метатеги, Schema.org
 
 ## Страницы
 
