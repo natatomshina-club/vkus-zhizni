@@ -112,13 +112,9 @@ CREATE INDEX idx_measurements_member_date ON measurements(member_id, date DESC);
 
 RLS: `auth.uid() = member_id` · ⚠️ Без миграции (см. R72)
 
-> [!danger] Расхождение DDL и кода — проверить на проде
-> TRACKER_IMPL.md (DDL, март 2026) называет поле `craving`.
-> Код (`route.ts`, TypeScript interface) использует `sweet_craving`.
-> Если в боевой БД поле называется `craving` — учёт тяги к сладкому
-> сломан: запросы возвращают `null`, достижения «Месяц без тяги»
-> и «Квартал без тяги» никогда не срабатывают.
-> Диагностика: запрос из SQL-шпаргалки (раздел 12). См. [[../_findings.md]] и R76.
+> [!info] R76 закрыт (2026-05-23)
+> Диагностика на боевой БД подтвердила: поле называется `sweet_craving` — совпадает с кодом.
+> `TRACKER_IMPL.md` (DDL, март 2026) содержал неверное имя `craving` — это был баг документации, не кода.
 
 > [!warning] Поле `note`
 > Присутствует в SELECT и TypeScript interface (`note: string | null`),
@@ -266,7 +262,7 @@ achievements = [
 
 | # | Описание | Приоритет |
 |---|---|---|
-| R76 | `craving` vs `sweet_craving` — расхождение DDL и кода | **высокий** |
+| R76 | ✅ закрыт — `sweet_craving` верно и в БД, и в коде; баг был в TRACKER_IMPL.md | — |
 | R77 | `note` есть в SELECT/interface, нет в форме UI | низкий |
 | R78 | `kbju_manual: false` при замере сбрасывает ручной override | средний |
 | R79 | Достижение «Цель достигнута» убрано или выпало | низкий |
