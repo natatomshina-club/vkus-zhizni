@@ -11,7 +11,7 @@
 
 Разделы клуба, у которых есть админ-интерфейс. Описаны в файлах модулей — см. секцию «Что делает админ» в каждом.
 
-- [[03-club/modules/marathons|Марафоны]]
+- [[03-club/modules/marathons|Марафоны]] → [[04-admin/modules/marathons-admin|Детальный admin-модуль]]
 - [[03-club/modules/webinars|Вебинары]]
 - [[03-club/modules/meditations|Медитации]]
 - [[03-club/modules/karta-pomoshi|Карта помощи]]
