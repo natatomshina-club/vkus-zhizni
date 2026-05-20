@@ -399,22 +399,20 @@ CMS-контент страниц (предположительно редакт
 
 ## SEO / Блог
 
-> SEO-блог вынесен в отдельный Vault (`Клуб разработка/БЛОГ + SEO/`). Таблицы обнаружены в коде, но не документируются в этом Vault. Подробнее: `08-roadmap/ideas.md` § «SEO-блог — отдельный Vault».
+> Техническая инфраструктура блога (`blog_posts`, `blog_hubs`, `blog_subcategory_hubs`) задокументирована в [[02-public-site/blog-infrastructure]].  
+> Таблицы SEO-инструментария (`seo_clusters`, `seo_settings`, `seo_topics`, `keyword_queue`, `keyword_suggestions`) — вне scope Vault. Подробнее: `08-roadmap/ideas.md` § «SEO-блог — отдельный Vault».
 
 ### `blog_posts`
-> [!warning] Не задокументирована в техническом Vault.
-Статьи SEO-блога.
-Источник: `src/app/api/admin/blog/route.ts`.
+Статьи и рецепты SEO-блога. Единая таблица для обоих типов; разделение по полю `category` (не по `type`). Поля: `id, slug, title, category, subcategory, content_html, meta_title, meta_description, widget_type, is_published, type, created_at, updated_at`.
+→ [[02-public-site/blog-infrastructure]]
 
 ### `blog_hubs`
-> [!warning] Не задокументирована в техническом Vault.
-Хаб-страницы блога (категории верхнего уровня).
-Источник: `src/app/api/admin/blog-hubs/route.ts`.
+Хаб-страницы блога (категории верхнего уровня). Флаги: `is_ready` (отображать) + `is_indexed` (noindex). Контент содержит `<!-- SUBCATEGORIES_PLACEHOLDER -->`.
+→ [[02-public-site/blog-infrastructure]]
 
 ### `blog_subcategory_hubs`
-> [!warning] Не задокументирована в техническом Vault.
-Подкатегории хабов.
-Источник: `src/app/api/admin/blog-subcategory-hubs/route.ts`.
+Подкатегории хабов. Контент содержит `<!-- ARTICLES_PLACEHOLDER -->`. Флаги: `is_ready`, `is_indexed`.
+→ [[02-public-site/blog-infrastructure]]
 
 ### `seo_clusters`
 > [!warning] Не задокументирована в техническом Vault.
