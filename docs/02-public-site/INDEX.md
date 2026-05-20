@@ -7,6 +7,7 @@
 - [[02-public-site/architecture|Архитектура]] — как устроен публичный сайт, изоляция от клуба
 - [[02-public-site/seo-structure|SEO и индексация]] — карта URL, sitemap, robots, метатеги, Schema.org
 - [[02-public-site/blog-infrastructure|Блог — техническая инфраструктура]] — БД, шаблоны, маркеры, ISR, CSS, админка
+- [[02-public-site/content-publishing|Публикация контента]] — жизненный цикл статьи/рецепта/хаба/истории, SEO-поля, ISR-таймлайны
 
 ## Страницы
 

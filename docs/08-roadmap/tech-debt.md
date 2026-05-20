@@ -23,11 +23,25 @@
 ### Устаревший upload-роут для медитаций
 - `src/app/api/admin/meditations/[id]/upload/route.ts` — старая FormData-реализация. Заменён на `upload-url/route.ts` (presigned). Не используется в UI, но не удалён из репозитория. Бакет `meditations` (старый) → актуальный `meditation-audio`. Подробнее: [[03-club/modules/meditations#известные-особенности]]
 
-### Проверка прав через `user.id` вместо `user.email` (нарушение правила #24)
+### Системный аудит Rule #11 — `.eq('id', user.id)` в admin-роутах
 
-В части admin-роутов проверка прав сделана через `.eq('id', user.id)` вместо `.eq('email', user.email)`. Работает только если `member.id === auth.users.id`, что не гарантируется: `member.id` — отдельный UUID в таблице `members`, `auth.users.id` — UUID из auth-системы Supabase. Совпадение — счастливая случайность, которая может сломаться при любом ручном создании участницы.
+**Системный паттерн:** в проекте исторически копировали `requireAdmin()` локально в каждый роут вместо импорта из `@/lib/auth/requireAdmin.ts`. Каждая копия воспроизводит одно и то же нарушение: `.eq('id', user.id)` вместо `.eq('email', user.email)`.
 
-**Файлы (найдено при разведках 18 мая 2026):**
+`member.id` ≠ `auth.users.id` — это разные UUID. Нарушение не ломается на тестовых участницах (созданных через Supabase UI), но сломается при любом ручном создании участницы через Admin API, где UUID генерируются независимо.
+
+**Задокументированные точки нарушения (7 мест):**
+
+| R-номер | Файл | Последствие |
+|---|---|---|
+| R71 | `src/app/api/diary/` (часть роутов) | diary/tracker/wins данные не сохраняются |
+| R90 | `src/app/api/kitchen/recipes/route.ts:65,99` | лимит кухни не считается |
+| R91 | `src/components/ProfileClient.tsx`, `AvatarUpload.tsx` | сохранение профиля и аватара не работает |
+| R92 | `src/app/api/profile/avatar/route.ts:19` | удаление аватара в DB не работает |
+| R94 | `src/app/api/admin/result-cases/route.ts:10`, `[id]/route.ts:10` | admin-проверка мёртвого модуля |
+| R96 | `src/proxy.ts:213` | кураторская проверка в middleware |
+| R107 | `src/app/api/admin/generate-image/route.ts:8` | AI-генерация изображений для admin |
+
+Дополнительно — найдено при разведке 18 мая 2026 (до введения R-нумерации):
 
 Вебинары (5 файлов):
 - `src/app/api/admin/webinars/route.ts:8`
@@ -36,14 +50,14 @@
 - `src/app/api/admin/webinars/[id]/materials/route.ts:9`
 - `src/app/api/admin/webinars/[id]/lessons/route.ts:9`
 
-Медитации (1 файл):
-- `src/app/api/admin/meditations/[id]/upload-url/route.ts:10` — критично: это активный роут загрузки аудио
+Медитации:
+- `src/app/api/admin/meditations/[id]/upload-url/route.ts:10` — критично: активный роут загрузки аудио
 
-Возможно, есть и в других admin-роутах — провести полную ревизию через `grep -rEn "\.eq\(['"]id['"], user\.id" src/app/api/admin`.
+**Полная ревизия:** `grep -rEn "\.eq\(['\"](id)['\"], user\.id" src/app/api/`
 
-**Фикс:** заменить на `.eq('email', user.email)` во всех найденных местах.
+**Фикс:** единственный правильный паттерн — `import { requireAdmin } from '@/lib/auth/requireAdmin'` и убрать все локальные копии. Заменить `.eq('id', user.id)` на `.eq('email', user.email)` в случаях прямого доступа к DB без requireAdmin.
 
-Подробнее: [[03-club/modules/webinars#известные-особенности]], [[03-club/modules/meditations#известные-особенности]]
+Подробнее: [[03-club/modules/webinars#известные-особенности]], [[03-club/modules/meditations#известные-особенности]], [[08-roadmap/todo]]
 
 ### Уведомления
 - OneSignal SDK грузится на `nata-tomshina.ru` (должен только в клубе) — перенести инициализацию из `RootLayout` в `(club)/layout.tsx`
