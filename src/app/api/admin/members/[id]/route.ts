@@ -54,7 +54,10 @@ export async function PATCH(
   if (body.tariff !== undefined) {
     updates.tariff = body.tariff
     // When setting a real plan, activate the subscription
-    if (body.tariff !== 'trial') updates.subscription_status = 'active'
+    if (body.tariff !== 'trial') {
+      updates.subscription_status = 'active'
+      updates.subscription_plan = body.tariff === 'halfyear' ? 'halfyear' : 'month'
+    }
   }
   if (body.subscription_ends_at !== undefined) updates.subscription_ends_at = body.subscription_ends_at
 
@@ -78,7 +81,10 @@ export async function PATCH(
       base.setDate(base.getDate() + days)
       updates.subscription_ends_at = base.toISOString()
       updates.subscription_status = 'active'
-      if (body.tariff !== undefined) updates.tariff = body.tariff
+      if (body.tariff !== undefined) {
+        updates.tariff = body.tariff
+        updates.subscription_plan = body.tariff === 'halfyear' ? 'halfyear' : 'month'
+      }
     }
   }
 
