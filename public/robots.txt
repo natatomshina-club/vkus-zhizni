@@ -1,6 +1,5 @@
 User-agent: *
 Allow: /blog
-Allow: /recipes
 Allow: /about
 Allow: /club
 Allow: /results
@@ -8,5 +7,8 @@ Disallow: /admin
 Disallow: /api
 Disallow: /dashboard
 Disallow: /partner
+Disallow: /recipes
+Disallow: /menyu
+Disallow: /racion
 
 Sitemap: https://nata-tomshina.ru/sitemap.xml

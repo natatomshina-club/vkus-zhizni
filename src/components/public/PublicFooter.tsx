@@ -18,12 +18,9 @@ export default function PublicFooter() {
         {[
           { href: '/about', label: 'О методе' },
           { href: '/results', label: 'Результаты' },
-          { href: '/menyu', label: 'Рационы' },
-          { href: '/recipes', label: 'Рецепты' },
           { href: '/blog', label: 'Блог' },
           { href: '/marathon', label: 'Марафон' },
           { href: '/club', label: 'О клубе' },
-          { href: '/partner', label: '✦ Заработай', highlight: true },
           { href: 'https://club.nata-tomshina.ru/legal/privacy', label: 'Конфиденциальность', external: true },
           { href: 'https://nata-tomshina.ru/legal', label: 'Документы', external: true },
         ].map(({ href, label, external, highlight }) =>

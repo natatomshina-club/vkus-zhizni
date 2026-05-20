@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next'
 import { createSupabasePublic } from '@/lib/supabase/public'
-import { SILO_CONFIG, RECIPES_CONFIG, getArticleUrl } from '@/lib/silo-config'
+import { SILO_CONFIG, getArticleUrl } from '@/lib/silo-config'
 
 const BASE = 'https://nata-tomshina.ru'
 
@@ -13,7 +13,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: { path: string; priority: number }[] = [
     { path: '', priority: 1 },
     { path: '/blog', priority: 0.8 },
-    { path: '/recipes', priority: 0.8 },
     { path: '/about', priority: 0.8 },
     { path: '/club', priority: 0.95 },
   ]
@@ -48,11 +47,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     urls.push({ url: `${BASE}/blog/${h.category}/${h.subcategory}`, changeFrequency: 'weekly', priority: 0.8 })
   }
 
-  // Recipe category hubs
-  for (const catKey of Object.keys(RECIPES_CONFIG)) {
-    urls.push({ url: `${BASE}/recipes/${catKey}`, changeFrequency: 'weekly', priority: 0.7 })
-  }
-
   // Blog articles
   const supabase = createSupabasePublic()
   const { data: posts } = await supabase
@@ -64,22 +58,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     urls.push({
       url: `${BASE}${getArticleUrl(post)}`,
       lastModified: post.published_at ? new Date(post.published_at) : undefined,
-      changeFrequency: 'monthly',
-      priority: 0.6,
-    })
-  }
-
-  // Recipes
-  const { data: recipes } = await supabase
-    .from('blog_posts')
-    .select('slug, category, published_at')
-    .eq('is_published', true)
-    .eq('type', 'recipe')
-
-  for (const recipe of (recipes ?? [])) {
-    urls.push({
-      url: `${BASE}/recipes/${recipe.category ?? 'other'}/${recipe.slug}`,
-      lastModified: recipe.published_at ? new Date(recipe.published_at) : undefined,
       changeFrequency: 'monthly',
       priority: 0.6,
     })
