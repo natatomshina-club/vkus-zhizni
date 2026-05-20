@@ -268,7 +268,7 @@ ORDER BY cnt DESC;
 - [subscriptions](../../03-club/modules/subscriptions.md) — логика доступа участницы (модуль не написан)
 - [email-system](../../05-infrastructure/email-system.md) — серия `welcome_members` стартует при первом платеже
 - [database](../../05-infrastructure/database.md) — `members` в общем индексе таблиц
-- `08-roadmap/todo.md` → R50 (UI апгрейда не выставляет subscription_plan), R51 (метка «Заблокированные» для cancelled)
+- `08-roadmap/todo.md` → ~~R50~~ ✅ закрыт 2026-05-23 (subscription_plan теперь пишется в обоих роутах: PATCH `/api/admin/members/[id]` при смене тарифа и продлении, POST `/api/admin/members` при создании участницы), R51 (метка «Заблокированные» для cancelled)
 
 ---
 
