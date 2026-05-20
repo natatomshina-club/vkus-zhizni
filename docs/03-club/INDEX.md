@@ -11,7 +11,7 @@
 ## Модули клуба
 
 ### Контент
-- [[03-club/modules/ya-i-moe-telo|Я и моё тело]] — курс
+- [[03-club/modules/courses|Я и моё тело — курсы и материалы]] — вводные курсы + материалы клуба
 - [[03-club/modules/marathons|Марафоны]]
 - [[03-club/modules/webinars|Вебинары]]
 - [[03-club/modules/meditations|Медитации]]
