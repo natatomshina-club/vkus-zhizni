@@ -31,13 +31,6 @@ export interface CourseData {
   lessons: CourseLesson[]
 }
 
-const FINAL_TIPS = [
-  { emoji: '📋', text: 'Держи список продуктов всегда под рукой' },
-  { emoji: '🍽️', text: 'Ешь только когда по-настоящему голодна' },
-  { emoji: '🥗', text: 'Выбирай натуральную еду — это основа метода' },
-  { emoji: '😊', text: 'Не будь фанатичной — гибкость важнее строгости' },
-  { emoji: '🚫', text: 'Полностью исключи сладкие напитки' },
-]
 
 function KinescopePlayer({ videoId }: { videoId: string }) {
   return (
@@ -85,49 +78,25 @@ function MaterialLink({ material }: { material: CourseMaterial }) {
   )
 }
 
-function FinalLessonContent() {
+
+function FinalButton() {
+  const [finished, setFinished] = useState(false)
   return (
-    <div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
-        {FINAL_TIPS.map((tip, i) => (
-          <div key={i} style={{
-            display: 'flex', alignItems: 'flex-start', gap: 12,
-            padding: '12px 14px', borderRadius: 12,
-            background: i % 2 === 0 ? '#F0EEFF' : '#fff',
-            border: '1px solid #EDE8FF',
-          }}>
-            <span style={{ fontSize: 22, flexShrink: 0 }}>{tip.emoji}</span>
-            <p style={{ margin: 0, fontSize: 14, color: 'var(--text)', lineHeight: 1.6, fontWeight: 600 }}>
-              {tip.text}
-            </p>
-          </div>
-        ))}
-      </div>
-      <div style={{
-        background: 'var(--pur)', borderRadius: 16, padding: '20px',
-        textAlign: 'center',
-      }}>
-        <p style={{
-          fontFamily: 'var(--font-unbounded)', fontSize: 15, fontWeight: 800,
-          color: '#fff', margin: '0 0 8px',
-        }}>
-          Хочешь результат с поддержкой?
-        </p>
-        <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.78)', margin: '0 0 16px', lineHeight: 1.5 }}>
-          Вступай в Клуб «Вкус Жизни» — ежедневная поддержка Наташи и сообщества
-        </p>
-        <Link
-          href="/join"
-          style={{
-            display: 'inline-block', background: '#FFD93D', color: '#5C4200',
-            borderRadius: 12, padding: '13px 28px', fontWeight: 800, fontSize: 14,
-            textDecoration: 'none', fontFamily: 'var(--font-nunito)',
-          }}
-        >
-          🌿 Вступить в клуб
-        </Link>
-      </div>
-    </div>
+    <button
+      onClick={() => setFinished(true)}
+      style={{
+        width: '100%', background: 'var(--pur)', color: '#fff',
+        border: 'none', borderRadius: 14, padding: '14px',
+        fontSize: 14, fontWeight: 800, cursor: 'pointer',
+        fontFamily: 'var(--font-nunito)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        transition: 'opacity 0.15s',
+      }}
+      onMouseEnter={e => (e.currentTarget.style.opacity = '0.9')}
+      onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+    >
+      {finished ? '🎉 Молодец!' : '✅ Курс пройден!'}
+    </button>
   )
 }
 
@@ -223,13 +192,7 @@ export default function CoursePageClient({ course }: { course: CourseData }) {
           </div>
         )}
 
-        {lesson.type === 'text' && lesson.isFinalLesson && (
-          <div style={{ marginBottom: 16 }}>
-            <FinalLessonContent />
-          </div>
-        )}
-
-        {lesson.type === 'text' && !lesson.isFinalLesson && lesson.textContent && (
+        {lesson.type === 'text' && lesson.textContent && (
           <div style={{ marginBottom: 16 }}>
             <div
               className="lesson-html"
@@ -267,7 +230,7 @@ export default function CoursePageClient({ course }: { course: CourseData }) {
         )}
 
         {/* Done button */}
-        {!isDone && (
+        {!isDone && !lesson.isFinalLesson && (
           <button
             onClick={() => markDone(lesson.id)}
             style={{
@@ -281,8 +244,12 @@ export default function CoursePageClient({ course }: { course: CourseData }) {
             onMouseEnter={e => (e.currentTarget.style.opacity = '0.9')}
             onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
           >
-            {lesson.isFinalLesson ? '✅ Курс пройден!' : '✅ Я изучила — открыть следующий урок'}
+            ✅ Я изучила — открыть следующий урок
           </button>
+        )}
+
+        {lesson.isFinalLesson && (
+          <FinalButton />
         )}
 
         {isDone && !lesson.isFinalLesson && (
@@ -293,17 +260,6 @@ export default function CoursePageClient({ course }: { course: CourseData }) {
             fontFamily: 'var(--font-nunito)',
           }}>
             ✅ Просмотрен
-          </div>
-        )}
-
-        {isDone && lesson.isFinalLesson && (
-          <div style={{
-            width: '100%', background: '#A8E6CF', color: '#2D6A4F',
-            borderRadius: 14, padding: '14px',
-            fontSize: 14, fontWeight: 800, textAlign: 'center',
-            fontFamily: 'var(--font-nunito)',
-          }}>
-            🎉 Курс завершён!
           </div>
         )}
       </div>
