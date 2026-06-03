@@ -212,7 +212,6 @@ export default function CoursePageClient({ course }: { course: CourseData }) {
   }
 
   function renderLessonContent(lesson: CourseLesson, idx: number) {
-    const isLast = idx === lessons.length - 1
     const isDone = done.has(lesson.id)
 
     return (
@@ -282,11 +281,11 @@ export default function CoursePageClient({ course }: { course: CourseData }) {
             onMouseEnter={e => (e.currentTarget.style.opacity = '0.9')}
             onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
           >
-            {isLast ? '✅ Курс пройден!' : '✅ Я изучила — открыть следующий урок'}
+            {lesson.isFinalLesson ? '✅ Курс пройден!' : '✅ Я изучила — открыть следующий урок'}
           </button>
         )}
 
-        {isDone && !isLast && (
+        {isDone && !lesson.isFinalLesson && (
           <div style={{
             width: '100%', background: '#A8E6CF', color: '#2D6A4F',
             borderRadius: 14, padding: '14px',
@@ -297,7 +296,7 @@ export default function CoursePageClient({ course }: { course: CourseData }) {
           </div>
         )}
 
-        {isDone && isLast && (
+        {isDone && lesson.isFinalLesson && (
           <div style={{
             width: '100%', background: '#A8E6CF', color: '#2D6A4F',
             borderRadius: 14, padding: '14px',

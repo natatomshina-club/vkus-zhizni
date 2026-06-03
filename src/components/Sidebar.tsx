@@ -25,10 +25,10 @@ const nav = [
   {
     label: 'Обучение',
     items: [
-      { href: '/dashboard/courses', label: 'Карта помощи', icon: '🌿' },
+      { href: '/dashboard/courses', label: 'Карта помощи', icon: '🗺' },
       { href: '/dashboard/webinars', label: 'Вебинары', icon: '🎥' },
       { href: '/dashboard/meditations', label: 'Медитации', icon: '🧘' },
-      { href: '/dashboard/help', label: 'Вопрос-Ответ', icon: '🗺' },
+      { href: '/dashboard/help', label: 'Вопрос-Ответ', icon: '💬' },
     ],
   },
   {
