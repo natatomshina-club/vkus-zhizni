@@ -1,0 +1,14 @@
+/* ── ДОПОЛНЕНИЕ к ранее добавленному блоку .lesson-html ── */
+/* Сетка картинок — для уроков с несколькими изображениями подряд */
+
+.lesson-html .image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 1.4em 0;
+}
+
+.lesson-html .image-grid img {
+  margin: 0;
+  width: 100%;
+}

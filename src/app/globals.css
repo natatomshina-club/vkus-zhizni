@@ -342,6 +342,19 @@ button:not(:disabled):not(.no-press):active,
   text-align: right;
 }
 
+/* Сетка картинок — для уроков с несколькими изображениями подряд */
+.lesson-html .image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 1.4em 0;
+}
+
+.lesson-html .image-grid img {
+  margin: 0;
+  width: 100%;
+}
+
 /* Мобильная адаптация */
 @media (max-width: 1023px) {
   .lesson-html { font-size: 16px; }
