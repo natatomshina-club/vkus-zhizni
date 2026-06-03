@@ -27,8 +27,8 @@ export default async function IntroCoursePageWrapper() {
 
   const course = buildCourseData({
     slug: 'intro',
-    title: result?.title ?? 'Волшебный пендель',
-    subtitle: result?.description ?? 'Основы метода Натальи — от правильной тарелки до первого рациона',
+    title: result?.title ?? 'Вводный курс',
+    subtitle: result?.description ?? '16 уроков о питании, метаболизме и работе с телом',
     lessons,
   })
   // Keep legacy storageKey for existing progress

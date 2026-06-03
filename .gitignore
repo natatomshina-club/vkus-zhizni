@@ -62,8 +62,8 @@ setup-ssh.sh
 /natalia*.png
 /natalia*.jpg
 
-# Local Claude Code settings (user-specific)
-.claude/settings.local.json
+# Local Claude Code settings and worktrees (user-specific)
+.claude/
 
 # Obsidian UI state (user-specific)
 docs/.obsidian/workspace*.json

@@ -131,22 +131,6 @@ function FinalLessonContent() {
   )
 }
 
-function TextCard({ lesson }: { lesson: CourseLesson }) {
-  return (
-    <div style={{
-      background: '#F0EEFF', borderRadius: 14, padding: '20px',
-      border: '2px solid #DDD5FF',
-    }}>
-      <p style={{
-        fontSize: 14, color: 'var(--text)', lineHeight: 1.75,
-        fontWeight: 600, margin: 0, whiteSpace: 'pre-wrap',
-      }}>
-        {lesson.textContent}
-      </p>
-    </div>
-  )
-}
-
 export default function CoursePageClient({ course }: { course: CourseData }) {
   const { lessons, storageKey } = course
 
@@ -230,10 +214,6 @@ export default function CoursePageClient({ course }: { course: CourseData }) {
   function renderLessonContent(lesson: CourseLesson, idx: number) {
     const isLast = idx === lessons.length - 1
     const isDone = done.has(lesson.id)
-    const nextLesson = idx < lessons.length - 1 ? lessons[idx + 1] : null
-    const nextLabel = nextLesson
-      ? (idx + 1 === 0 ? 'Начать курс →' : `открыть урок ${idx + 1}`)
-      : '✅ Курс пройден!'
 
     return (
       <div>
@@ -250,9 +230,12 @@ export default function CoursePageClient({ course }: { course: CourseData }) {
           </div>
         )}
 
-        {lesson.type === 'text' && !lesson.isFinalLesson && (
+        {lesson.type === 'text' && !lesson.isFinalLesson && lesson.textContent && (
           <div style={{ marginBottom: 16 }}>
-            <TextCard lesson={lesson} />
+            <div
+              className="lesson-html"
+              dangerouslySetInnerHTML={{ __html: lesson.textContent }}
+            />
           </div>
         )}
 
@@ -299,7 +282,7 @@ export default function CoursePageClient({ course }: { course: CourseData }) {
             onMouseEnter={e => (e.currentTarget.style.opacity = '0.9')}
             onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
           >
-            {isLast ? '✅ Курс пройден!' : `✅ Я посмотрела — ${nextLabel}`}
+            {isLast ? '✅ Курс пройден!' : '✅ Я изучила — открыть следующий урок'}
           </button>
         )}
 

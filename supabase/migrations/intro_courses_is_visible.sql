@@ -1,0 +1,1 @@
+ALTER TABLE intro_courses ADD COLUMN is_visible BOOLEAN NOT NULL DEFAULT TRUE;

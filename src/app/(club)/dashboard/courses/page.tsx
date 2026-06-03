@@ -6,7 +6,7 @@ import BodyMaterialsClient from './BodyMaterialsClient'
 export const dynamic = 'force-dynamic'
 
 const FALLBACK_COURSES = [
-  { slug: 'intro', title: 'Волшебный пендель', description: 'Правило волшебной тарелки, выбор продуктов и первые шаги к стройности без голода', lessons_count: null as number | null },
+  { slug: 'intro', title: 'Вводный курс', description: '16 уроков о питании, метаболизме и работе с телом', lessons_count: null as number | null },
   { slug: 'stop-diabet', title: 'Стоп Диабет', description: 'Лечебное питание для восстановления здоровья и снижения уровня сахара в крови', lessons_count: null as number | null },
 ]
 
@@ -15,6 +15,7 @@ async function getCourses(admin: ReturnType<typeof createServiceClient>) {
     const { data, error } = await admin
       .from('intro_courses')
       .select('id, slug, title, description, sort_order')
+      .eq('is_visible', true)
       .order('sort_order')
 
     if (error || !data || data.length === 0) return FALLBACK_COURSES

@@ -1,0 +1,209 @@
+{
+  "meta": {
+    "name": "Reborn Style",
+    "description": "Дизайн-система сайта Томшина·nutri. Зелёный + оранжевый, Playfair Display + Inter.",
+    "version": "1.0.0"
+  },
+
+  "colors": {
+    "bg":           { "value": "#FAFAF7",  "usage": "Фон страницы" },
+    "white":        { "value": "#FFFFFF",  "usage": "Карточки, хедер, футер" },
+    "cream":        { "value": "#F4F2EC",  "usage": "Вторичный фон, обложка" },
+    "border":       { "value": "#E6E4DD",  "usage": "Линии, обводки карточек" },
+
+    "ink":          { "value": "#2A2D3A",  "usage": "Основной текст" },
+    "inkSoft":      { "value": "#5C6172",  "usage": "Второстепенный текст, мета" },
+
+    "greenLight":   { "value": "#7FD287",  "usage": "Светлый акцент, иконки чеклиста" },
+    "green":        { "value": "#63BA6C",  "usage": "Навигация, теги, акцентные точки" },
+    "greenDark":    { "value": "#4A9E54",  "usage": "Буквица, ховеры" },
+    "greenDeep":    { "value": "#3F7C4A",  "usage": "Текст на светлых зелёных поверхностях" },
+    "greenMid":     { "value": "#2E8B4F",  "usage": "Градиент кнопки — светлая точка" },
+    "greenBase":    { "value": "#1F5A33",  "usage": "Градиент кнопки — тёмная точка" },
+    "greenAbyss":   { "value": "#103A1F",  "usage": "Градиент тёмных карточек — основание" },
+
+    "orange":       { "value": "#F77D27",  "usage": "Оранжевый акцент, кнопки CTA" },
+    "orangeLight":  { "value": "#FFA45F",  "usage": "Светлый оранжевый, превью карточек" },
+    "orangeDark":   { "value": "#B84500",  "usage": "Тёмный оранжевый, градиент низ" },
+
+    "coral":        { "value": "#F4756A",  "usage": "Запас, не используется в основном UI" },
+    "brown":        { "value": "#74422C",  "usage": "Запас" },
+    "brownLight":   { "value": "#9A6440",  "usage": "Запас" },
+    "blueGray":     { "value": "#5B7A8A",  "usage": "Запас" }
+  },
+
+  "gradients": {
+    "greenBtn": {
+      "value": "radial-gradient(ellipse at 30% 25%, rgba(180,230,185,0.55), transparent 60%), linear-gradient(180deg, #6FC57E 0%, #2E8B4F 60%, #1F5A33 100%)",
+      "usage": "Основная зелёная кнопка"
+    },
+    "orangeBtn": {
+      "value": "radial-gradient(ellipse at 30% 25%, rgba(255,210,170,0.60), transparent 60%), linear-gradient(180deg, #FFA45F 0%, #F77D27 55%, #B84500 100%)",
+      "usage": "Оранжевая кнопка CTA"
+    },
+    "greenCard": {
+      "value": "radial-gradient(ellipse 60% 50% at 75% 25%, rgba(180,230,185,0.50), transparent 55%), radial-gradient(circle at 95% 95%, rgba(16,58,31,0.65), transparent 50%), linear-gradient(135deg, #2E8B4F 0%, #1F5A33 60%, #103A1F 100%)",
+      "usage": "Тёмная зелёная карточка (лид-магнит, CTA-блок)"
+    },
+    "orangeCard": {
+      "value": "radial-gradient(ellipse 60% 50% at 75% 25%, rgba(255,210,170,0.50), transparent 55%), radial-gradient(circle at 95% 95%, rgba(184,69,0,0.55), transparent 50%), linear-gradient(135deg, #FFA45F 0%, #F77D27 55%, #B84500 100%)",
+      "usage": "Оранжевая карточка лид-магнит"
+    },
+    "greenPill": {
+      "value": "linear-gradient(135deg, #DFEFE0, #C2DEC4)",
+      "usage": "Светлая зелёная пилюля / тег / цитата"
+    },
+    "coverOverlay": {
+      "value": "radial-gradient(ellipse at 70% 30%, rgba(127,210,135,0.20), transparent 60%), radial-gradient(ellipse at 20% 70%, rgba(255,164,95,0.13), transparent 60%)",
+      "usage": "Оверлей на обложке статьи"
+    }
+  },
+
+  "shadows": {
+    "card":        "0 8px 20px rgba(40,42,55,0.08)",
+    "cardLg":      "0 16px 40px rgba(40,42,55,0.08)",
+    "greenBtn":    "0 12px 28px rgba(99,186,108,0.30)",
+    "greenCard":   "0 24px 50px rgba(31,90,51,0.35)",
+    "greenCta":    "0 30px 70px rgba(31,90,51,0.40)",
+    "orangeCard":  "0 24px 50px rgba(184,69,0,0.30)",
+    "orangeBtn":   "0 12px 28px rgba(247,125,39,0.45)"
+  },
+
+  "typography": {
+    "fonts": {
+      "serif": "\"Playfair Display\", Georgia, serif",
+      "sans":  "\"Inter\", system-ui, sans-serif"
+    },
+    "scale": {
+      "xs":   "11px",
+      "sm":   "13px",
+      "base": "16px",
+      "md":   "18px",
+      "lg":   "22px",
+      "xl":   "24px",
+      "2xl":  "36px",
+      "3xl":  "42px",
+      "4xl":  "46px",
+      "5xl":  "56px",
+      "6xl":  "76px"
+    },
+    "lineHeight": {
+      "tight":   1.05,
+      "snug":    1.15,
+      "normal":  1.45,
+      "relaxed": 1.6,
+      "loose":   1.8
+    },
+    "fontWeight": {
+      "light":    300,
+      "regular":  400,
+      "medium":   500,
+      "semibold": 600,
+      "bold":     700
+    },
+    "letterSpacing": {
+      "tight":   "-0.025em",
+      "normal":  "0em",
+      "wide":    "0.08em",
+      "wider":   "0.16em",
+      "widest":  "0.22em",
+      "caps":    "0.28em"
+    }
+  },
+
+  "radii": {
+    "sm":   "8px",
+    "md":   "16px",
+    "lg":   "20px",
+    "xl":   "24px",
+    "2xl":  "28px",
+    "pill": "999px"
+  },
+
+  "spacing": {
+    "1":  "4px",
+    "2":  "8px",
+    "3":  "12px",
+    "4":  "16px",
+    "5":  "20px",
+    "6":  "24px",
+    "8":  "32px",
+    "10": "40px",
+    "12": "48px",
+    "14": "56px",
+    "16": "64px",
+    "20": "80px",
+    "24": "96px",
+    "32": "128px"
+  },
+
+  "layout": {
+    "pageWidth":    "1280px",
+    "pagePadding":  "56px",
+    "contentNarrow":"720px",
+    "contentMid":   "900px",
+    "contentWide":  "1080px",
+    "contentFull":  "1170px"
+  },
+
+  "components": {
+    "btn": {
+      "fontFamily":    "Inter",
+      "fontWeight":    700,
+      "letterSpacing": "0.16em",
+      "textTransform": "uppercase",
+      "borderRadius":  "999px",
+      "sizes": {
+        "md": { "padding": "14px 24px", "fontSize": "11px" },
+        "lg": { "padding": "14px 28px", "fontSize": "11px" },
+        "xl": { "padding": "20px 44px", "fontSize": "13px" }
+      }
+    },
+    "articlePill": {
+      "padding":       "8px 20px",
+      "borderRadius":  "999px",
+      "background":    "greenPill gradient",
+      "fontSize":      "11px",
+      "letterSpacing": "0.22em",
+      "fontWeight":    700
+    },
+    "dropcap": {
+      "fontSize":   "96px",
+      "fontFamily": "Playfair Display",
+      "fontWeight": 700,
+      "color":      "#4A9E54",
+      "lineHeight": 0.85,
+      "float":      "left",
+      "paddingRight":"14px",
+      "paddingTop": "8px"
+    },
+    "quoteCard": {
+      "borderRadius": "20px",
+      "padding":      "32px 40px",
+      "markFontSize": "64px",
+      "textFontSize": "24px"
+    },
+    "leadMagnet": {
+      "borderRadius": "24px",
+      "padding":      "40px 44px",
+      "titleSize":    "36px"
+    },
+    "checklistIcon": {
+      "size":         "24px",
+      "borderRadius": "8px",
+      "background":   "linear-gradient(135deg, #7FD287, #63BA6C)"
+    },
+    "ctaCard": {
+      "borderRadius": "28px",
+      "padding":      "56px 64px",
+      "titleSize":    "46px",
+      "iconSize":     "130px"
+    },
+    "relatedCard": {
+      "borderRadius":   "20px",
+      "thumbAspectRatio":"16/9",
+      "bodyPadding":    "24px 26px 28px",
+      "titleSize":      "22px"
+    }
+  }
+}
