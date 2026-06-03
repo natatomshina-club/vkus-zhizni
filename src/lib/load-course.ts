@@ -56,10 +56,7 @@ export async function loadCourseLessons(slug: string): Promise<{
       matsByLesson.set(m.lesson_id, arr)
     }
 
-    // Last text lesson is "final"
-    const lastIdx = rows.length - 1
-
-    const lessons: CourseLesson[] = rows.map((r, idx) => ({
+    const lessons: CourseLesson[] = rows.map((r) => ({
       id: r.id,
       sortOrder: r.sort_order,
       title: r.title,
@@ -67,7 +64,7 @@ export async function loadCourseLessons(slug: string): Promise<{
       videoId: r.video_url ? r.video_url.split('/').pop() : undefined,
       bonusVideoId: r.bonus_video_url ? r.bonus_video_url.split('/').pop() : undefined,
       textContent: r.text_content ?? undefined,
-      isFinalLesson: idx === lastIdx && r.lesson_type === 'text',
+      isFinalLesson: r.sort_order === 16 && r.lesson_type === 'text',
       materials: matsByLesson.get(r.id) ?? [],
     }))
 
