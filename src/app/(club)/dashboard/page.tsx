@@ -110,12 +110,12 @@ export default async function DashboardPage() {
     { href: '/dashboard/diary',      icon: '📓', title: 'Дневник',            desc: 'Питание за день',          bg: 'var(--ora)',                                              color: '#fff',       tour: 'dashboard-diary' },
     { href: '/dashboard/tracker',    icon: '📏', title: 'Трекер',             desc: 'Замеры и прогресс',        bg: 'var(--yel)',                                              color: 'var(--text)', tour: 'dashboard-tracker' },
     { href: '/dashboard/channel',    icon: '💬', title: 'Чаты клуба',         desc: 'Общение и поддержка',      bg: 'linear-gradient(135deg, #3D2B8A 0%, #7C5CFC 100%)',       color: '#fff',       tour: 'dashboard-channel' },
-    { href: '/dashboard/courses',    icon: '🌿', title: 'Я и моё тело',       desc: 'Памятки, Чек-листы',            bg: 'var(--grn)',                                              color: '#1A5C3A',    tour: 'dashboard-courses' },
+    { href: '/dashboard/courses',    icon: '🌿', title: 'Карта помощи',      desc: 'Памятки, Чек-листы',            bg: 'var(--grn)',                                              color: '#1A5C3A',    tour: 'dashboard-courses' },
     { href: '/dashboard/webinars',   icon: '🎥', title: 'Вебинары',           desc: 'Вебинары от Натальи',      bg: '#5B8DEF',                                                color: '#fff',       tour: 'dashboard-webinars' },
     { href: '/dashboard/meditations', icon:'🧘', title: 'Медитации',          desc: 'Спокойствие и баланс',     bg: 'linear-gradient(135deg, #C4B5FD 0%, #EDE9FF 100%)',       color: '#4C1D95',    tour: 'dashboard-meditations' },
     { href: '/dashboard/marathon',   icon: '🏃', title: 'Марафон',            desc: 'Вызов себе',               bg: 'linear-gradient(135deg, #FF6B35 0%, #F7C59F 100%)',       color: '#7A1F00',    tour: 'dashboard-marathon' },
     { href: '/dashboard/profile',    icon: '👤', title: 'Профиль',            desc: 'Мои данные',               bg: 'linear-gradient(135deg, #F0EEFF 0%, #DDD5FF 100%)',       color: '#3D2B8A',    tour: 'dashboard-profile' },
-    { href: '/dashboard/help',       icon: '🗺', title: 'Карта помощи',       desc: 'Инструкции и ответы',       bg: 'linear-gradient(135deg, #E0F7FA 0%, #B2EBF2 100%)',       color: '#006064',    tour: 'dashboard-help' },
+    { href: '/dashboard/help',       icon: '🗺', title: 'Вопрос-Ответ',      desc: 'Инструкции и ответы',       bg: 'linear-gradient(135deg, #E0F7FA 0%, #B2EBF2 100%)',       color: '#006064',    tour: 'dashboard-help' },
   ]
 
   return (

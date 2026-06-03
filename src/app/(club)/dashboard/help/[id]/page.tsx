@@ -52,7 +52,7 @@ export default async function HelpMaterialPage({ params }: { params: Promise<{ i
       return (
         <div style={{ maxWidth: 700, margin: '0 auto', padding: '40px 16px 96px', fontFamily: 'var(--font-nunito)' }}>
           <Link href="/dashboard/help" style={{ fontSize: 13, color: '#7B6FAA', textDecoration: 'none', padding: '6px 12px', borderRadius: 10, background: '#F0EEFF', display: 'inline-block', marginBottom: 24 }}>
-            ← Карта помощи
+            ← Вопрос-Ответ
           </Link>
           <div style={{ background: 'linear-gradient(135deg,#3D2B8A 0%,#7C5CFC 100%)', borderRadius: 20, padding: '40px 32px', textAlign: 'center' }}>
             <p style={{ fontSize: 48, marginBottom: 16 }}>🔒</p>
@@ -76,7 +76,7 @@ export default async function HelpMaterialPage({ params }: { params: Promise<{ i
   return (
     <div style={{ maxWidth: 800, margin: '0 auto', padding: '24px 16px 96px', fontFamily: 'var(--font-nunito)' }}>
       <Link href="/dashboard/help" style={{ fontSize: 13, color: '#7B6FAA', textDecoration: 'none', padding: '6px 12px', borderRadius: 10, background: '#F0EEFF', display: 'inline-block', marginBottom: 24 }}>
-        ← Карта помощи
+        ← Вопрос-Ответ
       </Link>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>

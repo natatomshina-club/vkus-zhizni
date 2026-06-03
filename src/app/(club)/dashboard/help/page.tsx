@@ -54,7 +54,7 @@ export default async function HelpPage() {
   return (
     <div style={{ maxWidth: 960, margin: '0 auto', padding: '24px 16px 96px', fontFamily: 'var(--font-nunito)' }}>
       <h1 style={{ fontFamily: 'var(--font-unbounded)', fontSize: 20, fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>
-        🗺 Карта помощи
+        🗺 Вопрос-Ответ
       </h1>
       <p style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 28 }}>
         Инструкции, ответы на вопросы и материалы на все случаи жизни

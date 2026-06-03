@@ -103,7 +103,7 @@ export default async function CoursesPage() {
 
       {/* Header */}
       <h1 style={{ fontFamily: 'var(--font-unbounded)', fontSize: 20, fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>
-        🌿 Я и моё тело
+        🌿 Карта помощи
       </h1>
       <p style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 32 }}>
         Вводные курсы и материалы от Натальи Томшиной
