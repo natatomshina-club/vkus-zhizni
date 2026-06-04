@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import CookbookTab from '@/components/club/CookbookTab'
 
 type Ingredient = { name: string; amount?: string; unit?: string; grams?: number }
 
@@ -108,7 +109,7 @@ const DIARY_MEAL_OPTIONS = [
 ]
 
 export default function FavoritesClient({ userId, initialRecipes, totalCount, maxCount, initialMemberRecipes }: Props) {
-  const [activeTab, setActiveTab]     = useState<'favorites' | 'my-recipes'>('favorites')
+  const [activeTab, setActiveTab]     = useState<'favorites' | 'my-recipes' | 'cookbook'>('favorites')
   const [recipes, setRecipes]         = useState<Recipe[]>(initialRecipes)
   const [count, setCount]             = useState(totalCount)
   const [memberRecipes, setMemberRecipes] = useState<MemberRecipe[]>(initialMemberRecipes)
@@ -308,6 +309,7 @@ export default function FavoritesClient({ userId, initialRecipes, totalCount, ma
         {([
           { key: 'favorites',  label: '⭐ Избранное' },
           { key: 'my-recipes', label: `📝 Мои рецепты${memberRecipes.length > 0 ? ` (${memberRecipes.length})` : ''}` },
+          { key: 'cookbook',   label: '📖 Кулинарная книга' },
         ] as const).map(tab => (
           <button
             key={tab.key}
@@ -1268,6 +1270,9 @@ export default function FavoritesClient({ userId, initialRecipes, totalCount, ma
         </div>
       )}
       </>}
+
+      {/* ── Cookbook tab ── */}
+      {activeTab === 'cookbook' && <CookbookTab />}
 
     </div>
   )

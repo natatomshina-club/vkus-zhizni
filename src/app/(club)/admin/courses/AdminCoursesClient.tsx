@@ -104,8 +104,8 @@ function LessonEditor({ lesson, isFirst, isLast, onUpdate, onDelete, onMoveUp, o
     setSaving(true)
     setSaveError('')
     const body: Record<string, unknown> = { title, is_visible: visible, ...overrides }
+    body.video_url = videoUrl
     if (lesson.lesson_type === 'video') {
-      body.video_url = videoUrl
       body.bonus_video_url = bonusUrl
     } else {
       body.text_content = textContent
@@ -240,7 +240,8 @@ function LessonEditor({ lesson, isFirst, isLast, onUpdate, onDelete, onMoveUp, o
 
   const isDirty =
     title !== lesson.title ||
-    (lesson.lesson_type === 'video' && (videoUrl !== (lesson.video_url ?? '') || bonusUrl !== (lesson.bonus_video_url ?? ''))) ||
+    videoUrl !== (lesson.video_url ?? '') ||
+    (lesson.lesson_type === 'video' && bonusUrl !== (lesson.bonus_video_url ?? '')) ||
     (lesson.lesson_type === 'text' && textContent !== (lesson.text_content ?? ''))
 
   return (
@@ -302,18 +303,18 @@ function LessonEditor({ lesson, isFirst, isLast, onUpdate, onDelete, onMoveUp, o
             <input value={title} onChange={e => setTitle(e.target.value)} style={INPUT} />
           </label>
 
-          {/* Video fields */}
+          {/* Video URL — всегда */}
+          <label style={{ display: 'block', marginBottom: 10 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Ссылка на видео (Kinescope)</span>
+            <input type="url" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="https://kinescope.io/..." style={INPUT} />
+          </label>
+
+          {/* Бонус — только для video-типа */}
           {lesson.lesson_type === 'video' && (
-            <>
-              <label style={{ display: 'block', marginBottom: 10 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Kinescope URL (основное видео)</span>
-                <input value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="https://kinescope.io/VIDEO_ID" style={INPUT} />
-              </label>
-              <label style={{ display: 'block', marginBottom: 10 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Kinescope URL (бонус, необязательно)</span>
-                <input value={bonusUrl} onChange={e => setBonusUrl(e.target.value)} placeholder="https://kinescope.io/VIDEO_ID" style={INPUT} />
-              </label>
-            </>
+            <label style={{ display: 'block', marginBottom: 10 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Kinescope URL (бонус, необязательно)</span>
+              <input value={bonusUrl} onChange={e => setBonusUrl(e.target.value)} placeholder="https://kinescope.io/VIDEO_ID" style={INPUT} />
+            </label>
           )}
 
           {/* Text content */}

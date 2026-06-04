@@ -9,7 +9,7 @@ const PREDEFINED: { screen: string; label: string }[] = [
   { screen: 'diary',       label: '📓 Дневник' },
   { screen: 'marathon',    label: '🏃 Марафон' },
   { screen: 'webinars',    label: '🎥 Вебинары' },
-  { screen: 'body',        label: '💚 Я и моё тело' },
+  { screen: 'body',        label: '💚 Карта помощи' },
   { screen: 'meditations', label: '🧘 Медитации' },
   { screen: 'community',   label: '💬 Сообщество' },
   { screen: 'favorites',   label: '⭐ Избранное' },

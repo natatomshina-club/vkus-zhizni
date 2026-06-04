@@ -175,7 +175,7 @@ export default function AdminHelpPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontFamily: 'var(--font-unbounded)', fontSize: 20, fontWeight: 800, color: '#3D2B8A', margin: 0 }}>
-            🗺 Карта помощи
+            🗺 FAQ
           </h1>
           <p style={{ fontSize: 12, color: '#7B6FAA', margin: '4px 0 0', fontFamily: 'var(--font-nunito)' }}>
             Материалы для участниц — управление контентом

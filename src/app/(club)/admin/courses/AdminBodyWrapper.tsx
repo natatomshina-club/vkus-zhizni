@@ -17,7 +17,7 @@ export default function AdminBodyWrapper() {
             ← Назад
           </Link>
           <h1 style={{ fontFamily: 'var(--font-unbounded)', fontSize: 18, fontWeight: 700, color: '#2D1F6E', margin: 0 }}>
-            🌿 Я и моё тело
+            🌿 Карта помощи
           </h1>
         </div>
       </div>

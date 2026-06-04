@@ -67,7 +67,7 @@ const SECTIONS = [
     ),
   },
   {
-    label: 'Карта помощи',
+    label: 'FAQ',
     desc: 'FAQ и материалы для участниц',
     href: '/admin/help',
     active: true,
@@ -80,7 +80,20 @@ const SECTIONS = [
     ),
   },
   {
-    label: 'Я и моё тело',
+    label: 'Кулинарная книга',
+    desc: 'Ручные рецепты от Наташи',
+    href: '/admin/cookbook',
+    active: true,
+    icon: (
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#E67E22" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2a10 10 0 0 1 10 10c0 4-2.5 7.5-6 9.3V22H8v-.7C4.5 19.5 2 16 2 12A10 10 0 0 1 12 2z" />
+        <line x1="12" y1="8" x2="12" y2="16" />
+        <line x1="8" y1="12" x2="16" y2="12" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Карта помощи',
     desc: 'Курсы и материалы',
     href: '/admin/courses',
     active: true,
