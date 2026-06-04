@@ -34,7 +34,7 @@ const nav = [
   {
     items: [
       { href: '/dashboard/marathon', label: 'Марафон', icon: '🔥' },
-      { href: '/dashboard/channel', label: 'Чаты клуба', icon: '💬' },
+      { href: '/dashboard/channel', label: 'Чаты клуба', icon: '🗣️' },
       { href: '/dashboard/profile', label: 'Профиль', icon: '👤' },
     ],
   },
