@@ -196,7 +196,7 @@ export default function CoursePageClient({ course }: { course: CourseData }) {
           <div style={{ marginBottom: 16 }}>
             <div
               className="lesson-html"
-              dangerouslySetInnerHTML={{ __html: lesson.textContent }}
+              dangerouslySetInnerHTML={{ __html: lesson.textContent.replace(/<a /g, '<a target="_blank" rel="noopener noreferrer" ') }}
             />
           </div>
         )}
