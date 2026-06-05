@@ -51,7 +51,9 @@ function Card({ children, title }: { children: React.ReactNode; title?: string }
 }
 
 function tariffDefaultDate(tariff: Tariff): string {
-  const days = tariff === 'trial' ? 7 : tariff === 'halfyear' ? 180 : 30
+  const days = (tariff === 'trial' || tariff === 'Пробный') ? 7
+             : (tariff === 'halfyear' || tariff === 'Полгода') ? 180
+             : 30
   const d = new Date(Date.now() + days * 24 * 60 * 60 * 1000)
   return d.toISOString().slice(0, 10)
 }
