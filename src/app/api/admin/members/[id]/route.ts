@@ -59,7 +59,10 @@ export async function PATCH(
       updates.subscription_plan = body.tariff === 'halfyear' ? 'halfyear' : 'month'
     }
   }
-  if (body.subscription_ends_at !== undefined) updates.subscription_ends_at = body.subscription_ends_at
+  if (body.subscription_ends_at !== undefined) {
+    updates.subscription_ends_at = body.subscription_ends_at
+    updates.last_expiry_reminder_sent = null
+  }
 
   // Manual renewal: set specific end date
   if (body.expires_at !== undefined) {
@@ -67,6 +70,7 @@ export async function PATCH(
     if (!isNaN(d.getTime())) {
       updates.subscription_ends_at = d.toISOString()
       updates.subscription_status = 'active'
+      updates.last_expiry_reminder_sent = null
     }
   }
 
@@ -81,6 +85,7 @@ export async function PATCH(
       base.setDate(base.getDate() + days)
       updates.subscription_ends_at = base.toISOString()
       updates.subscription_status = 'active'
+      updates.last_expiry_reminder_sent = null
       if (body.tariff !== undefined) {
         updates.tariff = body.tariff
         updates.subscription_plan = body.tariff === 'halfyear' ? 'halfyear' : 'month'
