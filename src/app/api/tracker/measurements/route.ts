@@ -117,12 +117,12 @@ export async function POST(request: NextRequest) {
       // 2. Получить данные для пересчёта КБЖУ
       const { data: member, error: memberErr } = await supabase
         .from('members')
-        .select('height, age, activity_level')
+        .select('height, age, activity_level, kbju_manual')
         .eq('id', user.id)
         .single()
       if (memberErr) throw new Error(`member_fetch: ${memberErr.message}`)
 
-      if (member?.height && member?.age && member?.activity_level) {
+      if (!member?.kbju_manual && member?.height && member?.age && member?.activity_level) {
         const kbju = calculateKBJU({
           weight,
           height:   member.height,
