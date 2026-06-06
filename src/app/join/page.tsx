@@ -112,13 +112,6 @@ function JoinContent() {
     setEmailLoading(true)
     setPayError('')
 
-    // Track email in Resend
-    await fetch('/api/join/track-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: trimmedEmail, plan: selectedPlan }),
-    }).catch(() => null)
-
     setEmailLoading(false)
 
     // Open CloudPayments widget

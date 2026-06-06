@@ -2,7 +2,7 @@
 
 > Все каналы отправки писем в проекте: SMTP-провайдеры, шаблоны, отписка, серии.
 >
-> Источники в коде сверены **2026-05-19**.
+> Источники в коде сверены **2026-06-06**.
 
 ## Карта каналов
 
@@ -11,8 +11,7 @@
 | Канал | Через что | Что отправляет |
 |---|---|---|
 | **Основной** — `sendEmail()` из `src/lib/mailer.ts` | nodemailer → Beget SMTP (`smtp.beget.com:465`) | Массовые рассылки, серии, VIP-напоминания, magic links, партнёрский OTP, рацион OTP |
-| **GoTrue** — конфиг Supabase | Supabase Auth → SMTP (провайдер требует уточнения — см. R57) | Только OTP для входа участниц в клуб |
-| **Resend Audiences** — `/api/join/track-email` | Resend SDK → Resend API | **Не отправляет письма.** Запись email в Resend CRM-аудиторию при заходе на `/join` |
+| **GoTrue** — конфиг Supabase | Supabase Auth → **`smtp.resend.com:465`** (API-ключ как SMTP_PASS) | Только OTP для входа участниц в клуб |
 
 ## Канал 1 — Beget SMTP (основной)
 
@@ -58,18 +57,26 @@ pass:   process.env.SMTP_PASS   // без дефолта
 
 ## Канал 2 — GoTrue SMTP (только клубный OTP)
 
-OTP для входа в клуб (`/api/auth/send-otp`) идёт через **Supabase GoTrue**, не через `mailer.ts`. У GoTrue своя SMTP-конфигурация в `/opt/supabase/docker/.env`.
+OTP для входа в клуб (`/api/auth/send-otp`) идёт через **Supabase GoTrue**, не через `mailer.ts`.
+Конфигурация живёт в `/opt/supabase/docker/.env` на проде.
 
-**Имена env-переменных** (по документации Supabase):
-- `GOTRUE_SMTP_HOST`
-- `GOTRUE_SMTP_PORT`
-- `GOTRUE_SMTP_USER`
-- `GOTRUE_SMTP_PASS`
-- `GOTRUE_SMTP_ADMIN_EMAIL`
-- `GOTRUE_SMTP_SENDER_NAME`
+**Фактические настройки на проде (сверено 2026-06-06):**
+```
+SMTP_HOST=smtp.resend.com
+SMTP_PORT=465
+SMTP_USER=resend
+SMTP_PASS=<значение из RESEND_API_KEY, хранится в .env на проде>
+SMTP_SENDER_NAME=Вкус Жизни
+GOTRUE_SMTP_SENDER_EMAIL=noreply@nata-tomshina.ru
+```
 
-> [!warning] Провайдер требует уточнения
-> Старые записи в `00-INDEX.md` и `tech-debt.md` указывают «OTP через Resend, мигрируем на Beget». Однако в коде проекта GoTrue SMTP не настраивается — он живёт в `/opt/supabase/docker/.env` на проде. Является ли GoTrue сейчас на Resend SMTP relay или уже на Beget — неизвестно. Тикет в `08-roadmap/todo.md` → R57.
+GoTrue использует **Resend как SMTP relay**. Письма OTP видны в `resend.com/emails`.
+Это **не** Resend Automations/Broadcasts — только транзитная SMTP-доставка.
+Отдельный API-ключ GoTrue не нужен: тот же `RESEND_API_KEY` работает как SMTP-пароль.
+
+> [!note] R57 закрыт
+> GoTrue подтверждённо использует smtp.resend.com. Миграция на Beget не требуется —
+> GoTrue OTP остаётся на Resend SMTP (отдельный канал, не влияет на основные рассылки).
 
 ### Диагностика клубного OTP
 
@@ -78,25 +85,20 @@ OTP для входа в клуб (`/api/auth/send-otp`) идёт через **S
 sudo docker logs supabase-auth --tail=100 | grep -i "otp\|email\|error"
 ```
 
-## Канал 3 — Resend Audiences (CRM, без отправки)
+## ~~Канал 3 — Resend Audiences~~ (удалён 2026-06-06)
 
-Единственное место в коде: `src/app/api/join/track-email/route.ts`.
-
-```typescript
-import { Resend } from 'resend'
-const resend = new Resend(process.env.RESEND_API_KEY)
-await resend.contacts.create({
-  audienceId: process.env.RESEND_AUDIENCE_ID,
-  email,
-  unsubscribed: false,
-})
-```
-
-**Что делает:** добавляет email в Resend Audience (CRM-список) при вводе email на лендинге `/join`, до оплаты.
-**Env-переменные:** `RESEND_API_KEY`, `RESEND_AUDIENCE_ID`.
-**Критичность:** не критично, ошибки сглатываются `.catch(() => null)`.
-
-**Что не делает:** не отправляет писем. Все письма проекта (включая лидам с `/join`) идут через Beget SMTP.
+> [!note] Исторический контекст
+> Роут `src/app/api/join/track-email/route.ts` и пакет `resend` удалены в коммите
+> `chore(legacy): remove Vercel cron config and Resend SDK leftovers` (2026-06-06).
+>
+> **Что было:** добавление email в Resend Audience при вводе email на лендинге `/join`.
+> **Почему удалено:** `RESEND_AUDIENCE_ID` не был задан в production env → роут
+> никогда не выполнял полезной работы. Параллельно отключены Vercel cron'ы
+> (были источником ежедневных писем «Доступ в клуб приостановлен» через старый
+> Resend API — legacy от архитектуры до миграции на Beget).
+>
+> **GoTrue SMTP через Resend не затронут** — `RESEND_API_KEY` остаётся в env
+> как SMTP-пароль для GoTrue OTP.
 
 ## Email-шаблоны
 
@@ -192,10 +194,10 @@ await admin
 - **R53** — Детальный состав email-серий не задокументирован
 - **R55** — `cron/email-sequences` не заменяет `{{unsubscribe_token}}` → отписка в сериях не работает (**высокий приоритет**)
 - **R56** — `cron/subscription-reminders` двойная HTML-обёртка → VIP-напоминания приходят битыми (**высокий приоритет**)
-- **R57** — GoTrue SMTP-провайдер не известен (Resend SMTP relay или Beget?)
+- ~~**R57**~~ — ✅ **закрыт 2026-06-06**: GoTrue использует smtp.resend.com как SMTP relay. Миграция на Beget не требуется.
 - **R58** — Два email-шаблона в коде расходятся, превью != реальная отправка
 - **R59** — `emailToToken` без HMAC, фиксация как приемлемый риск или добавление подписи
 
 ---
 
-*Обновлено: 2026-05-19. Источники сверены с кодом.*
+*Обновлено: 2026-06-06. Сверены GoTrue SMTP-настройки; удалены legacy Resend Audiences.*
