@@ -203,7 +203,7 @@ export async function POST(req: NextRequest) {
 
         const { data: existingMember, error: memberError } = await supabaseAdmin
           .from('members')
-          .select('id')
+          .select('id, is_manual_subscription')
           .eq('email', AccountId)
           .single()
 
@@ -256,19 +256,27 @@ export async function POST(req: NextRequest) {
         }
 
         console.log('Updating member subscription, id:', member.id)
-        const { error: updateError } = await supabaseAdmin.from('members').update({
-          subscription_status: plan === 'trial' ? 'trial' : 'active',
-          tariff: plan,
-          subscription_plan: plan,
-          subscription_started_at: new Date().toISOString(),
-          subscription_ends_at: expiresAt,
-          subscription_expires_at: expiresAt,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const isManualPay = (existingMember as any)?.is_manual_subscription === true
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const payUpdate: Record<string, any> = {
           payment_transaction_id: String(TransactionId),
           last_payment_at: new Date().toISOString(),
           last_payment_amount: Amount,
-          last_expiry_reminder_sent: null,
-          expiry_followup_step: 0,
-        }).eq('id', member.id)
+        }
+        if (!isManualPay) {
+          payUpdate.subscription_status = plan === 'trial' ? 'trial' : 'active'
+          payUpdate.tariff = plan
+          payUpdate.subscription_plan = plan
+          payUpdate.subscription_started_at = new Date().toISOString()
+          payUpdate.subscription_ends_at = expiresAt
+          payUpdate.subscription_expires_at = expiresAt
+          payUpdate.last_expiry_reminder_sent = null
+          payUpdate.expiry_followup_step = 0
+        } else {
+          console.log('[pay] manual subscription — skipping subscription fields for member:', member.id)
+        }
+        const { error: updateError } = await supabaseAdmin.from('members').update(payUpdate).eq('id', member.id)
         console.log('Member update error:', updateError)
 
         console.log('Inserting payment_log...')
@@ -459,20 +467,20 @@ export async function POST(req: NextRequest) {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const recurrentUpdate: Record<string, any> = {
-        subscription_status: 'active',
-        tariff: plan,
-        subscription_plan: plan,
         last_payment_at: new Date().toISOString(),
         last_payment_amount: Amount,
         payment_transaction_id: String(TransactionId),
-        last_expiry_reminder_sent: null,
-        expiry_followup_step: 0,
       }
       if (!isManual) {
+        recurrentUpdate.subscription_status = 'active'
+        recurrentUpdate.tariff = plan
+        recurrentUpdate.subscription_plan = plan
         recurrentUpdate.subscription_ends_at = expiresAt
         recurrentUpdate.subscription_expires_at = expiresAt
+        recurrentUpdate.last_expiry_reminder_sent = null
+        recurrentUpdate.expiry_followup_step = 0
       } else {
-        console.log('[recurrent] manual subscription — skipping date overwrite for member:', member.id)
+        console.log('[recurrent] manual subscription — skipping subscription fields for member:', member.id)
       }
 
       await supabaseAdmin.from('members').update(recurrentUpdate).eq('id', member.id)
