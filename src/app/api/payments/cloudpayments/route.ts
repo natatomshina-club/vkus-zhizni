@@ -244,7 +244,7 @@ export async function POST(req: NextRequest) {
           const { data: newMember, error: insertError } = await supabaseAdmin
             .from('members')
             .insert(insertData)
-            .select('id')
+            .select('id, is_manual_subscription')
             .single()
           console.log('Member insert result:', { newMember, insertError })
           member = newMember
