@@ -58,12 +58,14 @@ function tariffDefaultDate(tariff: string): string {
   return d.toISOString().slice(0, 10)
 }
 
-export default function MemberClient({ initial, payments }: { initial: MemberRow; payments: PaymentLog[] }) {
+export default function MemberClient({ initial, payments, introCourseStartedAt }: { initial: MemberRow; payments: PaymentLog[]; introCourseStartedAt: string | null }) {
   const router = useRouter()
   const [member, setMember] = useState<MemberRow>(initial)
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState('')
   const [resetingTour, setResetingTour] = useState(false)
+  const [introCourseDate, setIntroCourseDate] = useState<string | null>(introCourseStartedAt)
+  const [launchingIntro, setLaunchingIntro] = useState(false)
 
   // Tariff form
   const [showTariffForm, setShowTariffForm] = useState(false)
@@ -93,6 +95,21 @@ export default function MemberClient({ initial, payments }: { initial: MemberRow
   function showToast(msg: string) {
     setToast(msg)
     setTimeout(() => setToast(''), 3000)
+  }
+
+  async function launchIntroCourse() {
+    setLaunchingIntro(true)
+    const res = await fetch(`/api/admin/members/${member.id}/launch-intro-course`, { method: 'POST' })
+    setLaunchingIntro(false)
+    if (res.ok) {
+      const { launched_at } = await res.json() as { launched_at: string }
+      setIntroCourseDate(launched_at)
+      showToast('✅ Цепочка вводного курса запущена')
+    } else {
+      const e = await res.json().catch(() => ({})) as { error?: string }
+      if (e.error === 'already_launched') showToast('ℹ️ Курс уже был запущен ранее')
+      else showToast('Ошибка запуска: ' + (e.error ?? 'неизвестная ошибка'))
+    }
   }
 
   async function saveTariff() {
@@ -633,6 +650,31 @@ export default function MemberClient({ initial, payments }: { initial: MemberRow
         >
           {resetingTour ? 'Сбрасываю...' : '🔄 Сбросить онбординг'}
         </button>
+      </Card>
+
+      {/* Intro Course */}
+      <Card title="Вводный курс (14 дней)">
+        {introCourseDate ? (
+          <span style={{
+            display: 'inline-block', padding: '6px 14px', borderRadius: 20,
+            background: '#F0F0F0', color: '#888', fontSize: 13, fontWeight: 600,
+          }}>
+            ✓ Курс запущен {formatDate(introCourseDate)}
+          </span>
+        ) : (
+          <button
+            onClick={launchIntroCourse}
+            disabled={launchingIntro}
+            style={{
+              padding: '10px 20px', borderRadius: 12, border: 'none',
+              background: launchingIntro ? '#ccc' : '#4CAF78', color: '#fff',
+              fontSize: 14, fontWeight: 600,
+              cursor: launchingIntro ? 'not-allowed' : 'pointer', minHeight: 44,
+            }}
+          >
+            {launchingIntro ? 'Запускаю...' : '▶ Запустить вводный курс'}
+          </button>
+        )}
       </Card>
 
       {/* Write message */}

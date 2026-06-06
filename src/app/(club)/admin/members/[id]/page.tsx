@@ -8,7 +8,7 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
   const { id } = await params
   const admin = createServiceClient()
 
-  const [{ data, error }, { data: payments }] = await Promise.all([
+  const [{ data, error }, { data: payments }, { data: introCourse }] = await Promise.all([
     admin
       .from('members')
       .select('id, email, full_name, avatar_url, role, subscription_status, tariff, subscription_plan, subscription_ends_at, is_blocked, blocked_at, blocked_reason, created_at, subscription_started_at, birth_date, admin_note, is_manual_subscription')
@@ -20,6 +20,13 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
       .eq('member_id', id)
       .not('amount', 'is', null)
       .order('created_at', { ascending: true }),
+    admin
+      .from('intro_course_pm_schedule')
+      .select('created_at')
+      .eq('member_id', id)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle(),
   ])
 
   if (error || !data) redirect('/admin/members')
@@ -59,7 +66,11 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
         </h1>
       </div>
 
-      <MemberClient initial={member} payments={(payments ?? []) as PaymentLog[]} />
+      <MemberClient
+        initial={member}
+        payments={(payments ?? []) as PaymentLog[]}
+        introCourseStartedAt={introCourse?.created_at ?? null}
+      />
     </div>
   )
 }
