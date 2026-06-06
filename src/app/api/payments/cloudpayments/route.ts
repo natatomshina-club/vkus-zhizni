@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
+import { INTRO_COURSE_MESSAGES } from '@/lib/intro-course-messages'
 
 export const dynamic = 'force-dynamic'
 
@@ -348,6 +349,56 @@ export async function POST(req: NextRequest) {
           }
         } catch (e) {
           console.warn('[members-sequence] error:', e)
+        }
+
+        // Запуск цепочки intro_course для новых участниц (первая оплата)
+        if (!existingMember && member) {
+          try {
+            // 1. Email-серия
+            const { data: subRow2 } = await supabaseAdmin
+              .from('subscribers')
+              .select('id')
+              .eq('email', AccountId)
+              .maybeSingle()
+
+            if (subRow2?.id) {
+              const { data: existingIntroProgress } = await supabaseAdmin
+                .from('subscriber_sequence_progress')
+                .select('id')
+                .eq('subscriber_id', subRow2.id)
+                .eq('series', 'intro_course')
+                .maybeSingle()
+
+              if (!existingIntroProgress) {
+                const introFirstSendAt = new Date(Date.now() + 60 * 60 * 1000).toISOString()
+                await supabaseAdmin.from('subscriber_sequence_progress').insert({
+                  subscriber_id: subRow2.id,
+                  series: 'intro_course',
+                  current_step: 0,
+                  next_send_at: introFirstSendAt,
+                  completed: false,
+                })
+              }
+            }
+
+            // 2. Личные сообщения по расписанию
+            const startDate = new Date()
+            const scheduledPMs = INTRO_COURSE_MESSAGES.map(({ day, text }) => {
+              const sendAt = new Date(startDate)
+              sendAt.setDate(sendAt.getDate() + day - 1)
+              sendAt.setUTCHours(9, 0, 0, 0)
+              // если на сегодня 09:00 уже прошло — перенести на следующий день
+              if (day === 1 && sendAt <= startDate) {
+                sendAt.setDate(sendAt.getDate() + 1)
+              }
+              return { member_id: member!.id, day_number: day, message: text, send_at: sendAt.toISOString() }
+            })
+            await supabaseAdmin.from('intro_course_pm_schedule').insert(scheduledPMs)
+
+            console.log('[intro-course] scheduled for new member:', member.id)
+          } catch (e) {
+            console.warn('[intro-course] error:', e)
+          }
         }
 
         // Синхронизация в subscribers
