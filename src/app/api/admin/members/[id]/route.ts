@@ -62,6 +62,7 @@ export async function PATCH(
   if (body.subscription_ends_at !== undefined) {
     updates.subscription_ends_at = body.subscription_ends_at
     updates.last_expiry_reminder_sent = null
+    updates.expiry_followup_step = 0
   }
 
   // Manual renewal: set specific end date
@@ -71,6 +72,7 @@ export async function PATCH(
       updates.subscription_ends_at = d.toISOString()
       updates.subscription_status = 'active'
       updates.last_expiry_reminder_sent = null
+      updates.expiry_followup_step = 0
     }
   }
 
@@ -86,6 +88,7 @@ export async function PATCH(
       updates.subscription_ends_at = base.toISOString()
       updates.subscription_status = 'active'
       updates.last_expiry_reminder_sent = null
+      updates.expiry_followup_step = 0
       if (body.tariff !== undefined) {
         updates.tariff = body.tariff
         updates.subscription_plan = body.tariff === 'halfyear' ? 'halfyear' : 'month'

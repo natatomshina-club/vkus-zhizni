@@ -266,6 +266,8 @@ export async function POST(req: NextRequest) {
           payment_transaction_id: String(TransactionId),
           last_payment_at: new Date().toISOString(),
           last_payment_amount: Amount,
+          last_expiry_reminder_sent: null,
+          expiry_followup_step: 0,
         }).eq('id', member.id)
         console.log('Member update error:', updateError)
 
@@ -463,6 +465,8 @@ export async function POST(req: NextRequest) {
         last_payment_at: new Date().toISOString(),
         last_payment_amount: Amount,
         payment_transaction_id: String(TransactionId),
+        last_expiry_reminder_sent: null,
+        expiry_followup_step: 0,
       }
       if (!isManual) {
         recurrentUpdate.subscription_ends_at = expiresAt
