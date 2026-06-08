@@ -32,6 +32,7 @@ export async function PATCH(
   if (body.video_url !== undefined) {
     const vid = body.video_url ? extractKinescopeId(body.video_url) : null
     update.video_url = vid ? `https://kinescope.io/${vid}` : null
+    if (vid) update.lesson_type = 'video'
   }
   if (body.bonus_video_url !== undefined) {
     const bid = body.bonus_video_url ? extractKinescopeId(body.bonus_video_url) : null

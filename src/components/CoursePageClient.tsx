@@ -186,13 +186,13 @@ export default function CoursePageClient({ course }: { course: CourseData }) {
     return (
       <div>
         {/* Main content */}
-        {lesson.type === 'video' && lesson.videoId && (
+        {lesson.videoId && (
           <div style={{ marginBottom: 16 }}>
             <KinescopePlayer videoId={lesson.videoId} />
           </div>
         )}
 
-        {lesson.type === 'text' && lesson.textContent && (
+        {lesson.textContent && (
           <div style={{ marginBottom: 16 }}>
             <div
               className="lesson-html"
