@@ -7,6 +7,7 @@
 ## 2026
 
 ### Июнь
+- [[07-sessions/2026-06-08|8 июня — subscription_started_at сброс + видео в курсе]] — баг started_at (9 восстановлено); lesson_type data-driven рендер; R114–R122 оформлены
 - [[07-sessions/2026-06-06|6 июня — 4 бага, legacy Vercel, churn-серия]] — R3/R4/R57/R78/рекуррент закрыты; обезврежен Vercel deployment (полгода работал параллельно); создана churn-серия 1/2/3/15/30
 
 ### Май
