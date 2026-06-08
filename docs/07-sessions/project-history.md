@@ -11,6 +11,24 @@
 
 ---
 
+## 2026-06
+
+### Обезврежен legacy Vercel deployment
+
+**Когда:** 2026-06-06
+
+С апреля параллельно основному коду на Beget работал старый Vercel-проект `vkus-zhizni` (deployment от 2 апреля, коммит `5560cb4`): 5 Cron Jobs запускались ежедневно на старом коде — `birthdays/check`, `cleanup-media`, `cleanup-posts`, `check-subscriptions`, `subscription-reminders`. Старый `subscription-reminders` шёл через Resend API напрямую; шаблон письма «Ваша подписка истекла, и доступ в клуб временно приостановлен» жил только в Vercel-deployment'е — в репо его не было, поэтому grep ничего не находил. DNS Cloudflare → Beget (IP 155.212.130.228) — Vercel трафик не обслуживал, но crons работали независимо на собственных vercel.app-URL.
+
+В прошлой сессии (R54, 22 мая) был disconnect Git от Vercel — но это останавливает только auto-deploy на push, **не сам deployment и не crons**. Обнаружен через Resend dashboard: поле `From: noreply@nata-tomshin.ru` в конкретном письме указало на старый Vercel за минуту.
+
+**Решение:** Vercel Cron Jobs disabled через UI; `vercel.json` удалён из репо; пакет `resend` убран; `track-email/route.ts` удалён. GoTrue OTP подтверждён — идёт через `smtp.resend.com:465` как SMTP relay (`SMTP_PASS` в `/opt/supabase/docker/.env`), это отдельный канал, не затронут.
+
+**Урок:** disconnect ≠ отключение. При выходе с любой PaaS-платформы явно останавливать crons/scheduled tasks отдельно (Pause Project или Delete Project).
+
+**Источники:** [[07-sessions/2026-06-06]], [[07-sessions/SESSION_2026-06-06_VAULT_HANDOFF]]
+
+---
+
 ## 2026-05
 
 ### R01. Vault-инцидент: код = первый источник истины

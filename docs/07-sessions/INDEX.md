@@ -6,6 +6,9 @@
 
 ## 2026
 
+### Июнь
+- [[07-sessions/2026-06-06|6 июня — 4 бага, legacy Vercel, churn-серия]] — R3/R4/R57/R78/рекуррент закрыты; обезврежен Vercel deployment (полгода работал параллельно); создана churn-серия 1/2/3/15/30
+
 ### Май
 - [[07-sessions/SESSION_2026-05-22_VAULT_HANDOFF|22 мая — R54 закрыт]] — push 14 коммитов на GitHub (прод и репо синхронизированы), Vercel disconnected, раздел «Git-дисциплина» в CLAUDE-RULES.md
 - [[07-sessions/SESSION_2026-05-21_VAULT_HANDOFF|20–21 мая — database и members]] — database.md (72 таблицы), members.md (последний админский модуль), исправлены R55 и R56 (email-баги)
