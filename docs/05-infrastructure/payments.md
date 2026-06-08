@@ -123,6 +123,37 @@ trial → active → expired
 | `CP_API_SECRET` | runtime | HMAC-секрет боевого магазина |
 | `CP_API_SECRET_TEST` | runtime | HMAC-секрет тестового магазина |
 
+## Семантика subscription_started_at
+
+- Записывается **один раз** — при первом платеже участницы (или при ручной установке через SQL/админку)
+- Webhook её больше не перезаписывает — ни PAY, ни RECURRENT (фикс от 2026-06-08, коммит `564a734`)
+- Используется только формулой `getEffectiveMonths()` для расчёта уровня в UI
+- Можно ставить в прошлое для ручного выставления уровня — подробнее в [[06-operations/manual-procedures#3-дать-участнице-ручной-уровень]]
+
+## Логика is_manual_subscription в webhook
+
+**PAY-блок** (срабатывает при любом платеже — CloudPayments шлёт все транзакции как `OperationType='Payment'`):
+
+| Поле | Защищено флагом is_manual=true | Пишется всегда |
+|---|---|---|
+| subscription_status | ✓ | |
+| tariff | ✓ | |
+| subscription_plan | ✓ | |
+| subscription_started_at | ✓ | |
+| subscription_ends_at | ✓ | |
+| subscription_expires_at | ✓ | |
+| last_expiry_reminder_sent | ✓ | |
+| expiry_followup_step | ✓ | |
+| payment_transaction_id | | ✓ |
+| last_payment_at | | ✓ |
+| last_payment_amount | | ✓ |
+
+**RECURRENT-блок** — никогда не срабатывает (CloudPayments шлёт всё как `Payment`), но защита идентична PAY на случай будущих изменений CloudPayments.
+
+**Когда поднимать `is_manual_subscription = true`:**
+- VIP, которым Наташа продлевает доступ вручную (без CP-оплат)
+- Если они платят через CP — **не поднимать**: `subscription_ends_at` не будет продлеваться при платежах
+
 ## Шпаргалка
 
 ### Ручной апгрейд в Бриллианты (SQL)
