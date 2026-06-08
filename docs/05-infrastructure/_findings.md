@@ -47,3 +47,34 @@
 При написании очередного модуля проверять наличие миграции.
 
 См. todo R72.
+
+---
+
+## 2026-06-08 — R119: NULL subscription_plan при last_payment_amount = 1500
+
+При аудите webhook-записей обнаружено: 14 участниц имеют `subscription_plan = NULL`
+при `last_payment_amount = 1500`. Функционально не сломаны — для тарифа `month` бонус = 0,
+уровень считается правильно. Проблема косметическая: NULL вместо `'month'`.
+
+Причина: ранние версии webhook не заполняли `subscription_plan` из `Data.Metadata.plan`.
+Исправлено с мая 2026 — новые платежи пишут корректный план.
+
+SQL-диагностика: `SELECT email FROM members WHERE last_payment_amount = 1500 AND subscription_plan IS NULL;`
+
+См. todo R119 (SQL-чистка).
+
+---
+
+## 2026-06-08 — R120: RECURRENT-блок webhook никогда не срабатывает
+
+При анализе `src/app/api/payments/cloudpayments/route.ts` установлено:
+CloudPayments присылает **все** транзакции (первый платёж + рекуррентные) как
+`OperationType = 'Payment'`. Блок `OperationType === 'Recurrent'` в коде
+никогда не получает управления на проде.
+
+Последствия:
+- Рекуррентные платежи обрабатываются PAY-блоком — работает корректно.
+- RECURRENT-блок — мёртвый код, но содержит аналогичную защитную логику.
+- **Не удалять:** если CloudPayments изменит поведение — блок станет активным.
+
+См. todo R120.

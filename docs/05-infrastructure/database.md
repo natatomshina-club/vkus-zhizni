@@ -35,8 +35,9 @@
 
 ### `members`
 Основной справочник участниц клуба. Тариф, статус подписки, КБЖУ-поля, даты начала/конца подписки, реф-код.
-Пишут: webhook CloudPayments, cron `check-subscriptions`, cron `subscription-reminders`, админка.
+Пишут: webhook CloudPayments, cron `check-subscriptions`, cron `subscription-reminders`, cron `expiry-followup`, админка.
 Читают: почти все модули клуба.
+Поле `expiry_followup_step` (integer DEFAULT 0) — шаг churn-серии писем; подробнее [[06-operations/churn-series]].
 → [subscriptions](../03-club/modules/subscriptions.md) · также: [emails](../04-admin/modules/emails.md), [payments](payments.md), [webinars](../03-club/modules/webinars.md)
 
 ### `avatars`
