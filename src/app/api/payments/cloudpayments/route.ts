@@ -204,7 +204,7 @@ export async function POST(req: NextRequest) {
 
         const { data: existingMember, error: memberError } = await supabaseAdmin
           .from('members')
-          .select('id, is_manual_subscription')
+          .select('id, is_manual_subscription, subscription_started_at')
           .eq('email', AccountId)
           .single()
 
@@ -269,7 +269,7 @@ export async function POST(req: NextRequest) {
           payUpdate.subscription_status = plan === 'trial' ? 'trial' : 'active'
           payUpdate.tariff = plan
           payUpdate.subscription_plan = plan
-          payUpdate.subscription_started_at = new Date().toISOString()
+          payUpdate.subscription_started_at = (existingMember as any)?.subscription_started_at ?? new Date().toISOString()
           payUpdate.subscription_ends_at = expiresAt
           payUpdate.subscription_expires_at = expiresAt
           payUpdate.last_expiry_reminder_sent = null
@@ -501,7 +501,7 @@ export async function POST(req: NextRequest) {
 
       const { data: member } = await supabaseAdmin
         .from('members')
-        .select('id, subscription_ends_at, referred_by, is_manual_subscription')
+        .select('id, subscription_ends_at, referred_by, is_manual_subscription, subscription_started_at')
         .eq('email', AccountId)
         .single()
 
@@ -526,6 +526,7 @@ export async function POST(req: NextRequest) {
         recurrentUpdate.subscription_status = 'active'
         recurrentUpdate.tariff = plan
         recurrentUpdate.subscription_plan = plan
+        recurrentUpdate.subscription_started_at = (member as any).subscription_started_at ?? new Date().toISOString()
         recurrentUpdate.subscription_ends_at = expiresAt
         recurrentUpdate.subscription_expires_at = expiresAt
         recurrentUpdate.last_expiry_reminder_sent = null
