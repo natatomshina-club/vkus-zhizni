@@ -128,7 +128,7 @@ export async function POST(req: Request) {
     subscription_plan: tariff === 'halfyear' ? 'halfyear' : 'month',
     subscription_ends_at: endsAt,
     admin_note: admin_note || null,
-    is_manual_subscription: true,
+    is_manual_subscription: body.is_manual_vip === true,
   }, { onConflict: 'id' })
 
   if (memberErr) {

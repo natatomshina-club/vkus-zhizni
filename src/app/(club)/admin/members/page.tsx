@@ -92,7 +92,7 @@ export default function MembersPage() {
 
   // Add member form
   const [showAddForm, setShowAddForm] = useState(false)
-  const [addForm, setAddForm] = useState({ email: '', full_name: '', tariff: 'monthly', admin_note: '' })
+  const [addForm, setAddForm] = useState({ email: '', full_name: '', tariff: 'monthly', admin_note: '', is_manual_vip: false })
   const [addSaving, setAddSaving] = useState(false)
   const [addError, setAddError] = useState('')
   const [addToast, setAddToast] = useState('')
@@ -147,7 +147,7 @@ export default function MembersPage() {
       return
     }
     setShowAddForm(false)
-    setAddForm({ email: '', full_name: '', tariff: 'monthly', admin_note: '' })
+    setAddForm({ email: '', full_name: '', tariff: 'monthly', admin_note: '', is_manual_vip: false })
     setAddError('')
     if (d.warning) {
       setAddToast(`⚠️ ${d.warning}`)
@@ -323,6 +323,24 @@ export default function MembersPage() {
                 boxSizing: 'border-box', fontFamily: 'var(--font-nunito)',
               }}
             />
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', userSelect: 'none' }}>
+              <input
+                type="checkbox"
+                checked={addForm.is_manual_vip}
+                onChange={e => setAddForm(p => ({ ...p, is_manual_vip: e.target.checked }))}
+                style={{ marginTop: 2, width: 16, height: 16, accentColor: '#7C5CFC', flexShrink: 0, cursor: 'pointer' }}
+              />
+              <span style={{ fontSize: 13, color: '#3D2B8A', lineHeight: 1.5 }}>
+                <strong>VIP без оплат через CloudPayments</strong> — доступ ведём вручную.
+                <span style={{ display: 'block', fontSize: 12, color: '#7B6FAA', marginTop: 2 }}>
+                  Отметь, если участница никогда не будет платить через CP (подарок, бартер, ручная оплата навсегда).
+                  Webhook CP не будет обновлять её подписку.
+                </span>
+              </span>
+            </label>
           </div>
 
           {addError && (

@@ -20,29 +20,41 @@ function verifyHmac(body: string, signature: string): boolean {
   return signature === hmacProd || signature === hmacTest
 }
 
-const PLAN_DAYS: Record<string, number> = {
-  trial: 7, month: 30, monthly: 30, halfyear: 180,
-}
+const KNOWN_PLANS = new Set(['trial', 'month', 'monthly', 'halfyear'])
 
 function resolvePlan(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   payload: Record<string, any>,
   amount: number
-): { plan: string; days: number } | null {
+): { plan: string } | null {
   // 1. Сначала читаем из Data.Metadata.plan
   const metaPlan: string | undefined =
     payload.Data?.Metadata?.plan ??
     payload.JsonData?.Metadata?.plan
 
-  if (metaPlan && PLAN_DAYS[metaPlan] !== undefined) {
-    return { plan: metaPlan, days: PLAN_DAYS[metaPlan] }
+  if (metaPlan && KNOWN_PLANS.has(metaPlan)) {
+    return { plan: metaPlan }
   }
 
   // 2. Fallback по сумме
-  if (amount === 149)  return { plan: 'trial',    days: 7   }
-  if (amount === 1500) return { plan: 'month',    days: 30  }
-  if (amount === 6000) return { plan: 'halfyear', days: 180 }
+  if (amount === 149)  return { plan: 'trial' }
+  if (amount === 1500) return { plan: 'month' }
+  if (amount === 6000) return { plan: 'halfyear' }
   return null
+}
+
+// Добавляет период подписки к base по календарю, не по дням
+function addSubscriptionPeriod(base: Date, plan: string): Date {
+  const d = new Date(base)
+  if (plan === 'trial') {
+    d.setDate(d.getDate() + 7)
+  } else if (plan === 'halfyear') {
+    d.setMonth(d.getMonth() + 6)
+  } else {
+    // month / monthly
+    d.setMonth(d.getMonth() + 1)
+  }
+  return d
 }
 
 // ── Affiliate commission helper ────────────────────────────────────────
@@ -170,7 +182,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ code: 0 })
         }
 
-        const { plan, days } = planData
+        const { plan } = planData
 
         // ── Защита от повторного триала ────────────────────────────
         if (plan === 'trial') {
@@ -199,7 +211,7 @@ export async function POST(req: NextRequest) {
         }
         // ──────────────────────────────────────────────────────────
 
-        const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
+        const expiresAt = addSubscriptionPeriod(new Date(), plan).toISOString()
         console.log('Looking up member:', AccountId)
 
         const { data: existingMember, error: memberError } = await supabaseAdmin
@@ -497,7 +509,7 @@ export async function POST(req: NextRequest) {
     if (Status === 'Completed' && OperationType === 'Recurrent') {
       const planData = resolvePlan(payload, Amount)
       if (!planData) return NextResponse.json({ code: 0 })
-      const { plan, days } = planData
+      const { plan } = planData
 
       const { data: member } = await supabaseAdmin
         .from('members')
@@ -514,7 +526,7 @@ export async function POST(req: NextRequest) {
       const base = currentEnd
         ? new Date(Math.max(Date.now(), new Date(currentEnd).getTime()))
         : new Date()
-      const expiresAt = new Date(base.getTime() + days * 24 * 60 * 60 * 1000).toISOString()
+      const expiresAt = addSubscriptionPeriod(base, plan).toISOString()
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const recurrentUpdate: Record<string, any> = {

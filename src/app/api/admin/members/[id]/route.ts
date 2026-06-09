@@ -76,7 +76,7 @@ export async function PATCH(
     }
   }
 
-  // Manual renewal: extend from current end date or today
+  // Manual renewal: extend from current end date or today (exact days — для нестандартных сроков)
   if (body.extend_days !== undefined) {
     const days = Number(body.extend_days)
     if (!isNaN(days) && days > 0) {
@@ -94,6 +94,26 @@ export async function PATCH(
         updates.subscription_plan = body.tariff === 'halfyear' ? 'halfyear' : 'month'
       }
     }
+  }
+
+  // Manual renewal: extend by calendar period (month → +1 мес., halfyear → +6 мес.)
+  if (body.extend_plan !== undefined) {
+    const extPlan = String(body.extend_plan)
+    const { data: cur } = await admin.from('members').select('subscription_ends_at').eq('id', id).single()
+    const base = cur?.subscription_ends_at && new Date(cur.subscription_ends_at) > new Date()
+      ? new Date(cur.subscription_ends_at)
+      : new Date()
+    if (extPlan === 'halfyear') {
+      base.setMonth(base.getMonth() + 6)
+    } else {
+      base.setMonth(base.getMonth() + 1)
+    }
+    updates.subscription_ends_at = base.toISOString()
+    updates.subscription_status = 'active'
+    updates.tariff = extPlan === 'halfyear' ? 'halfyear' : 'monthly'
+    updates.subscription_plan = extPlan === 'halfyear' ? 'halfyear' : 'month'
+    updates.last_expiry_reminder_sent = null
+    updates.expiry_followup_step = 0
   }
 
   if (body.onboarding_completed !== undefined) updates.onboarding_completed = body.onboarding_completed

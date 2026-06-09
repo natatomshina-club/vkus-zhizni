@@ -138,8 +138,7 @@ export default function MemberClient({ initial, payments, introCourseStartedAt }
       if (!renewDate) { setRenewError('Укажите дату'); setRenewSaving(false); return }
       body = { expires_at: renewDate }
     } else {
-      const days = renewTariff === 'halfyear' ? 180 : 30
-      body = { extend_days: days, tariff: renewTariff }
+      body = { extend_plan: renewTariff }
     }
     const res = await fetch(`/api/admin/members/${member.id}`, {
       method: 'PATCH',
@@ -398,8 +397,8 @@ export default function MemberClient({ initial, payments, introCourseStartedAt }
             <p style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 700, color: '#3D2B8A' }}>Выбери срок продления</p>
             <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
               {([
-                { value: 'monthly' as const, label: 'Месяц (+30 дней)' },
-                { value: 'halfyear' as const, label: 'Полгода (+180 дней)' },
+                { value: 'monthly' as const, label: 'Месяц (+1 мес.)' },
+                { value: 'halfyear' as const, label: 'Полгода (+6 мес.)' },
                 { value: 'date' as const, label: 'До определённой даты' },
               ]).map(o => (
                 <button
