@@ -2,9 +2,16 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { headers } from 'next/headers'
 
+// legko quiz shows "35–45 лет" etc, DB constraint expects '35-45' etc
+const AGE_MAP: Record<string, string> = {
+  '35–45 лет': '35-45',
+  '46–55 лет': '46-55',
+  '56–65 лет': '56-65',
+  'больше 65 лет': '65+',
+}
+
 function validate(body: Record<string, unknown>): string | null {
-  const VALID_AGE = ['35–45 лет', '46–55 лет', '56–65 лет', 'больше 65 лет']
-  if (!VALID_AGE.includes(body.age_range as string)) return 'Укажите возраст'
+  if (!AGE_MAP[body.age_range as string]) return 'Укажите возраст'
   if (!Array.isArray(body.problems) || (body.problems as string[]).length === 0) return 'Укажите что беспокоит'
   if (!body.davnost) return 'Укажите как давно беспокоит'
   if (!body.preparaty) return 'Укажите про препараты'
@@ -96,7 +103,7 @@ export async function POST(request: Request) {
   ].join('\n')
 
   const row = {
-    age_range: body.age_range as string,
+    age_range: AGE_MAP[body.age_range as string],
     problems: body.problems as string[],
     // Map legko-specific fields into existing columns with labeled values
     tried_result: `Давность: ${body.davnost}`,
