@@ -58,6 +58,7 @@ setup-ssh.sh
 /CLAUDE-CODE-V*.md
 /KITCHEN_PATCH_*.md
 /lending-*.html
+/legkost-*.html
 /*.docx
 /natalia*.png
 /natalia*.jpg
