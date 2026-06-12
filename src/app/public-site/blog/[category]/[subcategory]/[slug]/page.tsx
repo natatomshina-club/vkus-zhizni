@@ -145,7 +145,9 @@ export async function generateMetadata(
       url: canonicalUrl,
       type: 'article',
       publishedTime: post.published_at ?? undefined,
-      images: post.cover_image_url ? [{ url: post.cover_image_url }] : undefined,
+      images: post.cover_image_url
+        ? [{ url: post.cover_image_url, width: 1200, height: 630, alt: post.title }]
+        : undefined,
     },
   }
 }
