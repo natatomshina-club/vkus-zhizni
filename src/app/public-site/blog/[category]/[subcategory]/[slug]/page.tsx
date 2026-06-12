@@ -17,9 +17,38 @@ import { SILO_CONFIG, isSiloCategory, getArticleUrl } from '@/lib/silo-config'
 interface BlogPost {
   id: string; slug: string; title: string; excerpt: string | null
   content: string | null; cover_image_url: string | null; published_at: string | null
+  updated_at: string | null
   meta_title: string | null; meta_description: string | null
   main_keyword?: string | null; cluster_name?: string | null
   category: string | null; subcategory: string | null; widget_type?: string | null
+}
+
+function countWords(html: string | null): number {
+  if (!html) return 0
+  return html.replace(/<[^>]+>/g, ' ').trim().split(/\s+/).filter(Boolean).length
+}
+
+interface FaqItem { question: string; answer: string }
+function parseFaq(html: string | null): FaqItem[] {
+  if (!html) return []
+  const blockMatch = html.match(/<div[^>]+class="[^"]*faq-block[^"]*"[^>]*>([\s\S]*?)<\/div>\s*(?=<(?!div)|$)/i)
+  if (!blockMatch) return []
+  const block = blockMatch[1]
+  const items: FaqItem[] = []
+  const itemRe = /<div[^>]+class="[^"]*faq-item[^"]*"[^>]*>([\s\S]*?)<\/div>/gi
+  let itemMatch
+  while ((itemMatch = itemRe.exec(block)) !== null) {
+    const inner = itemMatch[1]
+    const qMatch = inner.match(/<h[23][^>]*>([\s\S]*?)<\/h[23]>/i)
+    const aMatch = inner.match(/<(?:p|div)[^>]*>([\s\S]*?)<\/(?:p|div)>/i)
+    if (qMatch && aMatch) {
+      items.push({
+        question: qMatch[1].replace(/<[^>]+>/g, '').trim(),
+        answer: aMatch[1].replace(/<[^>]+>/g, '').trim(),
+      })
+    }
+  }
+  return items
 }
 
 async function getPost(slug: string): Promise<BlogPost | null> {
@@ -150,6 +179,8 @@ export default async function SiloArticlePage(
     : post.widget_type ?? selectWidget(post.main_keyword ?? '', post.cluster_name ?? post.title)
 
   const readingTimeMin = calcReadingTime(post.content)
+  const wordCount = countWords(post.content)
+  const faqItems = parseFaq(post.content)
 
   const breadcrumbs = [
     { label: 'Главная', href: '/' },
@@ -165,24 +196,68 @@ export default async function SiloArticlePage(
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify({
           '@context': 'https://schema.org',
-          '@type': 'BlogPosting',
-          headline: post.meta_title ?? post.title,
-          description: post.meta_description ?? post.excerpt ?? '',
-          image: post.cover_image_url ?? '',
-          datePublished: post.published_at ?? '',
-          dateModified: post.published_at ?? '',
-          author: { '@type': 'Person', name: 'Наталья Томшина', jobTitle: 'нутрициолог', url: 'https://nata-tomshina.ru/about' },
-          publisher: { '@type': 'Organization', name: 'Наталья Томшина', url: 'https://nata-tomshina.ru' },
-          mainEntityOfPage: { '@type': 'WebPage', '@id': `https://nata-tomshina.ru${articleUrl}` },
-          breadcrumb: {
-            '@type': 'BreadcrumbList',
-            itemListElement: breadcrumbs.map((b, i) => ({
-              '@type': 'ListItem',
-              position: i + 1,
-              name: b.label,
-              item: 'href' in b ? `https://nata-tomshina.ru${b.href}` : undefined,
-            })),
-          },
+          '@graph': [
+            {
+              '@type': 'BlogPosting',
+              headline: post.meta_title ?? post.title,
+              description: post.meta_description ?? post.excerpt ?? '',
+              image: post.cover_image_url
+                ? { '@type': 'ImageObject', url: post.cover_image_url, width: 1200, height: 630 }
+                : undefined,
+              datePublished: post.published_at ?? '',
+              dateModified: post.updated_at ?? post.published_at ?? '',
+              wordCount: wordCount || undefined,
+              articleSection: post.cluster_name ?? (cat.label || undefined),
+              keywords: post.main_keyword ?? undefined,
+              inLanguage: 'ru-RU',
+              author: {
+                '@type': 'Person',
+                name: 'Наталья Томшина',
+                jobTitle: 'Интегративный нутрициолог',
+                url: 'https://nata-tomshina.ru/about',
+                image: 'https://nata-tomshina.ru/images/natalia.jpg',
+                sameAs: [
+                  'https://t.me/NataTomshina',
+                  'https://instagram.com/nata.tomshina',
+                  'https://youtube.com/@natatomshina',
+                ],
+              },
+              publisher: {
+                '@type': 'Organization',
+                name: 'Клуб «Вкус Жизни»',
+                url: 'https://nata-tomshina.ru',
+                logo: {
+                  '@type': 'ImageObject',
+                  url: 'https://nata-tomshina.ru/images/logo.png',
+                  width: 240,
+                  height: 60,
+                },
+              },
+              mainEntityOfPage: { '@type': 'WebPage', '@id': `https://nata-tomshina.ru${articleUrl}` },
+              isPartOf: { '@type': 'Blog', '@id': 'https://nata-tomshina.ru/blog' },
+              speakable: {
+                '@type': 'SpeakableSpecification',
+                cssSelector: ['.article-lede', '.kratko-block'],
+              },
+            },
+            {
+              '@type': 'BreadcrumbList',
+              itemListElement: breadcrumbs.map((b, i) => ({
+                '@type': 'ListItem',
+                position: i + 1,
+                name: b.label,
+                item: 'href' in b ? `https://nata-tomshina.ru${b.href}` : undefined,
+              })),
+            },
+            ...(faqItems.length > 0 ? [{
+              '@type': 'FAQPage',
+              mainEntity: faqItems.map(({ question, answer }) => ({
+                '@type': 'Question',
+                name: question,
+                acceptedAnswer: { '@type': 'Answer', text: answer },
+              })),
+            }] : []),
+          ],
         })}}
       />
       <PublicNav currentPage="/blog" />

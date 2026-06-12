@@ -1,14 +1,57 @@
 User-agent: *
 Allow: /blog
+Allow: /recipes
 Allow: /about
 Allow: /club
 Allow: /results
+Allow: /marathon
+Allow: /free
 Disallow: /admin
 Disallow: /api
 Disallow: /dashboard
-Disallow: /partner
-Disallow: /recipes
+Disallow: /join
 Disallow: /menyu
 Disallow: /racion
+
+# AI-боты — Allow (трафик из ChatGPT Search, Perplexity, Claude)
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: claude-web
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+# Спам-боты и парсеры датасетов — Disallow
+User-agent: Bytespider
+Disallow: /
+
+User-agent: ImagesiftBot
+Disallow: /
+
+User-agent: Diffbot
+Disallow: /
 
 Sitemap: https://nata-tomshina.ru/sitemap.xml
