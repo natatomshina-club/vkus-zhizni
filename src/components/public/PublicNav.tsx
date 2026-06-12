@@ -13,6 +13,7 @@ const NAV_LINKS = [
   { href: '/about', label: 'О методе' },
   { href: '/results', label: 'Результаты' },
   { href: '/marathon', label: 'Марафон' },
+  { href: '/recipes', label: 'Рецепты' },
   { href: '/blog', label: 'Блог' },
 ]
 

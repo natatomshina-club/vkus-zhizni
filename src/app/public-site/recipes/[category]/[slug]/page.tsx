@@ -41,13 +41,21 @@ export async function generateStaticParams() {
 export async function generateMetadata(
   { params }: { params: Promise<{ category: string; slug: string }> }
 ): Promise<Metadata> {
-  const { slug } = await params
+  const { category, slug } = await params
   const recipe = await getRecipe(slug)
   if (!recipe) return { title: 'Рецепт не найден' }
+  const canonicalUrl = `https://nata-tomshina.ru/recipes/${category}/${slug}`
   return {
     title: recipe.meta_title ?? recipe.title,
     description: recipe.meta_description ?? recipe.excerpt ?? undefined,
-    openGraph: recipe.cover_image_url ? { images: [{ url: recipe.cover_image_url }] } : undefined,
+    alternates: { canonical: canonicalUrl },
+    openGraph: {
+      title: recipe.meta_title ?? recipe.title,
+      description: recipe.meta_description ?? recipe.excerpt ?? undefined,
+      url: canonicalUrl,
+      type: 'article',
+      ...(recipe.cover_image_url ? { images: [{ url: recipe.cover_image_url }] } : {}),
+    },
   }
 }
 

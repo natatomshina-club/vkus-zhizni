@@ -159,9 +159,11 @@ export async function POST(request: Request) {
         const promptTemplate = promptSetting?.value ?? DEFAULT_ARTICLE_PROMPT
         console.log('[generate-article] Prompt from DB length:', promptTemplate.length, '| first 100:', promptTemplate.slice(0, 100))
 
+        const wordCount = (body.wordCount as number | undefined) ?? 2000
         const articleUserPrompt = promptTemplate
           .replace(/\{main_keyword\}/g, mainKeyword)
           .replace(/\{keywords_list\}/g, keywordsList)
+          .replace(/\{word_count\}/g, String(wordCount))
 
         const messageStream = anthropic.messages.stream({
           model: 'claude-sonnet-4-6',

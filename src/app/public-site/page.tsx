@@ -16,9 +16,52 @@ export const metadata: Metadata = {
   },
 }
 
+const HOME_SCHEMA = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      name: 'Вкус Жизни — Наталья Томшина',
+      url: 'https://nata-tomshina.ru',
+      description: 'Питание для женского здоровья. Клуб нутрициолога Натальи Томшиной для женщин 35–60 лет.',
+      inLanguage: 'ru-RU',
+      publisher: { '@id': 'https://nata-tomshina.ru#organization' },
+    },
+    {
+      '@type': 'Organization',
+      '@id': 'https://nata-tomshina.ru#organization',
+      name: 'Клуб «Вкус Жизни»',
+      url: 'https://nata-tomshina.ru',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://nata-tomshina.ru/images/logo.png',
+        width: 240,
+        height: 60,
+      },
+      description: 'Клуб для женщин 35–60 лет о метаболическом питании, гормонах и здоровом весе.',
+      founder: { '@type': 'Person', name: 'Наталья Томшина' },
+      sameAs: [
+        'https://t.me/NataTomshina',
+        'https://instagram.com/nata.tomshina',
+        'https://youtube.com/@natatomshina',
+      ],
+      contactPoint: {
+        '@type': 'ContactPoint',
+        contactType: 'customer support',
+        email: 'support@nata-tomshina.ru',
+        availableLanguage: 'ru',
+      },
+    },
+  ],
+}
+
 export default function HomePage() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(HOME_SCHEMA) }}
+      />
       <PublicNav currentPage="/" />
       <main className="hp-main">
 

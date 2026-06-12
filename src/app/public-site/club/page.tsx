@@ -22,6 +22,15 @@ import Footer from './_components/Footer'
 export const metadata: Metadata = {
   title: 'Клуб «Вкус Жизни» — годовая программа Натальи Томшиной',
   description: 'Годовая программа похудения для женщин 35–60 после диет и марафонов. Метаболическое питание, поддержка нутрициолога, чат сообщества. Минус 2–3 кг в месяц без надрыва.',
+  alternates: {
+    canonical: 'https://nata-tomshina.ru/club',
+  },
+  openGraph: {
+    title: 'Клуб «Вкус Жизни» — годовая программа Натальи Томшиной',
+    description: 'Годовая программа похудения для женщин 35–60 после диет и марафонов. Метаболическое питание, поддержка нутрициолога, чат сообщества. Минус 2–3 кг в месяц без надрыва.',
+    url: 'https://nata-tomshina.ru/club',
+    type: 'website',
+  },
 }
 
 export default function ClubPage() {

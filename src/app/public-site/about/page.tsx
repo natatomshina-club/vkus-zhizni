@@ -18,9 +18,59 @@ export const metadata: Metadata = {
   },
 }
 
+const ABOUT_SCHEMA = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: 'Наталья Томшина',
+  url: 'https://nata-tomshina.ru/about',
+  image: 'https://nata-tomshina.ru/images/natalia.jpg',
+  jobTitle: 'Интегративный нутрициолог',
+  description: 'Помогаю женщинам 35–60 лет восстановить гормональный баланс и нормализовать вес через метаболическое питание.',
+  worksFor: {
+    '@type': 'Organization',
+    name: 'Клуб «Вкус Жизни»',
+    url: 'https://nata-tomshina.ru',
+  },
+  knowsAbout: [
+    'Нутрициология',
+    'Метаболическое питание',
+    'Гормональные нарушения',
+    'Инсулинорезистентность',
+    'Менопауза',
+    'Гипотиреоз',
+    'СПКЯ',
+  ],
+  hasCredential: [
+    {
+      '@type': 'EducationalOccupationalCredential',
+      credentialCategory: 'certificate',
+      name: 'Нутрициолог',
+    },
+    {
+      '@type': 'EducationalOccupationalCredential',
+      credentialCategory: 'certificate',
+      name: 'Управление весом',
+    },
+    {
+      '@type': 'EducationalOccupationalCredential',
+      credentialCategory: 'certificate',
+      name: 'Витаминология и нутрициология',
+    },
+  ],
+  sameAs: [
+    'https://t.me/NataTomshina',
+    'https://instagram.com/nata.tomshina',
+    'https://youtube.com/@natatomshina',
+  ],
+}
+
 export default function AboutPage() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(ABOUT_SCHEMA) }}
+      />
       <PublicNav currentPage="/about" />
       <main className="ab-main">
 
