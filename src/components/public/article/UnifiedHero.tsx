@@ -10,6 +10,7 @@ type Props = {
   authorName?: string
   authorRole?: string | null
   publishedAt?: string | null
+  updatedAt?: string | null
 }
 
 const PILL_LABELS: Record<Variant, string> = {
@@ -78,6 +79,11 @@ export function UnifiedHero(props: Props) {
             {props.publishedAt ? (
               <span className="unified-hero__date">
                 {formatDate(props.publishedAt)}
+              </span>
+            ) : null}
+            {props.updatedAt && props.updatedAt !== props.publishedAt ? (
+              <span className="unified-hero__updated">
+                Обновлено: {formatDate(props.updatedAt)}
               </span>
             ) : null}
           </div>

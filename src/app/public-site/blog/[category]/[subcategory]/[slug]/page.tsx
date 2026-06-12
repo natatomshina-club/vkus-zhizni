@@ -278,10 +278,30 @@ export default async function SiloArticlePage(
               authorName="Наталья Томшина"
               authorRole="нутрициолог"
               publishedAt={post.published_at}
+              updatedAt={post.updated_at}
             />
 
+            {post.cover_image_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={post.cover_image_url}
+                alt={post.title}
+                style={{ width: '100%', aspectRatio: '1200/630', objectFit: 'cover', borderRadius: 12, marginBottom: 32, display: 'block' }}
+                loading="eager"
+              />
+            )}
+
             {post.content && (
-              <div style={{ fontFamily: 'var(--font-nunito)', fontSize: 16, lineHeight: 1.8, color: 'var(--color-text-primary)' }} className="blog-content" dangerouslySetInnerHTML={{ __html: post.content }} />
+              <div
+                style={{ fontFamily: 'var(--font-nunito)', fontSize: 16, lineHeight: 1.8, color: 'var(--color-text-primary)' }}
+                className="blog-content"
+                dangerouslySetInnerHTML={{
+                  __html: post.content.replace(
+                    /https:\/\/club\.nata-tomshina\.ru\/join/g,
+                    '/club'
+                  ),
+                }}
+              />
             )}
 
             {widgetType && <BlogWidget type={widgetType} />}
