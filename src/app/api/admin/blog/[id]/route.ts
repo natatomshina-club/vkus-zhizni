@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/auth/requireAdmin'
 
@@ -50,6 +51,48 @@ export async function PATCH(
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
   console.log('[blog PATCH] Saved OK — content length in DB:', (data as Record<string, unknown>)?.content ? String((data as Record<string, unknown>).content).length : 0)
+
+  // Post-publish hooks — fire when is_published set to true in this request
+  if ('is_published' in body && body.is_published === true) {
+    const post = data as { category: string | null; subcategory: string | null; slug: string }
+    const { category, subcategory, slug } = post
+
+    if (category && subcategory && slug) {
+      // ISR invalidation
+      revalidatePath(`/blog/${category}/${subcategory}/${slug}`)
+      revalidatePath(`/blog/${category}/${subcategory}`)
+      revalidatePath(`/blog/${category}`)
+      revalidatePath('/blog')
+      revalidatePath('/sitemap.xml')
+
+      const articleUrl = `https://nata-tomshina.ru/blog/${category}/${subcategory}/${slug}`
+      const indexNowKey = process.env.INDEXNOW_KEY
+
+      // IndexNow — Yandex + Bing (non-blocking)
+      if (indexNowKey) {
+        fetch('https://api.indexnow.org/indexnow', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            host: 'nata-tomshina.ru',
+            key: indexNowKey,
+            keyLocation: `https://nata-tomshina.ru/${indexNowKey}.txt`,
+            urlList: [articleUrl],
+          }),
+        }).catch(() => {})
+
+        fetch(`https://yandex.com/indexnow?url=${encodeURIComponent(articleUrl)}&key=${indexNowKey}`)
+          .catch(() => {})
+      }
+
+      // Sitemap pings (non-blocking)
+      Promise.allSettled([
+        fetch('https://www.google.com/ping?sitemap=https://nata-tomshina.ru/sitemap.xml'),
+        fetch('https://webmaster.yandex.com/ping?sitemap=https://nata-tomshina.ru/sitemap.xml'),
+      ])
+    }
+  }
+
   return NextResponse.json({ post: data })
 }
 
