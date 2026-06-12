@@ -21,6 +21,10 @@ export const metadata: Metadata = {
   title: 'Наталья Томшина — нутрициолог',
   description: 'Блог Натальи Томшиной о питании для гормонального баланса, здоровом образе жизни и методе умного питания без голода.',
   metadataBase: new URL('https://nata-tomshina.ru'),
+  verification: {
+    yandex: '0e366f3e10e9b223',
+    google: 'rqQkXq-aXDhjzs9d8qTKKA3XyiZTUOI4-ksgdNRIOyE',
+  },
   other: {
     'format-detection': 'telephone=no',
   },
