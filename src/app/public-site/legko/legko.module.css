@@ -262,18 +262,9 @@
   box-shadow: var(--shadow-green-card);
 }
 
-.heroArtHeart {
+.heroArtPhoto {
   position: absolute;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-green-dark);
-}
-
-.heroArtHeart svg {
-  width: 62%;
-  opacity: 0.92;
 }
 
 .authorCard {
@@ -320,22 +311,6 @@
   margin-bottom: 12px;
 }
 
-.acPhoto {
-  flex-shrink: 0;
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  border: 2px solid var(--color-accent-green);
-  overflow: hidden;
-}
-
-.acPhoto img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-  display: block;
-}
 
 @media (max-width: 860px) {
   .heroGrid {

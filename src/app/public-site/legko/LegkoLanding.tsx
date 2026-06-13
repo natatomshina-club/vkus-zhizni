@@ -111,23 +111,19 @@ export default function LegkoLanding() {
             </div>
             <div>
               <div className={styles.heroArt}>
-                <div className={styles.heroArtHeart}>
-                  <svg viewBox="0 0 200 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M100 165C100 165 20 120 20 65C20 38 40 22 62 22C80 22 92 33 100 48C108 33 120 22 138 22C160 22 180 38 180 65C180 120 100 165 100 165Z" fill="white" fillOpacity="0.55" stroke="currentColor" strokeWidth="3"/>
-                    <path d="M64 70c12 6 20 18 22 32M136 70c-12 6-20 18-22 32" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" opacity=".7"/>
-                  </svg>
+                <div className={styles.heroArtPhoto}>
+                  <Image
+                    src="/images/authors/natalia.jpg"
+                    alt="Наталья Томшина"
+                    fill
+                    priority
+                    sizes="(max-width: 860px) 90vw, 45vw"
+                    style={{ objectFit: 'contain', objectPosition: 'bottom center' }}
+                  />
                 </div>
               </div>
               <div className={styles.authorCard}>
                 <div className={styles.acTop}>
-                  <div className={styles.acPhoto}>
-                    <Image
-                      src="/images/authors/natalia.jpg"
-                      alt="Наталья Томшина"
-                      width={72}
-                      height={72}
-                    />
-                  </div>
                   <div>
                     <div className={styles.acLabel}>Автор программы</div>
                     <div className={styles.acName}>Наталья Томшина</div>

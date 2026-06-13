@@ -16,6 +16,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/about', priority: 0.8 },
     { path: '/club', priority: 0.95 },
     { path: '/results', priority: 0.9 },
+    { path: '/obuchenie', priority: 0.6 },
+    { path: '/obuchenie/kursy', priority: 0.6 },
   ]
   for (const { path, priority } of staticPages) {
     urls.push({ url: `${BASE}${path}`, changeFrequency: 'weekly', priority })

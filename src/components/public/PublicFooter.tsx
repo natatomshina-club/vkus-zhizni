@@ -19,6 +19,7 @@ export default function PublicFooter() {
           { href: '/about', label: 'О методе' },
           { href: '/results', label: 'Результаты' },
           { href: '/blog', label: 'Блог' },
+          { href: '/obuchenie', label: 'Обучение' },
           { href: '/marathon', label: 'Марафон' },
           { href: '/club', label: 'О клубе' },
           { href: 'https://club.nata-tomshina.ru/legal/privacy', label: 'Конфиденциальность', external: true },
