@@ -70,7 +70,7 @@ export default function LegkoLanding() {
       {/* ── NAV ─────────────────────────────────────────────────────────── */}
       <header className={styles.stickyNav}>
         <div className={styles.navInner}>
-          <a className={styles.brand} href="#top">
+          <a className={styles.brand} href="https://nata-tomshina.ru/">
             Наталья Томшина
             <small>интегративный нутрициолог</small>
           </a>
@@ -104,16 +104,16 @@ export default function LegkoLanding() {
               <h1 className={styles.heroH1}>Лёгкость<br />перемен</h1>
               <p className={styles.lead}>Новая жизнь без боли и дискомфорта от заболеваний ЖКТ.</p>
               <div className={styles.heroCta}>
-                <a className={`${styles.btnPeach}`} href="#anketa">Пройти диагностику</a>
-                <a className={`${styles.btnGreen}`} href="#anketa">Консультация с Натальей</a>
+                <a className="hp-btn hp-btn--orange hp-btn--lg" href="#anketa">Пройти диагностику</a>
+                <a className="hp-btn hp-btn--green hp-btn--lg" href="#anketa">Консультация с Натальей</a>
               </div>
             </div>
             <div>
               <div className={styles.heroArt}>
                 <div className={styles.heroArtHeart}>
                   <svg viewBox="0 0 200 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M100 165C100 165 20 120 20 65C20 38 40 22 62 22C80 22 92 33 100 48C108 33 120 22 138 22C160 22 180 38 180 65C180 120 100 165 100 165Z" fill="#ffffff" fillOpacity="0.55" stroke="#3f8a55" strokeWidth="3"/>
-                    <path d="M64 70c12 6 20 18 22 32M136 70c-12 6-20 18-22 32" stroke="#3f8a55" strokeWidth="2.4" strokeLinecap="round" opacity=".7"/>
+                    <path d="M100 165C100 165 20 120 20 65C20 38 40 22 62 22C80 22 92 33 100 48C108 33 120 22 138 22C160 22 180 38 180 65C180 120 100 165 100 165Z" fill="white" fillOpacity="0.55" stroke="currentColor" strokeWidth="3"/>
+                    <path d="M64 70c12 6 20 18 22 32M136 70c-12 6-20 18-22 32" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" opacity=".7"/>
                   </svg>
                 </div>
               </div>
@@ -204,7 +204,7 @@ export default function LegkoLanding() {
           </div>
 
           <div style={{ textAlign: 'center', marginTop: 8 }}>
-            <a className={`${styles.btnPeach} ${styles.btnLg}`} href="#anketa">
+            <a className="hp-btn hp-btn--orange hp-btn--xl" href="#anketa">
               Пройти диагностику и узнать, подходит ли вам программа
             </a>
           </div>
@@ -311,7 +311,7 @@ export default function LegkoLanding() {
                 <li>начнёте питаться разнообразно</li>
                 <li>уйдёт газообразование, вздутие, изжога, нормализуется стул</li>
               </ul>
-              <p style={{ margin: '12px 0 0', color: '#42584a', fontSize: '0.97rem' }}>Вы перестанете травмировать себя неподходящей едой и создадите свой здоровый рацион.</p>
+              <p style={{ margin: '12px 0 0', color: 'var(--color-green-deep)', fontSize: '0.97rem' }}>Вы перестанете травмировать себя неподходящей едой и создадите свой здоровый рацион.</p>
             </div>
           </div>
 
@@ -433,7 +433,7 @@ export default function LegkoLanding() {
             <div className={styles.ba}>
               <div className={`${styles.baCol} ${styles.baColBefore}`}>
                 <h4>До</h4>
-                <p style={{ margin: '0 0 12px', color: '#5a6b62', fontSize: '0.95rem' }}>Елена пришла на курс с жалобами:</p>
+                <p style={{ margin: '0 0 12px', color: 'var(--color-text-secondary)', fontSize: '0.95rem' }}>Елена пришла на курс с жалобами:</p>
                 <ul className={styles.baList}>
                   <li>отсутствие энергии</li>
                   <li>проблемы с ЖКТ (вздутие, боли, неустойчивый стул)</li>
@@ -451,8 +451,14 @@ export default function LegkoLanding() {
               </div>
             </div>
             <div className={styles.videoPh}>
-              <div className={styles.videoPlay}><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>
-              <small>видео-отзыв</small>
+              <iframe
+                src="https://kinescope.io/embed/7e7a79ef-1b63-4a75-a5cc-750dd3d9850b"
+                title="Видео-отзыв Елены — программа «Лёгкость перемен»"
+                allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+                allowFullScreen
+                loading="lazy"
+                className={styles.videoIframe}
+              />
             </div>
           </div>
 
@@ -462,7 +468,7 @@ export default function LegkoLanding() {
             <div className={styles.ba}>
               <div className={`${styles.baCol} ${styles.baColBefore}`}>
                 <h4>До</h4>
-                <p style={{ margin: '0 0 12px', color: '#5a6b62', fontSize: '0.95rem' }}>До курса Людмила жаловалась на:</p>
+                <p style={{ margin: '0 0 12px', color: 'var(--color-text-secondary)', fontSize: '0.95rem' }}>До курса Людмила жаловалась на:</p>
                 <ul className={styles.baList}>
                   <li>низкий уровень энергии (энергии почти ноль)</li>
                   <li>отёки</li>
@@ -484,8 +490,14 @@ export default function LegkoLanding() {
               </div>
             </div>
             <div className={styles.videoPh}>
-              <div className={styles.videoPlay}><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>
-              <small>видео-отзыв</small>
+              <iframe
+                src="https://kinescope.io/embed/bc2da89c-42ad-4ac0-840d-ba0b5b6cbd32"
+                title="Видео-отзыв Людмилы — программа «Лёгкость перемен»"
+                allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+                allowFullScreen
+                loading="lazy"
+                className={styles.videoIframe}
+              />
             </div>
           </div>
 
@@ -516,13 +528,19 @@ export default function LegkoLanding() {
               </div>
             </div>
             <div className={styles.videoPh}>
-              <div className={styles.videoPlay}><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>
-              <small>видео-отзыв</small>
+              <iframe
+                src="https://kinescope.io/embed/2a0112ca-9dbc-4af9-b541-28fc0a36565c"
+                title="Видео-отзыв Татьяны — программа «Лёгкость перемен»"
+                allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+                allowFullScreen
+                loading="lazy"
+                className={styles.videoIframe}
+              />
             </div>
           </div>
 
           <div style={{ textAlign: 'center', marginTop: 36 }}>
-            <a className={`${styles.btnPeach} ${styles.btnLg}`} href="#anketa">Хочу такие же результаты</a>
+            <a className="hp-btn hp-btn--orange hp-btn--xl" href="#anketa">Хочу такие же результаты</a>
           </div>
         </div>
       </section>
@@ -764,8 +782,7 @@ export default function LegkoLanding() {
                 </button>
                 <button
                   type="button"
-                  className={styles.btnSolid}
-                  style={{ padding: '13px 30px' }}
+                  className="hp-btn hp-btn--green hp-btn--lg"
                   onClick={handleNext}
                 >
                   {quizStep === TOTAL_STEPS ? 'Отправить анкету' : 'Далее →'}
@@ -823,7 +840,7 @@ export default function LegkoLanding() {
         <div className={styles.wrap}>
           <h2>Хватит откладывать заботу о себе</h2>
           <p>Вы заслуживаете жить без боли, тяжести и постоянной усталости. Пройдите короткую диагностику — и я подскажу, подходит ли вам программа.</p>
-          <a className={`${styles.btnPeach} ${styles.btnLg}`} href="#anketa">Заполнить анкету</a>
+          <a className="hp-btn hp-btn--orange hp-btn--xl" href="#anketa">Заполнить анкету</a>
           <div style={{ marginTop: 34 }}>
             <div className={styles.eyebrow} style={{ marginBottom: 8 }}>Остались вопросы?</div>
             <p style={{ marginBottom: 10 }}>Задайте их лично Наталье:</p>
@@ -834,6 +851,13 @@ export default function LegkoLanding() {
           </div>
         </div>
       </section>
+
+      {/* ── DISCLAIMER ──────────────────────────────────────────────────── */}
+      <div className={styles.disclaimer}>
+        <div className={styles.wrap}>
+          <p>Информация на странице носит образовательный характер и не заменяет консультацию врача. Наталья Томшина — нутрициолог, не врач, не ставит диагнозы и не назначает лечение.</p>
+        </div>
+      </div>
 
       {/* ── FOOTER ──────────────────────────────────────────────────────── */}
       <footer className={styles.footer}>
