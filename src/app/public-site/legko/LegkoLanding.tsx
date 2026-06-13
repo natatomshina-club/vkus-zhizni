@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import styles from './legko.module.css'
 
 type QuizAnswers = {
@@ -118,8 +119,20 @@ export default function LegkoLanding() {
                 </div>
               </div>
               <div className={styles.authorCard}>
-                <div className={styles.acLabel}>Автор программы</div>
-                <div className={styles.acName}>Наталья Томшина</div>
+                <div className={styles.acTop}>
+                  <div className={styles.acPhoto}>
+                    <Image
+                      src="/images/authors/natalia.jpg"
+                      alt="Наталья Томшина"
+                      width={72}
+                      height={72}
+                    />
+                  </div>
+                  <div>
+                    <div className={styles.acLabel}>Автор программы</div>
+                    <div className={styles.acName}>Наталья Томшина</div>
+                  </div>
+                </div>
                 <ul>
                   <li>интегративный нутрициолог</li>
                   <li>основатель Клуба Стройных и Здоровых «Вкус Жизни»</li>
