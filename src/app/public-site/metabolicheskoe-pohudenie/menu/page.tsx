@@ -216,6 +216,7 @@ export default function MenuPage() {
         </nav>
 
         <article className="article-body">
+          <div className="article-body__inner">
           <p className="article-lede">
             Если коротко, метаболическое меню работает так: три полноценных приёма
             пищи в день, в основе каждого белок и овощи плюс правильные жиры, а
@@ -616,6 +617,7 @@ export default function MenuPage() {
             согласуйте изменения рациона с лечащим врачом, особенно если препараты
             влияют на сахар, гормоны щитовидки или работу почек.
           </aside>
+          </div>
         </article>
 
         {/* CTA */}
