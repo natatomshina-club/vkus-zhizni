@@ -12,11 +12,11 @@
 
 ```js
 // Пути, переписываемые с nata-tomshina.ru → /public-site/*
-PUBLIC_SITE_PATHS = ['/blog', '/recipes', '/about', '/results', '/club',
-                     '/free', '/free-kurs', '/marathon', '/menyu', '/racion']
+PUBLIC_SITE_PATHS = ['/blog', '/recipes', '/metabolicheskoe-pohudenie', '/results', '/club',
+                     '/free', '/free-kurs', '/marathon', '/menyu', '/racion', '/legko', '/obuchenie']
 ```
 
-`nata-tomshina.ru/about` → proxy rewrite → `/public-site/about`.  
+`nata-tomshina.ru/metabolicheskoe-pohudenie` → proxy rewrite → `/public-site/metabolicheskoe-pohudenie`.  
 `nata-tomshina.ru/partner` — НЕ в списке → маршрутизируется в `src/app/partner/` напрямую.
 
 ---
@@ -28,7 +28,8 @@ PUBLIC_SITE_PATHS = ['/blog', '/recipes', '/about', '/results', '/club',
 | URL | Файл | Примечание |
 |---|---|---|
 | `/` | `public-site/page.tsx` | Главная |
-| `/about` | `public-site/about/page.tsx` | |
+| `/metabolicheskoe-pohudenie` | `public-site/metabolicheskoe-pohudenie/page.tsx` | Pillar «Метаболическое похудение» (быв. `/about`) |
+| `/metabolicheskoe-pohudenie/menu` | `public-site/metabolicheskoe-pohudenie/menu/page.tsx` | Cluster-статья «Меню на неделю» |
 | `/club` | `public-site/club/page.tsx` | Главный конверсионный лендинг |
 | `/free` | `public-site/free/` | Бесплатный мини-курс |
 | `/free-kurs`, `/free-kurs/plan`, `/free-kurs/racion` | `public-site/free-kurs/` | |
@@ -59,7 +60,7 @@ PUBLIC_SITE_PATHS = ['/blog', '/recipes', '/about', '/results', '/club',
 | Пункт | URL | Примечание |
 |---|---|---|
 | Бесплатный мини-курс 🎁 | `/free` | Выделен badge |
-| О методе | `/about` | |
+| О методе | `/metabolicheskoe-pohudenie` | |
 | Результаты | `/results` | |
 | Марафон | `/marathon` | |
 | ~~Рецепты~~ | `/recipes` | **Закомментировано в коде** — страница есть, в хедере нет (R102) |
@@ -87,7 +88,8 @@ PUBLIC_SITE_PATHS = ['/blog', '/recipes', '/about', '/results', '/club',
 | `/` | 1.0 | статично |
 | `/blog` | 0.8 | статично |
 | `/recipes` | 0.8 | статично |
-| `/about` | 0.8 | статично |
+| `/metabolicheskoe-pohudenie` | 0.9 | статично |
+| `/metabolicheskoe-pohudenie/menu` | 0.7 | статично |
 | `/club` | 0.95 | статично |
 | `/blog/[category]` | — | `blog_hubs`, `is_ready+is_indexed` |
 | `/blog/[category]/[subcategory]` | — | `blog_subcategory_hubs`, `is_ready+is_indexed` |
@@ -151,7 +153,8 @@ Sitemap: https://nata-tomshina.ru/sitemap.xml
 | Страница | title | description | canonical | OG |
 |---|---|---|---|---|
 | `/` | ✓ | ✓ | ✓ | ✓ type: website |
-| `/about` | ✓ | ✓ | ✓ | ✓ type: profile |
+| `/metabolicheskoe-pohudenie` | ✓ | ✓ | ✓ | ✓ type: article |
+| `/metabolicheskoe-pohudenie/menu` | ✓ | ✓ | ✓ | ✓ type: article |
 | `/results` | ✓ | ✓ | ✓ | ✓ |
 | `/club` | ✓ | ✓ | **нет** | **нет og:url** |
 | `/results/[slug]` | `generateMetadata` ✓ | ✓ | ✓ | noindex если `!published` |
@@ -171,9 +174,10 @@ Sitemap: https://nata-tomshina.ru/sitemap.xml
 | `/blog/[cat]/[subcat]/[slug]` | `BlogPosting` + `Person` + `Organization` + `BreadcrumbList` | ✓ |
 | `/blog/[cat]` | `CollectionPage` + `BreadcrumbList` (@graph) | ✓ |
 | `/recipes/[cat]/[slug]` | `Recipe` | ✓ |
+| `/metabolicheskoe-pohudenie` | `Article` + `Person` + `Organization` + `FAQPage` + `BreadcrumbList` (@graph) | ✓ |
+| `/metabolicheskoe-pohudenie/menu` | `Article` + `Person` + `Organization` + `FAQPage` + `BreadcrumbList` (@graph) | ✓ |
 | Любая страница с `<Breadcrumbs />` | `BreadcrumbList` | ✓ |
 | `/` | **нет** (`WebSite` + `Organization` отсутствует) | пробел (R101) |
-| `/about` | **нет** (`Person` отсутствует) | пробел (R101) |
 | `/results` листинг | **нет** | пробел |
 | `/results/[slug]` | **нет** | пробел |
 | `/club`, `/free`, `/marathon` | **нет** | OK, лендинги |
@@ -185,7 +189,8 @@ Sitemap: https://nata-tomshina.ru/sitemap.xml
 | URL | Canonical | Примечание |
 |---|---|---|
 | `/` | ✓ | |
-| `/about` | ✓ | |
+| `/metabolicheskoe-pohudenie` | ✓ | |
+| `/metabolicheskoe-pohudenie/menu` | ✓ | |
 | `/results` | ✓ | |
 | `/blog/*` | ✓ | все уровни |
 | `/results/[slug]` | ✓ | |
@@ -207,12 +212,14 @@ Sitemap: https://nata-tomshina.ru/sitemap.xml
 
 ### Редиректы
 
-Единственный настроенный 301 (`next.config.ts`):
+Настроенные permanent-редиректы (`next.config.ts`, `redirects()`):
 
 ```
-/blog/pohudenie/bez-diet-bez-golodaniy/:path*
-  → /blog/pohudenie/bez-diet-bez-sporta/:path*  (permanent)
+/about  →  /metabolicheskoe-pohudenie  (permanent, 308)
+/blog/pohudenie/bez-diet-bez-golodaniy/:path*  →  /blog/pohudenie/bez-diet-bez-sporta/:path*  (permanent)
 ```
+
+> Next.js `permanent: true` отдаёт 308, не 301 — Google обрабатывает их одинаково.
 
 **`/welcome` отсутствует.** Старый редирект `/welcome?plan=monthly` из эпохи Prodamus (`SESSION_2026-05-19_VAULT_HANDOFF.md`) — следов в коде нет. Закрытый вопрос.
 
@@ -248,3 +255,4 @@ R96 (Rule #11 в middleware, кураторская auth) — в `docs/08-roadma
 | Дата | Событие |
 |---|---|
 | 2026-05-23 | Документ создан — разведка по коду |
+| 2026-06-14 | `/about` → `/metabolicheskoe-pohudenie` (rename + 308); добавлен `/menu` cluster; обновлены sitemap, nav, schema, canonical, proxy paths, redirects |

@@ -52,8 +52,9 @@ const hostname = request.headers.get('host') ?? ''
 const pathname = request.nextUrl.pathname
 
 const PUBLIC_SITE_PATHS = [
-  '/blog', '/recipes', '/about', '/results',
-  '/club', '/free', '/free-kurs', '/marathon', '/menyu', '/racion'
+  '/blog', '/recipes', '/metabolicheskoe-pohudenie', '/results',
+  '/club', '/free', '/free-kurs', '/marathon', '/menyu', '/racion',
+  '/legko', '/obuchenie'
 ]
 const isPublicSitePath = PUBLIC_SITE_PATHS.some(p =>
   pathname === p || pathname.startsWith(p + '/')
@@ -79,7 +80,8 @@ if (hostname === 'club.nata-tomshina.ru' && pathname === '/') {
 |---|---|
 | `nata-tomshina.ru/` | rewrite → `/public-site` |
 | `nata-tomshina.ru/blog/...` | rewrite → `/public-site/blog/...` |
-| `nata-tomshina.ru/about` | rewrite → `/public-site/about` |
+| `nata-tomshina.ru/metabolicheskoe-pohudenie` | rewrite → `/public-site/metabolicheskoe-pohudenie` |
+| `nata-tomshina.ru/about` | 308 → `/metabolicheskoe-pohudenie` (next.config.ts `redirects()`) |
 | `club.nata-tomshina.ru/` | redirect → `/dashboard` или `/auth` |
 | `club.nata-tomshina.ru/dashboard/*` | проходит как есть |
 
@@ -116,7 +118,8 @@ src/app/
 │   │   └── styles.css        ← стили лендинга
 │   ├── page.tsx              ← главная nata-tomshina.ru
 │   ├── blog/
-│   ├── about/
+│   ├── metabolicheskoe-pohudenie/   ← pillar (быв. about/)
+│   │   └── menu/             ← cluster-статья «Меню на неделю»
 │   ├── free/
 │   ├── free-kurs/
 │   ├── marathon/
