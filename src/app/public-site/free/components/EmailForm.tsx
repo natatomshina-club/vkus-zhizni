@@ -12,18 +12,25 @@ interface Props {
   buttonVariant?: 'green' | 'orange'
   size?: 'lg' | 'md'
   ymGoal?: string
+  endpoint?: string
+  source?: string
+  redirectTo?: string
 }
 
 export default function EmailForm({
   buttonVariant = 'green',
   size = 'lg',
   ymGoal = 'free_email_sent',
+  endpoint = '/api/public/subscribe',
+  source,
+  redirectTo = '/free-kurs',
 }: Props) {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
   const inputRef = useRef<HTMLInputElement>(null)
+  const honeypotRef = useRef<HTMLInputElement>(null)
 
   const btnBg = buttonVariant === 'orange'
     ? 'var(--grad-orange-btn)'
@@ -36,6 +43,7 @@ export default function EmailForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (honeypotRef.current?.value) return
     const trimmed = email.trim()
     if (!trimmed.includes('@')) {
       setError('Введите корректный email')
@@ -45,21 +53,23 @@ export default function EmailForm({
     setLoading(true)
     setError('')
     try {
-      await fetch('/api/public/subscribe', {
+      await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: trimmed }),
+        body: JSON.stringify({ email: trimmed, ...(source ? { source } : {}) }),
       })
       window.ym?.(108262096, 'reachGoal', ymGoal)
-      router.push('/free-kurs')
+      router.push(redirectTo)
     } catch {
-      setError('Не удалось открыть курс. Попробуйте ещё раз.')
+      setError('Не удалось открыть. Попробуйте ещё раз.')
       setLoading(false)
     }
   }
 
   return (
     <form onSubmit={handleSubmit} style={{ width: '100%' }}>
+      {/* honeypot — hidden from users, filled only by bots */}
+      <input ref={honeypotRef} name="website" type="text" tabIndex={-1} aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <input
           ref={inputRef}

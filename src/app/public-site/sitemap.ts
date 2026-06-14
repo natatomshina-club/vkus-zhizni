@@ -14,6 +14,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '', priority: 1 },
     { path: '/blog', priority: 0.8 },
     { path: '/metabolicheskoe-pohudenie', priority: 0.9 },
+    { path: '/metabolicheskoe-pohudenie/menu', priority: 0.7 },
     { path: '/club', priority: 0.95 },
     { path: '/results', priority: 0.9 },
     { path: '/obuchenie', priority: 0.6 },
