@@ -21,17 +21,17 @@ export const metadata: Metadata = {
   title: 'Метаболическое похудение — что это и как работает метод | Наталья Томшина',
   description: 'Метаболическое похудение простыми словами: что это, как работает, меню, результаты. Метод Натальи Томшиной для женщин 35–60 без диет и подсчёта калорий.',
   keywords: 'метаболическое похудение, метаболическое питание, метод Натальи Томшиной, похудение без диет, инсулинорезистентность',
-  authors: [{ name: 'Наталья Томшина', url: 'https://nata-tomshina.ru/about' }],
+  authors: [{ name: 'Наталья Томшина', url: 'https://nata-tomshina.ru/metabolicheskoe-pohudenie' }],
 
   alternates: {
-    canonical: 'https://nata-tomshina.ru/about',
+    canonical: 'https://nata-tomshina.ru/metabolicheskoe-pohudenie',
   },
 
   openGraph: {
     type: 'article',
     title: 'Метаболическое похудение — что это и как работает метод',
     description: 'Метаболическое похудение простыми словами: что это, как работает, меню, результаты. Метод Натальи Томшиной для женщин 35–60 без диет.',
-    url: 'https://nata-tomshina.ru/about',
+    url: 'https://nata-tomshina.ru/metabolicheskoe-pohudenie',
     siteName: 'Вкус Жизни',
     locale: 'ru_RU',
     publishedTime: '2026-06-12T10:00:00+03:00',
@@ -58,7 +58,7 @@ const schemaGraph = {
   '@graph': [
     {
       '@type': 'Article',
-      '@id': 'https://nata-tomshina.ru/about#article',
+      '@id': 'https://nata-tomshina.ru/metabolicheskoe-pohudenie#article',
       headline: 'Метаболическое похудение: что это такое простыми словами и как работает метод',
       description: 'Метаболическое похудение простыми словами: что это, как работает, меню, результаты. Метод Натальи Томшиной для женщин 35–60 без диет.',
       image: {
@@ -73,18 +73,18 @@ const schemaGraph = {
       articleSection: 'Метод',
       keywords: 'метаболическое похудение, метаболическое питание, метод Натальи Томшиной',
       inLanguage: 'ru-RU',
-      author: { '@id': 'https://nata-tomshina.ru/about#person' },
+      author: { '@id': 'https://nata-tomshina.ru/metabolicheskoe-pohudenie#person' },
       publisher: { '@id': 'https://nata-tomshina.ru#organization' },
       mainEntityOfPage: {
         '@type': 'WebPage',
-        '@id': 'https://nata-tomshina.ru/about',
+        '@id': 'https://nata-tomshina.ru/metabolicheskoe-pohudenie',
       },
     },
     {
       '@type': 'Person',
-      '@id': 'https://nata-tomshina.ru/about#person',
+      '@id': 'https://nata-tomshina.ru/metabolicheskoe-pohudenie#person',
       name: 'Наталья Томшина',
-      url: 'https://nata-tomshina.ru/about',
+      url: 'https://nata-tomshina.ru/metabolicheskoe-pohudenie',
       image: 'https://nata-tomshina.ru/images/natalia.jpg',
       jobTitle: 'Интегративный нутрициолог',
       description: 'Помогаю женщинам 35–60 лет восстановить гормональный баланс и нормализовать вес через метаболическое питание. С 2017 года живу по этому методу и веду клуб «Вкус Жизни».',
@@ -132,11 +132,11 @@ const schemaGraph = {
         '@type': 'ImageObject',
         url: 'https://nata-tomshina.ru/images/logo.png',
       },
-      founder: { '@id': 'https://nata-tomshina.ru/about#person' },
+      founder: { '@id': 'https://nata-tomshina.ru/metabolicheskoe-pohudenie#person' },
     },
     {
       '@type': 'FAQPage',
-      '@id': 'https://nata-tomshina.ru/about#faq',
+      '@id': 'https://nata-tomshina.ru/metabolicheskoe-pohudenie#faq',
       mainEntity: [
         {
           '@type': 'Question',
@@ -216,7 +216,7 @@ const schemaGraph = {
       '@type': 'BreadcrumbList',
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'Главная', item: 'https://nata-tomshina.ru' },
-        { '@type': 'ListItem', position: 2, name: 'О методе' },
+        { '@type': 'ListItem', position: 2, name: 'Метаболическое похудение' },
       ],
     },
   ],
@@ -230,7 +230,7 @@ export default function AboutPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaGraph) }}
       />
 
-      <PublicNav currentPage="/about" />
+      <PublicNav currentPage="/metabolicheskoe-pohudenie" />
 
       <main className="about-article">
 

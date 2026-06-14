@@ -154,7 +154,7 @@ export default async function SubcategoryPage(
           '@type': 'Person',
           name: 'Наталья Томшина',
           jobTitle: 'нутрициолог',
-          url: `${BASE}/about`,
+          url: `${BASE}/metabolicheskoe-pohudenie`,
         },
       },
       {

@@ -10,7 +10,7 @@ declare global {
 
 const NAV_LINKS = [
   { href: '/free', label: 'Бесплатный курс', highlight: true },
-  { href: '/about', label: 'О методе' },
+  { href: '/metabolicheskoe-pohudenie', label: 'О методе' },
   { href: '/obuchenie', label: 'Обучение' },
   { href: '/results', label: 'Результаты' },
   { href: '/marathon', label: 'Марафон' },

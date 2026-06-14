@@ -16,7 +16,7 @@ export default function PublicFooter() {
       </p>
       <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', justifyContent: 'center' }}>
         {[
-          { href: '/about', label: 'О методе' },
+          { href: '/metabolicheskoe-pohudenie', label: 'О методе' },
           { href: '/results', label: 'Результаты' },
           { href: '/blog', label: 'Блог' },
           { href: '/obuchenie', label: 'Обучение' },

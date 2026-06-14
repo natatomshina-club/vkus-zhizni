@@ -119,7 +119,7 @@ export async function proxy(request: NextRequest) {
   const hostname = request.headers.get('host') ?? ''
 
   // Route public site SEO pages to /public-site/* prefix
-  const PUBLIC_SITE_PATHS = ['/blog', '/recipes', '/about', '/results', '/club', '/free', '/free-kurs', '/marathon', '/menyu', '/racion', '/legko', '/obuchenie']
+  const PUBLIC_SITE_PATHS = ['/blog', '/recipes', '/metabolicheskoe-pohudenie', '/results', '/club', '/free', '/free-kurs', '/marathon', '/menyu', '/racion', '/legko', '/obuchenie']
   const isPublicSitePath = PUBLIC_SITE_PATHS.some(p =>
     pathname === p || pathname.startsWith(p + '/')
   )

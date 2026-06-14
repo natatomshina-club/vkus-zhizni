@@ -216,7 +216,7 @@ export default async function SiloArticlePage(
                 '@type': 'Person',
                 name: 'Наталья Томшина',
                 jobTitle: 'Интегративный нутрициолог',
-                url: 'https://nata-tomshina.ru/about',
+                url: 'https://nata-tomshina.ru/metabolicheskoe-pohudenie',
                 image: 'https://nata-tomshina.ru/images/natalia.jpg',
                 sameAs: [
                   'https://t.me/NataTomshina',

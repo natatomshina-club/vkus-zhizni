@@ -92,7 +92,7 @@ export default async function RecipePage(
           author: {
             '@type': 'Person',
             name: 'Наталья Томшина',
-            url: 'https://nata-tomshina.ru/about',
+            url: 'https://nata-tomshina.ru/metabolicheskoe-pohudenie',
           },
           publisher: {
             '@type': 'Organization',

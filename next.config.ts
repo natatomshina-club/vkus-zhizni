@@ -20,6 +20,11 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        source: '/about',
+        destination: '/metabolicheskoe-pohudenie',
+        permanent: true,
+      },
+      {
         source: '/blog/pohudenie/bez-diet-bez-golodaniy/:path*',
         destination: '/blog/pohudenie/bez-diet-bez-sporta/:path*',
         permanent: true,
