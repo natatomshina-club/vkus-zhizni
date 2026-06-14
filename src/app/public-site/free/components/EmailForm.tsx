@@ -69,7 +69,7 @@ export default function EmailForm({
   return (
     <form onSubmit={handleSubmit} style={{ width: '100%' }}>
       {/* honeypot — hidden from users, filled only by bots */}
-      <input ref={honeypotRef} name="website" type="text" tabIndex={-1} aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
+      <input ref={honeypotRef} name="company_url" type="text" autoComplete="off" tabIndex={-1} aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <input
           ref={inputRef}
