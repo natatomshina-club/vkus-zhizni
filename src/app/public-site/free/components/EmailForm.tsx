@@ -56,7 +56,11 @@ export default function EmailForm({
       await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: trimmed, ...(source ? { source } : {}) }),
+        body: JSON.stringify({
+          email: trimmed,
+          ...(source ? { source } : {}),
+          company_url: honeypotRef.current?.value ?? '',
+        }),
       })
       window.ym?.(108262096, 'reachGoal', ymGoal)
       router.push(redirectTo)

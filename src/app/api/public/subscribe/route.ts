@@ -2,10 +2,13 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { sendEmail } from '@/lib/mailer'
 import { headers } from 'next/headers'
+import { isHoneypotFilled, rateLimit } from '@/lib/anti-spam'
 
 export async function POST(request: Request) {
   try {
-    const { email } = await request.json() as { email?: string }
+    const body = await request.json() as Record<string, unknown>
+    const email = typeof body.email === 'string' ? body.email : undefined
+
     if (!email || !email.includes('@')) {
       return NextResponse.json({ error: 'Некорректный email' }, { status: 400 })
     }
@@ -16,6 +19,11 @@ export async function POST(request: Request) {
       hdrs.get('x-real-ip') ??
       'unknown'
     const userAgent = hdrs.get('user-agent') ?? ''
+
+    // Spam guard: silent 200 to not reveal the trap
+    if (isHoneypotFilled(body) || rateLimit(ip, 'subscribe', { limit: 5, windowMs: 3_600_000 })) {
+      return NextResponse.json({ success: true })
+    }
 
     const supabase = createServiceClient()
 
@@ -36,7 +44,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Ошибка. Попробуйте ещё раз.' }, { status: 500 })
     }
 
-    // Non-blocking email with course access link
     sendAccessEmail(email.toLowerCase().trim()).catch(err =>
       console.error('[subscribe] email error:', err)
     )
@@ -80,6 +87,7 @@ async function sendAccessEmail(email: string) {
         </p>
       </div>
     `,
+    raw: true,
   })
 
   if (sent) {

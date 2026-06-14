@@ -3,10 +3,13 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { sendEmail } from '@/lib/mailer'
 import { baseEmailTemplate } from '@/lib/email-templates/base'
 import { headers } from 'next/headers'
+import { isHoneypotFilled, rateLimit } from '@/lib/anti-spam'
 
 export async function POST(request: Request) {
   try {
-    const { email } = await request.json() as { email?: string }
+    const body = await request.json() as Record<string, unknown>
+    const email = typeof body.email === 'string' ? body.email : undefined
+
     if (!email || !email.includes('@')) {
       return NextResponse.json({ error: 'Некорректный email' }, { status: 400 })
     }
@@ -17,6 +20,11 @@ export async function POST(request: Request) {
       hdrs.get('x-real-ip') ??
       'unknown'
     const userAgent = hdrs.get('user-agent') ?? ''
+
+    // Spam guard: silent 200 to not reveal the trap
+    if (isHoneypotFilled(body) || rateLimit(ip, 'subscribe-menu', { limit: 5, windowMs: 3_600_000 })) {
+      return NextResponse.json({ success: true })
+    }
 
     const supabase = createServiceClient()
 
